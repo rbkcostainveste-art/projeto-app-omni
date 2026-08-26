@@ -56,7 +56,7 @@ export function FlightBoard() {
   useEffect(() => {
     const restore=window.setTimeout(() => {
       const stored=localStorage.getItem("passagem-de-pista-flights");
-      const storedUser=sessionStorage.getItem("passagem-de-pista-user");
+      const storedUser=localStorage.getItem("passagem-de-pista-user");
       const storedCatalogs=localStorage.getItem("passagem-de-pista-catalogs");
       const isCurrentFlightData=localStorage.getItem("passagem-de-pista-flights-version")==="2";
       if(stored&&isCurrentFlightData) setFlights((JSON.parse(stored) as Flight[]).map((flight) => ({ ...flight,fuelUnit: flight.fuelUnit??"L" })));
@@ -84,7 +84,7 @@ export function FlightBoard() {
     event.preventDefault();
     const authorized=login==="0001"||catalogs.users.some((item) => item.employeeNumber===login);
     if(!authorized||password!=="1234") { setLoginError("Matrícula não cadastrada ou senha inválida."); return; }
-    sessionStorage.setItem("passagem-de-pista-user",login); setUser(login);
+    localStorage.setItem("passagem-de-pista-user",login); setUser(login);
   }
   function updateCheck(id: string,key: CheckKey,value: CheckValue) {
     setFlights((items) => items.map((flight) => {
@@ -112,7 +112,7 @@ export function FlightBoard() {
         <div className="mx-auto flex h-[72px] max-w-[1440px] items-center gap-4 px-4 sm:px-8">
           <button className="rounded-xl p-2 text-[#66768a] hover:bg-[#edf4fb] md:hidden" aria-label="Abrir menu"><Menu size={22} /></button>
           <div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-xl bg-[#1167d8] text-white shadow-[0_8px_20px_#1167d833]"><Plane size={21} /></div><div><p className="text-[11px] font-bold uppercase tracking-[.18em] text-[#6480a0]">Operações aéreas</p><h1 className="text-lg font-bold tracking-[-.02em]">Passagem de Pista</h1></div></div>
-          <div className="ml-auto flex items-center gap-2">{isAdmin? <button aria-label="Cadastros" onClick={() => setAdminOpen(true)} className="flex items-center gap-2 rounded-xl border border-[#bcd4f2] bg-[#edf5ff] px-3 py-2.5 text-xs font-bold text-[#1268d8] hover:bg-[#dcecff]"><Settings size={17} /><span className="desktop-only">Cadastros</span></button>:null}<button className="relative rounded-xl border border-[#dce6f0] p-2.5 text-[#52677f] hover:bg-[#f2f7fc]" aria-label="Notificações"><Bell size={19} /><span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#f0b429] ring-2 ring-white" /></button><div className="desktop-only ml-2 flex items-center gap-3 border-l border-[#e1e8f0] pl-4"><div className="grid h-9 w-9 place-items-center rounded-full bg-[#dcebff] text-[#1769e0]"><UserRound size={18} /></div><div><p className="text-xs text-[#718197]">{isAdmin? "Administrador":"Matrícula"}</p><p className="text-sm font-bold">{user}</p></div></div><button onClick={() => { sessionStorage.removeItem("passagem-de-pista-user"); setUser(""); }} className="rounded-xl p-2.5 text-[#718197] hover:bg-[#edf4fb]" aria-label="Sair"><LogOut size={19} /></button></div>
+          <div className="ml-auto flex items-center gap-2">{isAdmin? <button aria-label="Cadastros" onClick={() => setAdminOpen(true)} className="flex items-center gap-2 rounded-xl border border-[#bcd4f2] bg-[#edf5ff] px-3 py-2.5 text-xs font-bold text-[#1268d8] hover:bg-[#dcecff]"><Settings size={17} /><span className="desktop-only">Cadastros</span></button>:null}<button className="relative rounded-xl border border-[#dce6f0] p-2.5 text-[#52677f] hover:bg-[#f2f7fc]" aria-label="Notificações"><Bell size={19} /><span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#f0b429] ring-2 ring-white" /></button><div className="desktop-only ml-2 flex items-center gap-3 border-l border-[#e1e8f0] pl-4"><div className="grid h-9 w-9 place-items-center rounded-full bg-[#dcebff] text-[#1769e0]"><UserRound size={18} /></div><div><p className="text-xs text-[#718197]">{isAdmin? "Administrador":"Matrícula"}</p><p className="text-sm font-bold">{user}</p></div></div><button onClick={() => { localStorage.removeItem("passagem-de-pista-user"); setUser(""); }} className="rounded-xl p-2.5 text-[#718197] hover:bg-[#edf4fb]" aria-label="Sair"><LogOut size={19} /></button></div>
         </div>
       </header>
       <main className="mx-auto max-w-[1440px] px-4 py-7 sm:px-8">
