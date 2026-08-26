@@ -1,0 +1,14 @@
+[mcp_servers.supabase]
+url = "https://mcp.supabase.com/mcp?features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching"
+auth = "oauth"
+default_tools_approval_mode = "writes"
+
+[mcp_servers.vercel]
+url = "https://mcp.vercel.com"
+auth = "oauth"
+default_tools_approval_mode = "writes"
+
+[mcp_servers.github]
+url = "https://api.githubcopilot.com/mcp/"
+bearer_token_env_var = "GITHUB_PAT_TOKEN"
+default_tools_approval_mode = "writes"
