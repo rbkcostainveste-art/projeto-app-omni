@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Passagem de Pista",
+  title: "Flight IA",
   description: "Acompanhamento operacional de voos em tempo real",
 };
 
