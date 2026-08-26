@@ -9,7 +9,9 @@ pnpm install
 pnpm dev
 ```
 
-Abra `http://localhost:3000` e use a matrícula `1024` com a senha `1234`.
+Abra `http://localhost:3000`. Use `1024` / `1234` para o perfil operacional ou `0001` / `1234` para o perfil administrador.
+
+O administrador possui um painel exclusivo para cadastrar bases de operação, modelos e aeronaves. Esses cadastros alimentam os filtros e os campos de lançamento de voo usados pela equipe.
 
 O MVP funciona em modo demonstração usando armazenamento local. Para ativar a persistência compartilhada, crie um projeto Supabase, copie `.env.example` para `.env.local`, preencha as duas variáveis públicas e aplique a migration em `supabase/migrations`.
 
