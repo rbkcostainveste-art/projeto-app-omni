@@ -21,11 +21,7 @@ const demoCatalogs: Catalogs={
   users: [{ employeeNumber: "1024",name: "Operador de teste" },{ employeeNumber: "1031",name: "Operador 1031" },{ employeeNumber: "1048",name: "Operador 1048" }],
 };
 
-const demoFlights: Flight[]=[
-  { id: "1",prefix: "PR-OMN",model: "H145",base: "Jacarepaguá",date: "2026-08-26",departure: "09:40",duration: 1.5,fuelAmount: 620,fuel: "ok",preflight: "ok",hums: "ok",engineStart: "ok",shutdown: "pending",actualEngineStart: "09:47",revision: 4,acknowledged: { "1024": 4 },createdBy: "1048",updatedBy: "1024" },
-  { id: "2",prefix: "PP-AZU",model: "S-76C++",base: "Macaé",date: "2026-08-26",departure: "11:20",duration: 2,fuelAmount: 780,fuel: "ok",preflight: "ok",hums: "pending",engineStart: "pending",shutdown: "pending",revision: 3,acknowledged: {},createdBy: "1024",updatedBy: "1048" },
-  { id: "3",prefix: "PR-LFT",model: "AW139",base: "Cabo Frio",date: "2026-08-26",departure: "07:10",duration: 1.2,fuelAmount: 690,fuel: "ok",preflight: "ok",hums: "ok",engineStart: "ok",shutdown: "ok",actualEngineStart: "07:18",actualShutdown: "08:29",revision: 6,acknowledged: { "1024": 6 },createdBy: "1031",updatedBy: "1031" },
-];
+const demoFlights: Flight[]=[];
 
 const checkLabels={ fuel: "Abastecimento",preflight: "Pré-voo",hums: "HUMS",engineStart: "Acionamento",shutdown: "Corte" } as const;
 type CheckKey=keyof typeof checkLabels;
@@ -61,7 +57,9 @@ export function FlightBoard() {
       const stored=localStorage.getItem("passagem-de-pista-flights");
       const storedUser=sessionStorage.getItem("passagem-de-pista-user");
       const storedCatalogs=localStorage.getItem("passagem-de-pista-catalogs");
-      if(stored) setFlights(JSON.parse(stored));
+      const isCurrentFlightData=localStorage.getItem("passagem-de-pista-flights-version")==="2";
+      if(stored&&isCurrentFlightData) setFlights(JSON.parse(stored));
+      else { setFlights([]); localStorage.setItem("passagem-de-pista-flights-version","2"); }
       if(storedCatalogs) {
         const parsed=JSON.parse(storedCatalogs) as Catalogs;
         const isCurrentCatalog=localStorage.getItem("passagem-de-pista-catalogs-version")==="3";
