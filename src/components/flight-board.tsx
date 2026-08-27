@@ -3,6 +3,7 @@
 import { useEffect,useMemo,useRef,useState } from "react";
 import { Bell,Bot,CalendarDays,Check,ChevronDown,Clock3,Fuel,Gauge,LogOut,Menu,Mic,MicOff,Plane,Plus,Search,Settings,ShieldCheck,Trash2,Upload,UserRound,X } from "lucide-react";
 import { createSupabaseClient } from "@/lib/supabase";
+import { Passage,RunwayHandover } from "@/components/runway-handover";
 
 type CheckValue="pending"|"ok"|"no";
 type FuelUnit="L"|"lb";
@@ -50,11 +51,13 @@ function todayLocal() { const now=new Date(); return `${now.getFullYear()}-${Str
 function nextOperationalMinutes(flight: Flight) { const time=flight.engineStart==="ok"? arrivalTime(flight):flight.departure; const [hour,minute]=time.split(":").map(Number); return hour*60+minute; }
 
 export function FlightBoard() {
+  const [workspace,setWorkspace]=useState<"flights"|"passage">("flights");
   const [user,setUser]=useState("");
   const [login,setLogin]=useState("1024");
   const [password,setPassword]=useState("1234");
   const [loginError,setLoginError]=useState("");
   const [flights,setFlights]=useState<Flight[]>(demoFlights);
+  const [passages,setPassages]=useState<Passage[]>([]);
   const [hydrated,setHydrated]=useState(false);
   const [newOpen,setNewOpen]=useState(false);
   const [adminOpen,setAdminOpen]=useState(false);
@@ -65,13 +68,14 @@ export function FlightBoard() {
   const [syncReady,setSyncReady]=useState(false);
   const [syncError,setSyncError]=useState("");
   const lastRemoteState=useRef("");
-  const localSnapshot=useRef({flights,catalogs});
+  const localSnapshot=useRef({flights,catalogs,passages});
 
   useEffect(() => {
     const restore=window.setTimeout(() => {
       const stored=localStorage.getItem("passagem-de-pista-flights");
       const storedUser=localStorage.getItem("passagem-de-pista-user");
       const storedCatalogs=localStorage.getItem("passagem-de-pista-catalogs");
+      const storedPassages=localStorage.getItem("passagem-de-pista-cards");
       const isCurrentFlightData=localStorage.getItem("passagem-de-pista-flights-version")==="2";
       if(stored&&isCurrentFlightData) setFlights((JSON.parse(stored) as Flight[]).map((flight) => ({ ...flight,fuelUnit: flight.fuelUnit??"L",actionBy: flight.actionBy??{},history: flight.history??[] })));
       else { setFlights([]); localStorage.setItem("passagem-de-pista-flights-version","2"); }
@@ -80,14 +84,16 @@ export function FlightBoard() {
         const isCurrentCatalog=localStorage.getItem("passagem-de-pista-catalogs-version")==="3";
         setCatalogs({ ...parsed,users: parsed.users??demoCatalogs.users,aircraft: parsed.aircraft.map((item) => ({ ...item,available: item.available??true,base: isCurrentCatalog&&item.base? item.base:demoCatalogs.aircraft.find((demo) => demo.prefix===item.prefix)?.base||parsed.bases[0]||"" })) });
       }
+      if(storedPassages) setPassages(JSON.parse(storedPassages) as Passage[]);
       if(storedUser) setUser(storedUser);
       setHydrated(true);
     },0);
     return () => window.clearTimeout(restore);
   },[]);
   useEffect(() => { if(hydrated) localStorage.setItem("passagem-de-pista-flights",JSON.stringify(flights)); },[flights,hydrated]);
+  useEffect(() => { if(hydrated) localStorage.setItem("passagem-de-pista-cards",JSON.stringify(passages)); },[passages,hydrated]);
   useEffect(() => { if(hydrated) { localStorage.setItem("passagem-de-pista-catalogs",JSON.stringify(catalogs)); localStorage.setItem("passagem-de-pista-catalogs-version","3"); } },[catalogs,hydrated]);
-  useEffect(() => { localSnapshot.current={flights,catalogs}; },[flights,catalogs]);
+  useEffect(() => { localSnapshot.current={flights,catalogs,passages}; },[flights,catalogs,passages]);
   useEffect(() => { let knownDay=todayLocal(); const timer=window.setInterval(() => { const currentDay=todayLocal(); if(currentDay!==knownDay) { knownDay=currentDay; setFilters((current)=>({ ...current,date:currentDay })); } },60000); return () => window.clearInterval(timer); },[]);
 
   useEffect(() => {
@@ -99,13 +105,13 @@ export function FlightBoard() {
       if(!sessionData.session) { const { error }=await supabase!.auth.signInAnonymously(); if(error) { if(active) setSyncError(error.message); return; } }
       const { error:claimError }=await supabase!.rpc("claim_device_identity",{ p_employee_number:user,p_password:"1234" });
       if(claimError) { if(active) setSyncError(claimError.message); return; }
-      const { data,error }=await supabase!.from("shared_app_state").select("flights,catalogs,revision").eq("id","main").maybeSingle();
+      const { data,error }=await supabase!.from("shared_app_state").select("flights,catalogs,passages,revision").eq("id","main").maybeSingle();
       if(error) { if(active) setSyncError(error.message); return; }
-      if(data) { const serialized=JSON.stringify({flights:data.flights,catalogs:data.catalogs}); lastRemoteState.current=serialized; if(active) { setFlights(data.flights as Flight[]); setCatalogs(data.catalogs as Catalogs); } }
-      else if(user==="0001") { const initial=localSnapshot.current; const serialized=JSON.stringify(initial); const { error:initError }=await supabase!.rpc("save_shared_state",{p_flights:initial.flights,p_catalogs:initial.catalogs}); if(initError) { if(active) setSyncError(initError.message); return; } lastRemoteState.current=serialized; }
+      if(data) { const serialized=JSON.stringify({flights:data.flights,catalogs:data.catalogs,passages:data.passages??[]}); lastRemoteState.current=serialized; if(active) { setFlights(data.flights as Flight[]); setCatalogs(data.catalogs as Catalogs); setPassages((data.passages??[]) as Passage[]); } }
+      else if(user==="0001") { const initial=localSnapshot.current; const serialized=JSON.stringify(initial); const { error:initError }=await supabase!.rpc("save_shared_state",{p_flights:initial.flights,p_catalogs:initial.catalogs,p_passages:initial.passages}); if(initError) { if(active) setSyncError(initError.message); return; } lastRemoteState.current=serialized; }
       else { if(active) setSyncError("Aguardando o administrador iniciar a sincronização."); return; }
       if(active) { setSyncError(""); setSyncReady(true); }
-      channel=supabase!.channel("flight-ia-shared-state").on("postgres_changes",{event:"UPDATE",schema:"public",table:"shared_app_state",filter:"id=eq.main"},(payload)=>{ const row=payload.new as {flights:Flight[];catalogs:Catalogs}; const serialized=JSON.stringify({flights:row.flights,catalogs:row.catalogs}); if(serialized===lastRemoteState.current) return; lastRemoteState.current=serialized; setFlights(row.flights); setCatalogs(row.catalogs); }).subscribe();
+      channel=supabase!.channel("flight-ia-shared-state").on("postgres_changes",{event:"UPDATE",schema:"public",table:"shared_app_state",filter:"id=eq.main"},(payload)=>{ const row=payload.new as {flights:Flight[];catalogs:Catalogs;passages?:Passage[]}; const serialized=JSON.stringify({flights:row.flights,catalogs:row.catalogs,passages:row.passages??[]}); if(serialized===lastRemoteState.current) return; lastRemoteState.current=serialized; setFlights(row.flights); setCatalogs(row.catalogs); setPassages(row.passages??[]); }).subscribe();
     }
     void connect();
     return () => { active=false; setSyncReady(false); if(channel) void supabase.removeChannel(channel); };
@@ -113,11 +119,11 @@ export function FlightBoard() {
 
   useEffect(() => {
     if(!syncReady||!supabase||!user) return;
-    const serialized=JSON.stringify({flights,catalogs});
+    const serialized=JSON.stringify({flights,catalogs,passages});
     if(serialized===lastRemoteState.current) return;
-    const timer=window.setTimeout(async()=>{ const { error }=await supabase!.rpc("save_shared_state",{p_flights:flights,p_catalogs:catalogs}); if(error) setSyncError(error.message); else { lastRemoteState.current=serialized; setSyncError(""); } },250);
+    const timer=window.setTimeout(async()=>{ const { error }=await supabase!.rpc("save_shared_state",{p_flights:flights,p_catalogs:catalogs,p_passages:passages}); if(error) setSyncError(error.message); else { lastRemoteState.current=serialized; setSyncError(""); } },250);
     return () => window.clearTimeout(timer);
-  },[flights,catalogs,syncReady,user]);
+  },[flights,catalogs,passages,syncReady,user]);
 
   const options=useMemo(() => ({ bases: catalogs.bases,models: catalogs.models,prefixes: catalogs.aircraft.map((item) => item.prefix) }),[catalogs]);
   const visible=useMemo(() => flights.filter((item) =>
@@ -162,16 +168,16 @@ export function FlightBoard() {
       <header className="sticky top-0 z-30 border-b border-[#dbe5f1] bg-white/95 backdrop-blur">
         <div className="mx-auto flex min-h-[72px] max-w-[1440px] flex-wrap items-center gap-3 px-4 py-2 sm:px-8 md:flex-nowrap md:gap-4 md:py-0">
           <button className="rounded-xl p-2 text-[#66768a] hover:bg-[#edf4fb] md:hidden" aria-label="Abrir menu"><Menu size={22} /></button>
-          <div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-xl bg-[#1167d8] text-white shadow-[0_8px_20px_#1167d833]"><Plane size={21} /></div><div><p className="text-[11px] font-bold uppercase tracking-[.18em] text-[#6480a0]">Operações aéreas</p><h1 className="text-lg font-bold tracking-[-.02em]">Flight IA</h1></div></div><select aria-label="Área de trabalho" className="order-last h-10 w-full rounded-xl border border-[#dce6f0] bg-white px-3 text-xs font-bold md:order-none md:w-auto"><option>Trilho das Aeronaves</option><option disabled>Passagem de Pista — em breve</option></select>
+          <div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-xl bg-[#1167d8] text-white shadow-[0_8px_20px_#1167d833]"><Plane size={21} /></div><div><p className="text-[11px] font-bold uppercase tracking-[.18em] text-[#6480a0]">Operações aéreas</p><h1 className="text-lg font-bold tracking-[-.02em]">Flight IA</h1></div></div><select aria-label="Área de trabalho" value={workspace} onChange={(event)=>setWorkspace(event.target.value as "flights"|"passage")} className="order-last h-10 w-full rounded-xl border border-[#dce6f0] bg-white px-3 text-xs font-bold md:order-none md:w-auto"><option value="flights">Trilho das Aeronaves</option><option value="passage">Passagem de Pista</option></select>
           <div className="ml-auto flex items-center gap-2"><button aria-label="Assistente IA" onClick={() => setAiOpen(true)} className="flex items-center gap-2 rounded-xl bg-[#0d315e] px-3 py-2.5 text-xs font-bold text-white"><Bot size={17} /><span className="desktop-only">Assistente IA</span></button>{isAdmin? <button aria-label="Cadastros" onClick={() => setAdminOpen(true)} className="flex items-center gap-2 rounded-xl border border-[#bcd4f2] bg-[#edf5ff] px-3 py-2.5 text-xs font-bold text-[#1268d8] hover:bg-[#dcecff]"><Settings size={17} /><span className="desktop-only">Cadastros</span></button>:null}<button className="relative rounded-xl border border-[#dce6f0] p-2.5 text-[#52677f] hover:bg-[#f2f7fc]" aria-label="Notificações"><Bell size={19} /><span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#f0b429] ring-2 ring-white" /></button><div className="desktop-only ml-2 flex items-center gap-3 border-l border-[#e1e8f0] pl-4"><div className="grid h-9 w-9 place-items-center rounded-full bg-[#dcebff] text-[#1769e0]"><UserRound size={18} /></div><div><p className="text-xs text-[#718197]">{isAdmin? "Administrador":"Matrícula"}</p><p className="text-sm font-bold">{user}</p></div></div><button onClick={() => { localStorage.removeItem("passagem-de-pista-user"); setUser(""); }} className="rounded-xl p-2.5 text-[#718197] hover:bg-[#edf4fb]" aria-label="Sair"><LogOut size={19} /></button></div>
         </div>
       </header>
       <main className="mx-auto max-w-[1440px] px-4 py-7 sm:px-8">
         {syncError?<div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800">Sincronização: {syncError}</div>:syncReady?<div className="mb-4 flex items-center gap-2 text-xs font-semibold text-green-700"><i className="h-2 w-2 rounded-full bg-green-500" /> Sincronizado em tempo real</div>:<div className="mb-4 flex items-center gap-2 text-xs font-semibold text-[#1769e0]"><i className="h-2 w-2 animate-pulse rounded-full bg-[#1769e0]" /> Conectando ao Supabase...</div>}
-        <section className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><p className="mb-1 text-sm font-medium text-[#1769e0]">Visão operacional</p><h2 className="text-2xl font-bold tracking-[-.035em] sm:text-[30px]">Linha do tempo de voos</h2><p className="mt-1 text-sm text-[#6a7d93]">Acompanhe cada aeronave do pré-voo ao corte.</p></div><button onClick={() => setNewOpen(true)} className="flex h-11 items-center gap-2 rounded-xl bg-[#1268d8] px-4 text-sm font-bold text-white shadow-[0_8px_20px_#1268d833] transition hover:-translate-y-0.5 hover:bg-[#095cbf]"><Plus size={18} /> Lançar voo</button></section>
+        {workspace==="flights"? <><section className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><p className="mb-1 text-sm font-medium text-[#1769e0]">Visão operacional</p><h2 className="text-2xl font-bold tracking-[-.035em] sm:text-[30px]">Linha do tempo de voos</h2><p className="mt-1 text-sm text-[#6a7d93]">Acompanhe cada aeronave do pré-voo ao corte.</p></div><button onClick={() => setNewOpen(true)} className="flex h-11 items-center gap-2 rounded-xl bg-[#1268d8] px-4 text-sm font-bold text-white shadow-[0_8px_20px_#1268d833] transition hover:-translate-y-0.5 hover:bg-[#095cbf]"><Plus size={18} /> Lançar voo</button></section>
         <section className="mb-7 rounded-2xl border border-[#dce6f0] bg-white p-4 shadow-[0_8px_30px_#173b6210]"><button onClick={() => setFiltersOpen((value) => !value)} className="flex w-full items-center justify-between font-bold md:hidden"><span className="flex items-center gap-2"><Search size={17} /> Filtros</span><ChevronDown size={18} className={filtersOpen? "rotate-180":""} /></button><div className={`${filtersOpen? "grid":"hidden"} mt-4 gap-3 md:mt-0 md:grid md:grid-cols-4`}><Filter label="Data" icon={<CalendarDays size={15} />}><input type="date" value={filters.date} onChange={(e) => setFilters({ ...filters,date: e.target.value })} /></Filter><Filter label="Base de operação"><select value={filters.base} onChange={(e) => setFilters({ ...filters,base: e.target.value })}><option value="">Todas as bases</option>{options.bases.map((value) => <option key={value}>{value}</option>)}</select></Filter><Filter label="Modelo"><select value={filters.model} onChange={(e) => setFilters({ ...filters,model: e.target.value })}><option value="">Todos os modelos</option>{options.models.map((value) => <option key={value}>{value}</option>)}</select></Filter><Filter label="Prefixo"><select value={filters.prefix} onChange={(e) => setFilters({ ...filters,prefix: e.target.value })}><option value="">Todos os prefixos</option>{options.prefixes.map((value) => <option key={value}>{value}</option>)}</select></Filter></div></section>
         <div className="mb-4 flex items-center justify-between"><p className="text-sm font-semibold text-[#52677f]">{visible.length} {visible.length===1? "voo encontrado":"voos encontrados"}</p><StatusLegend /></div>
-        <section className="relative grid gap-5 pb-12 lg:grid-cols-2">{visible.map((flight,index) => <FlightCard key={flight.id} flight={flight} user={user} index={index} isAdmin={isAdmin} onCheck={updateCheck} onFuel={updateFuel} onField={updateFlightField} onCancel={cancelFlight} onDelete={deleteFlight} onAcknowledge={acknowledge} />)}{visible.length===0? <div className="col-span-full rounded-2xl border border-dashed border-[#becddd] bg-white px-6 py-16 text-center"><Plane className="mx-auto mb-3 text-[#9bb0c7]" /><h3 className="font-bold">Nenhum voo encontrado</h3><p className="mt-1 text-sm text-[#718197]">Ajuste os filtros ou lance um novo voo.</p></div>:null}</section>
+        <section className="relative grid gap-5 pb-12 lg:grid-cols-2">{visible.map((flight,index) => <FlightCard key={flight.id} flight={flight} user={user} index={index} isAdmin={isAdmin} onCheck={updateCheck} onFuel={updateFuel} onField={updateFlightField} onCancel={cancelFlight} onDelete={deleteFlight} onAcknowledge={acknowledge} />)}{visible.length===0? <div className="col-span-full rounded-2xl border border-dashed border-[#becddd] bg-white px-6 py-16 text-center"><Plane className="mx-auto mb-3 text-[#9bb0c7]" /><h3 className="font-bold">Nenhum voo encontrado</h3><p className="mt-1 text-sm text-[#718197]">Ajuste os filtros ou lance um novo voo.</p></div>:null}</section></>:<RunwayHandover passages={passages} catalogs={catalogs} user={user} isAdmin={isAdmin} onCreate={(item)=>setPassages((items)=>[item,...items])} onChange={(id,change)=>setPassages((items)=>items.map((item)=>item.id===id?change(item):item))} onDelete={(id)=>{if(isAdmin&&window.confirm("Excluir definitivamente esta passagem?"))setPassages((items)=>items.filter((item)=>item.id!==id));}}/>}
       </main>
       {newOpen? <NewFlightModal user={user} catalogs={catalogs} onClose={() => setNewOpen(false)} onCreate={(flight) => { setFlights((items) => [flight,...items]); setNewOpen(false); setFilters((current) => ({ ...current,date: flight.date })); }} />:null}
       {adminOpen? <AdminModal catalogs={catalogs} user={user} onChange={setCatalogs} onClose={() => setAdminOpen(false)} />:null}
