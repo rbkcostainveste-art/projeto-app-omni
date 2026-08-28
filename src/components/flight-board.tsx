@@ -7,6 +7,7 @@ import { Passage,RunwayHandover } from "@/components/runway-handover";
 import { AircraftPicker } from "@/components/aircraft-picker";
 
 type CheckValue="pending"|"ok"|"no";
+type TimelineView="all"|"operational"|"finished"|"cancelled";
 type FuelUnit="L"|"lb"|"kg";
 type FlightHistory={ field: string; value: string; employeeNumber: string; at: string; revision?: number };
 type SpeechResultEvent={ results: ArrayLike<{ 0: { transcript: string } }> };
@@ -52,8 +53,8 @@ function flightStatus(flight: Flight,user: string) {
 function todayLocal() { const now=new Date(); return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`; }
 function durationToClock(duration:number) { const total=Math.max(0,Math.round(duration*60)); return `${String(Math.floor(total/60)).padStart(2,"0")}:${String(total%60).padStart(2,"0")}`; }
 function clockToDuration(value:string) { const [hours,minutes]=value.split(":").map(Number); return (hours*60+minutes)/60; }
-function nextOperationalMinutes(flight: Flight) { const time=flight.engineStart==="ok"? arrivalTime(flight):flight.departure; const [hour,minute]=time.split(":").map(Number); return hour*60+minute; }
-function terminalTime(flight:Flight) { return Date.parse(flight.completedAt??flight.cancelledAt??[...(flight.history??[])].reverse().find((entry)=>entry.field==="shutdown"||entry.field==="cancelled")?.at??`${flight.date}T${flight.departure}:00-03:00`); }
+function timelineCategory(flight:Flight):Exclude<TimelineView,"all"> { return flight.cancelled?"cancelled":flight.shutdown==="ok"||Boolean(flight.actualShutdown)?"finished":"operational"; }
+function timelineTime(flight:Flight) { const latest=flight.history?.at(-1)?.at; return Date.parse(latest??flight.completedAt??flight.cancelledAt??`${flight.date}T${flight.departure}:00-03:00`); }
 function fieldChanged(flight:Flight,user:string,field:string) { return (flight.fieldRevisions?.[field]??0)>(flight.acknowledged[user]??0); }
 function urlBase64ToUint8Array(value:string) { const padding="=".repeat((4-value.length%4)%4); const base64=(value+padding).replace(/-/g,"+").replace(/_/g,"/"); return Uint8Array.from(atob(base64),(character)=>character.charCodeAt(0)); }
 function changedPatch<T>(before:T,after:T):Partial<T> { const patch:Record<string,unknown>={}; for(const key of Object.keys(after as object)) { const previous=(before as Record<string,unknown>)[key]; const next=(after as Record<string,unknown>)[key]; if(JSON.stringify(previous)!==JSON.stringify(next)) patch[key]=next; } return patch as Partial<T>; }
@@ -74,6 +75,7 @@ export function FlightBoard() {
   const [catalogs,setCatalogs]=useState<Catalogs>(demoCatalogs);
   const [filtersOpen,setFiltersOpen]=useState(false);
   const [filters,setFilters]=useState({ date: todayLocal(),base: "",model: "",prefix: "" });
+  const [timelineView,setTimelineView]=useState<TimelineView>("all");
   const [syncReady,setSyncReady]=useState(false);
   const [syncError,setSyncError]=useState("");
   const [alerts,setAlerts]=useState<Record<string,number>>({});
@@ -108,6 +110,7 @@ export function FlightBoard() {
   useEffect(() => { if(hydrated) { localStorage.setItem("passagem-de-pista-catalogs",JSON.stringify(catalogs)); localStorage.setItem("passagem-de-pista-catalogs-version","3"); } },[catalogs,hydrated]);
   useEffect(() => { localSnapshot.current={flights,catalogs,passages}; },[flights,catalogs,passages]);
   useEffect(() => { let knownDay=todayLocal(); const timer=window.setInterval(() => { const currentDay=todayLocal(); if(currentDay!==knownDay) { knownDay=currentDay; setFilters((current)=>({ ...current,date:currentDay })); } },60000); return () => window.clearInterval(timer); },[]);
+  useEffect(() => { if("serviceWorker" in navigator) void navigator.serviceWorker.register("/sw.js").then((registration)=>registration.update()).catch(()=>undefined); },[]);
 
   useEffect(() => {
     if(!hydrated||!user||!supabase) return;
@@ -166,10 +169,12 @@ export function FlightBoard() {
   },[syncReady,user]);
 
   const options=useMemo(() => ({ bases: catalogs.bases,models: catalogs.models,prefixes: catalogs.aircraft.map((item) => item.prefix) }),[catalogs]);
-  const visible=useMemo(() => flights.filter((item) =>
+  const filteredFlights=useMemo(() => flights.filter((item) =>
     !item.deletedAt&&(!filters.date||item.date===filters.date)&&(!filters.base||item.base===filters.base)&&
     (!filters.model||item.model===filters.model)&&(!filters.prefix||item.prefix===filters.prefix)
-  ).sort((a,b) => { const aTerminal=Boolean(a.cancelled||a.shutdown==="ok"); const bTerminal=Boolean(b.cancelled||b.shutdown==="ok"); if(aTerminal!==bTerminal) return Number(aTerminal)-Number(bTerminal); return aTerminal?terminalTime(a)-terminalTime(b):nextOperationalMinutes(a)-nextOperationalMinutes(b); }),[flights,filters]);
+  ),[flights,filters]);
+  const timelineCounts=useMemo(() => ({all:filteredFlights.length,operational:filteredFlights.filter((flight)=>timelineCategory(flight)==="operational").length,finished:filteredFlights.filter((flight)=>timelineCategory(flight)==="finished").length,cancelled:filteredFlights.filter((flight)=>timelineCategory(flight)==="cancelled").length}),[filteredFlights]);
+  const visible=useMemo(() => filteredFlights.filter((flight)=>timelineView==="all"||timelineCategory(flight)===timelineView).sort((a,b) => { const ranks={operational:0,finished:1,cancelled:2}; const categoryDifference=ranks[timelineCategory(a)]-ranks[timelineCategory(b)]; return categoryDifference||timelineTime(b)-timelineTime(a); }),[filteredFlights,timelineView]);
 
   async function reloadSharedState() {
     if(!supabase) return;
@@ -247,15 +252,16 @@ export function FlightBoard() {
     if(permission!=="granted") throw new Error("Permissão de notificações não concedida.");
     let subscription=await registration.pushManager.getSubscription();
     if(!subscription) subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(vapidPublicKey)});
-    const json=subscription.toJSON();
-    const {error}=await supabase.rpc("save_push_subscription",{p_endpoint:subscription.endpoint,p_p256dh:json.keys?.p256dh??"",p_auth:json.keys?.auth??"",p_user_agent:navigator.userAgent});
-    if(error) throw error;
+    return subscription.toJSON();
   }
   async function setFlightAlert(id:string,minutes:number|null) {
     try {
       if(!supabase) throw new Error("Serviço de notificações indisponível.");
-      if(minutes!==null) await ensurePushSubscription();
-      const {error}=await supabase.rpc("set_flight_alert",{p_flight_id:id,p_minutes_before:minutes??10,p_enabled:minutes!==null});
+      let error;
+      if(minutes!==null) {
+        const subscription=await ensurePushSubscription();
+        ({error}=await supabase.rpc("save_push_subscription_and_alert",{p_endpoint:subscription.endpoint??"",p_p256dh:subscription.keys?.p256dh??"",p_auth:subscription.keys?.auth??"",p_user_agent:navigator.userAgent,p_flight_id:id,p_minutes_before:minutes}));
+      } else ({error}=await supabase.rpc("set_flight_alert",{p_flight_id:id,p_minutes_before:10,p_enabled:false}));
       if(error) throw error;
       setAlerts((current)=>{ const next={...current}; if(minutes===null) delete next[id]; else next[id]=minutes; return next; });
       setSyncError("");
@@ -278,7 +284,7 @@ export function FlightBoard() {
         {syncError?<div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800">Sincronização: {syncError}</div>:syncReady?<div className="mb-4 flex items-center gap-2 text-xs font-semibold text-green-700"><i className="h-2 w-2 rounded-full bg-green-500" /> Sincronizado em tempo real</div>:<div className="mb-4 flex items-center gap-2 text-xs font-semibold text-[#1769e0]"><i className="h-2 w-2 animate-pulse rounded-full bg-[#1769e0]" /> Conectando ao Supabase...</div>}
         {workspace==="flights"? <><section className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><p className="mb-1 text-sm font-medium text-[#1769e0]">Visão operacional</p><h2 className="text-2xl font-bold tracking-[-.035em] sm:text-[30px]">Linha do tempo de voos</h2><p className="mt-1 text-sm text-[#6a7d93]">Acompanhe cada aeronave do pré-voo ao corte.</p></div><div className="flex flex-wrap gap-2">{isAdmin?<button onClick={()=>setTrashOpen(true)} className="flex h-11 items-center gap-2 rounded-xl border border-[#d5e0eb] bg-white px-4 text-sm font-bold text-[#52677f]"><Trash2 size={17}/> Lixeira ({flights.filter((flight)=>flight.deletedAt).length})</button>:null}<button onClick={() => setNewOpen(true)} className="flex h-11 items-center gap-2 rounded-xl bg-[#1268d8] px-4 text-sm font-bold text-white shadow-[0_8px_20px_#1268d833] transition hover:-translate-y-0.5 hover:bg-[#095cbf]"><Plus size={18} /> Lançar voo</button></div></section>
         <section className="mb-7 rounded-2xl border border-[#dce6f0] bg-white p-4 shadow-[0_8px_30px_#173b6210]"><button onClick={() => setFiltersOpen((value) => !value)} className="flex w-full items-center justify-between font-bold md:hidden"><span className="flex items-center gap-2"><Search size={17} /> Filtros</span><ChevronDown size={18} className={filtersOpen? "rotate-180":""} /></button><div className={`${filtersOpen? "grid":"hidden"} mt-4 gap-3 md:mt-0 md:grid md:grid-cols-4`}><Filter label="Data" icon={<CalendarDays size={15} />}><input type="date" value={filters.date} onChange={(e) => setFilters({ ...filters,date: e.target.value })} /></Filter><Filter label="Base de operação"><select value={filters.base} onChange={(e) => setFilters({ ...filters,base: e.target.value })}><option value="">Todas as bases</option>{options.bases.map((value) => <option key={value}>{value}</option>)}</select></Filter><Filter label="Modelo"><select value={filters.model} onChange={(e) => setFilters({ ...filters,model: e.target.value })}><option value="">Todos os modelos</option>{options.models.map((value) => <option key={value}>{value}</option>)}</select></Filter><Filter label="Prefixo"><select value={filters.prefix} onChange={(e) => setFilters({ ...filters,prefix: e.target.value })}><option value="">Todos os prefixos</option>{options.prefixes.map((value) => <option key={value}>{value}</option>)}</select></Filter></div></section>
-        <div className="mb-4 flex items-center justify-between"><p className="text-sm font-semibold text-[#52677f]">{visible.length} {visible.length===1? "voo encontrado":"voos encontrados"}</p><StatusLegend /></div>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><div className="mb-2 flex flex-wrap gap-1.5" role="group" aria-label="Filtrar situação dos voos">{([{key:"all",label:"Todos"},{key:"operational",label:"Operacionais"},{key:"finished",label:"Finalizados"},{key:"cancelled",label:"Cancelados"}] as {key:TimelineView;label:string}[]).map((option)=><button key={option.key} onClick={()=>setTimelineView(option.key)} aria-pressed={timelineView===option.key} className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition ${timelineView===option.key?"border-[#9fc3ee] bg-[#eaf3ff] text-[#1268d8]":"border-[#dce6f0] bg-white text-[#66798e] hover:bg-[#f5f8fb]"}`}>{option.label} <span className="ml-1 opacity-65">{timelineCounts[option.key]}</span></button>)}</div><p className="text-sm font-semibold text-[#52677f]">{visible.length} {visible.length===1? "voo encontrado":"voos encontrados"}</p></div><StatusLegend /></div>
         <section className="relative grid gap-5 pb-12 lg:grid-cols-2">{visible.map((flight,index) => <FlightCard key={flight.id} flight={flight} user={user} index={index} isAdmin={isAdmin} alertMinutes={alerts[flight.id]} onAlert={(minutes)=>void setFlightAlert(flight.id,minutes)} onCheck={updateCheck} onFuel={updateFuel} onField={updateFlightField} onCancel={cancelFlight} onDelete={(id)=>{if(window.confirm("Mover este voo para a lixeira?"))moveFlightToTrash(id);}} onAcknowledge={acknowledge} />)}{visible.length===0? <div className="col-span-full rounded-2xl border border-dashed border-[#becddd] bg-white px-6 py-16 text-center"><Plane className="mx-auto mb-3 text-[#9bb0c7]" /><h3 className="font-bold">Nenhum voo encontrado</h3><p className="mt-1 text-sm text-[#718197]">Ajuste os filtros ou lance um novo voo.</p></div>:null}</section></>:<RunwayHandover passages={passages} catalogs={catalogs} user={user} isAdmin={isAdmin} onCreate={createPassage} onChange={changePassage} onDelete={(id)=>{if(isAdmin&&window.confirm("Excluir definitivamente esta passagem?")){setPassages((items)=>items.filter((item)=>item.id!==id));void persistItem("passages",id,{},"delete");}}}/>} {/* workspaces */}
       </main>
       {newOpen? <NewFlightModal user={user} catalogs={catalogs} onClose={() => setNewOpen(false)} onCreate={(flight) => { createFlight(flight); setNewOpen(false); setFilters((current) => ({ ...current,date: flight.date })); }} />:null}
