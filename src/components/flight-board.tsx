@@ -8,14 +8,14 @@ import { AircraftPicker } from "@/components/aircraft-picker";
 
 type CheckValue="pending"|"ok"|"no";
 type FuelUnit="L"|"lb"|"kg";
-type FlightHistory={ field: string; value: string; employeeNumber: string; at: string };
+type FlightHistory={ field: string; value: string; employeeNumber: string; at: string; revision?: number };
 type SpeechResultEvent={ results: ArrayLike<{ 0: { transcript: string } }> };
 type SpeechRecognitionLike={ lang:string; interimResults:boolean; continuous:boolean; onresult:((event:SpeechResultEvent)=>void)|null; onerror:((event:{error:string})=>void)|null; onend:(()=>void)|null; start:()=>void; stop:()=>void };
 type Flight={
   id: string; prefix: string; model: string; base: string; date: string; departure: string;
   duration: number; fuelAmount: number; fuelUnit: FuelUnit; fuel: CheckValue; preflight: CheckValue; hums: CheckValue;
   engineStart: CheckValue; shutdown: CheckValue; revision: number; acknowledged: Record<string,number>;
-  actualEngineStart?: string; actualShutdown?: string; cancelled?: boolean; cancellationReason?: string; deletedAt?: string; deletedBy?: string; actionBy?: Record<string,string>; history?: FlightHistory[]; createdBy: string; updatedBy: string;
+  actualEngineStart?: string; actualShutdown?: string; completedAt?: string; cancelled?: boolean; cancellationReason?: string; cancelledAt?: string; deletedAt?: string; deletedBy?: string; actionBy?: Record<string,string>; fieldRevisions?: Record<string,number>; history?: FlightHistory[]; createdBy: string; updatedBy: string;
 };
 type Catalogs={ bases: string[]; models: string[]; aircraft: { prefix: string; model: string; base: string; available?: boolean; unavailabilityReason?: string; availabilityUpdatedBy?: string; }[]; users: { employeeNumber: string; name: string; }[]; };
 
@@ -33,6 +33,7 @@ const demoFlights: Flight[]=[];
 const checkLabels={ fuel: "Abastecimento",preflight: "Pré-voo",hums: "HUMS",engineStart: "Acionamento",shutdown: "Corte" } as const;
 type CheckKey=keyof typeof checkLabels;
 const supabase=createSupabaseClient();
+const vapidPublicKey="BBWuHqLMza7mVt6d3KJ34hlLQDAPiyzLS02IjP5wyiNMoUgegKawRUtrY0TBU3RSvZ9xmMZmbDWg4YX_HWSZPfU";
 
 function arrivalTime(flight: Pick<Flight,"departure"|"duration"|"actualEngineStart">) {
   const [hour,minute]=(flight.actualEngineStart??flight.departure).split(":").map(Number);
@@ -52,6 +53,10 @@ function todayLocal() { const now=new Date(); return `${now.getFullYear()}-${Str
 function durationToClock(duration:number) { const total=Math.max(0,Math.round(duration*60)); return `${String(Math.floor(total/60)).padStart(2,"0")}:${String(total%60).padStart(2,"0")}`; }
 function clockToDuration(value:string) { const [hours,minutes]=value.split(":").map(Number); return (hours*60+minutes)/60; }
 function nextOperationalMinutes(flight: Flight) { const time=flight.engineStart==="ok"? arrivalTime(flight):flight.departure; const [hour,minute]=time.split(":").map(Number); return hour*60+minute; }
+function terminalTime(flight:Flight) { return Date.parse(flight.completedAt??flight.cancelledAt??[...(flight.history??[])].reverse().find((entry)=>entry.field==="shutdown"||entry.field==="cancelled")?.at??`${flight.date}T${flight.departure}:00-03:00`); }
+function fieldChanged(flight:Flight,user:string,field:string) { return (flight.fieldRevisions?.[field]??0)>(flight.acknowledged[user]??0); }
+function urlBase64ToUint8Array(value:string) { const padding="=".repeat((4-value.length%4)%4); const base64=(value+padding).replace(/-/g,"+").replace(/_/g,"/"); return Uint8Array.from(atob(base64),(character)=>character.charCodeAt(0)); }
+function changedPatch<T>(before:T,after:T):Partial<T> { const patch:Record<string,unknown>={}; for(const key of Object.keys(after as object)) { const previous=(before as Record<string,unknown>)[key]; const next=(after as Record<string,unknown>)[key]; if(JSON.stringify(previous)!==JSON.stringify(next)) patch[key]=next; } return patch as Partial<T>; }
 
 export function FlightBoard() {
   const [workspace,setWorkspace]=useState<"flights"|"passage">("flights");
@@ -71,7 +76,11 @@ export function FlightBoard() {
   const [filters,setFilters]=useState({ date: todayLocal(),base: "",model: "",prefix: "" });
   const [syncReady,setSyncReady]=useState(false);
   const [syncError,setSyncError]=useState("");
+  const [alerts,setAlerts]=useState<Record<string,number>>({});
   const lastRemoteState=useRef("");
+  const lastRemoteCatalogs=useRef("");
+  const pendingMutations=useRef(0);
+  const passageSaveTimers=useRef(new Map<string,{timer:number;patch:Partial<Passage>}>());
   const localSnapshot=useRef({flights,catalogs,passages});
 
   useEffect(() => {
@@ -111,30 +120,31 @@ export function FlightBoard() {
       if(claimError) { if(active) setSyncError(claimError.message); return; }
       const { data,error }=await supabase!.from("shared_app_state").select("flights,catalogs,passages,revision").eq("id","main").maybeSingle();
       if(error) { if(active) setSyncError(error.message); return; }
-      if(data) { const serialized=JSON.stringify({flights:data.flights,catalogs:data.catalogs,passages:data.passages??[]}); lastRemoteState.current=serialized; if(active) { setFlights(data.flights as Flight[]); setCatalogs(data.catalogs as Catalogs); setPassages((data.passages??[]) as Passage[]); } }
+      if(data) { const serialized=JSON.stringify({flights:data.flights,catalogs:data.catalogs,passages:data.passages??[]}); lastRemoteState.current=serialized; lastRemoteCatalogs.current=JSON.stringify(data.catalogs); if(active) { setFlights(data.flights as Flight[]); setCatalogs(data.catalogs as Catalogs); setPassages((data.passages??[]) as Passage[]); } }
       else if(user==="0001") { const initial=localSnapshot.current; const serialized=JSON.stringify(initial); const { error:initError }=await supabase!.rpc("save_shared_state",{p_flights:initial.flights,p_catalogs:initial.catalogs,p_passages:initial.passages}); if(initError) { if(active) setSyncError(initError.message); return; } lastRemoteState.current=serialized; }
       else { if(active) setSyncError("Aguardando o administrador iniciar a sincronização."); return; }
       if(active) { setSyncError(""); setSyncReady(true); }
-      channel=supabase!.channel("flight-ia-shared-state").on("postgres_changes",{event:"UPDATE",schema:"public",table:"shared_app_state",filter:"id=eq.main"},(payload)=>{ const row=payload.new as {flights:Flight[];catalogs:Catalogs;passages?:Passage[]}; const serialized=JSON.stringify({flights:row.flights,catalogs:row.catalogs,passages:row.passages??[]}); if(serialized===lastRemoteState.current) return; lastRemoteState.current=serialized; setFlights(row.flights); setCatalogs(row.catalogs); setPassages(row.passages??[]); }).subscribe();
+      channel=supabase!.channel("flight-ia-shared-state").on("postgres_changes",{event:"UPDATE",schema:"public",table:"shared_app_state",filter:"id=eq.main"},(payload)=>{ const row=payload.new as {flights:Flight[];catalogs:Catalogs;passages?:Passage[]}; const serialized=JSON.stringify({flights:row.flights,catalogs:row.catalogs,passages:row.passages??[]}); if(serialized===lastRemoteState.current) return; lastRemoteState.current=serialized; lastRemoteCatalogs.current=JSON.stringify(row.catalogs); setFlights(row.flights); setCatalogs(row.catalogs); setPassages(row.passages??[]); }).subscribe((status)=>{ if(status==="SUBSCRIBED") setSyncError(""); else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT") setSyncError("Reconectando a sincronização em tempo real…"); });
     }
     void connect();
     return () => { active=false; setSyncReady(false); if(channel) void supabase.removeChannel(channel); };
   },[hydrated,user]);
 
   useEffect(() => {
-    if(!syncReady||!supabase||!user) return;
-    const serialized=JSON.stringify({flights,catalogs,passages});
-    if(serialized===lastRemoteState.current) return;
-    const timer=window.setTimeout(async()=>{ const { error }=await supabase!.rpc("save_shared_state",{p_flights:flights,p_catalogs:catalogs,p_passages:passages}); if(error) setSyncError(error.message); else { lastRemoteState.current=serialized; setSyncError(""); } },250);
-    return () => window.clearTimeout(timer);
-  },[flights,catalogs,passages,syncReady,user]);
+    if(!syncReady||!supabase||user!=="0001") return;
+    const serialized=JSON.stringify(catalogs);
+    if(serialized===lastRemoteCatalogs.current) return;
+    const timer=window.setTimeout(async()=>{ const {error}=await supabase!.rpc("save_shared_catalogs",{p_catalogs:catalogs}); if(error) setSyncError(error.message); else { lastRemoteCatalogs.current=serialized; setSyncError(""); } },250);
+    return ()=>window.clearTimeout(timer);
+  },[catalogs,syncReady,user]);
+
+  useEffect(() => { if(!syncReady||!supabase) return; void supabase.rpc("get_my_flight_alerts").then(({data,error})=>{ if(error) { setSyncError(error.message); return; } setAlerts(Object.fromEntries(((data??[]) as {flight_id:string;minutes_before:number}[]).map((alert)=>[alert.flight_id,alert.minutes_before]))); }); },[syncReady,user]);
 
   useEffect(() => {
     if(!syncReady||!supabase||!user) return;
     let active=true;
     async function refreshSharedState() {
-      const current=JSON.stringify(localSnapshot.current);
-      if(current!==lastRemoteState.current) return;
+      if(pendingMutations.current>0) return;
       const { data,error }=await supabase!.from("shared_app_state").select("flights,catalogs,passages").eq("id","main").maybeSingle();
       if(!active) return;
       if(error) { setSyncError(error.message); return; }
@@ -142,6 +152,7 @@ export function FlightBoard() {
       const serialized=JSON.stringify({flights:data.flights,catalogs:data.catalogs,passages:data.passages??[]});
       if(serialized===lastRemoteState.current) return;
       lastRemoteState.current=serialized;
+      lastRemoteCatalogs.current=JSON.stringify(data.catalogs);
       setFlights(data.flights as Flight[]);
       setCatalogs(data.catalogs as Catalogs);
       setPassages((data.passages??[]) as Passage[]);
@@ -158,7 +169,50 @@ export function FlightBoard() {
   const visible=useMemo(() => flights.filter((item) =>
     !item.deletedAt&&(!filters.date||item.date===filters.date)&&(!filters.base||item.base===filters.base)&&
     (!filters.model||item.model===filters.model)&&(!filters.prefix||item.prefix===filters.prefix)
-  ).sort((a,b) => Number(Boolean(a.cancelled))-Number(Boolean(b.cancelled))||nextOperationalMinutes(a)-nextOperationalMinutes(b)),[flights,filters]);
+  ).sort((a,b) => { const aTerminal=Boolean(a.cancelled||a.shutdown==="ok"); const bTerminal=Boolean(b.cancelled||b.shutdown==="ok"); if(aTerminal!==bTerminal) return Number(aTerminal)-Number(bTerminal); return aTerminal?terminalTime(a)-terminalTime(b):nextOperationalMinutes(a)-nextOperationalMinutes(b); }),[flights,filters]);
+
+  async function reloadSharedState() {
+    if(!supabase) return;
+    const {data,error}=await supabase.from("shared_app_state").select("flights,catalogs,passages").eq("id","main").single();
+    if(error) { setSyncError(error.message); return; }
+    const serialized=JSON.stringify({flights:data.flights,catalogs:data.catalogs,passages:data.passages??[]});
+    lastRemoteState.current=serialized; lastRemoteCatalogs.current=JSON.stringify(data.catalogs);
+    setFlights(data.flights as Flight[]); setCatalogs(data.catalogs as Catalogs); setPassages((data.passages??[]) as Passage[]);
+  }
+  async function persistItem(collection:"flights"|"passages",id:string,patch:object,operation:"create"|"update"|"delete"="update",changedFields:string[]=[],historyEvent:FlightHistory|null=null,incrementRevision=true) {
+    if(!supabase||!syncReady) return;
+    pendingMutations.current++;
+    const {data,error}=await supabase.rpc("mutate_shared_item",{p_collection:collection,p_item_id:id,p_patch:patch,p_operation:operation,p_changed_fields:changedFields,p_history_event:historyEvent,p_increment_revision:incrementRevision});
+    pendingMutations.current=Math.max(0,pendingMutations.current-1);
+    if(error) { setSyncError(`Alteração não sincronizada: ${error.message}`); await reloadSharedState(); return; }
+    const result=data as {item:Flight|Passage|null};
+    if(operation==="delete") {
+      if(collection==="flights") setFlights((items)=>items.filter((item)=>item.id!==id)); else setPassages((items)=>items.filter((item)=>item.id!==id));
+    } else if(collection==="flights"&&result.item) {
+      const serverItem=result.item as Flight;
+      setFlights((items)=>{ const existing=items.find((item)=>item.id===id); if(existing&&existing.revision>serverItem.revision)return items; return existing?items.map((item)=>item.id===id?serverItem:item):[serverItem,...items]; });
+    } else if(collection==="passages"&&result.item) {
+      const serverItem=result.item as Passage;
+      setPassages((items)=>{ const existing=items.find((item)=>item.id===id); if(existing&&(existing.revision??0)>(serverItem.revision??0))return items; return existing?items.map((item)=>item.id===id?serverItem:item):[serverItem,...items]; });
+    }
+    setSyncError("");
+  }
+  function changeFlight(id:string,changedFields:string[],historyEvent:FlightHistory|null,change:(flight:Flight)=>Flight) {
+    const current=localSnapshot.current.flights.find((flight)=>flight.id===id);
+    if(!current) return;
+    const revision=current.revision+1;
+    const nextBase=change(current);
+    const event=historyEvent?{...historyEvent,revision}:null;
+    const next={...nextBase,revision,fieldRevisions:{...current.fieldRevisions,...Object.fromEntries(changedFields.map((field)=>[field,revision]))},acknowledged:{...current.acknowledged,[user]:revision},history:event?[...(current.history??[]),event]:current.history,updatedBy:user};
+    localSnapshot.current={...localSnapshot.current,flights:localSnapshot.current.flights.map((flight)=>flight.id===id?next:flight)};
+    setFlights((items)=>items.map((flight)=>flight.id===id?next:flight));
+    const patch=changedPatch(current,next) as Record<string,unknown>;
+    delete patch.revision; delete patch.fieldRevisions; delete patch.acknowledged; delete patch.history;
+    void persistItem("flights",id,patch,"update",changedFields,historyEvent);
+  }
+  function createFlight(flight:Flight) { localSnapshot.current={...localSnapshot.current,flights:[flight,...localSnapshot.current.flights]}; setFlights((items)=>[flight,...items]); void persistItem("flights",flight.id,flight,"create",["created"]); }
+  function changePassage(id:string,change:(item:Passage)=>Passage) { const current=localSnapshot.current.passages.find((item)=>item.id===id); if(!current)return; const next=change(current); localSnapshot.current={...localSnapshot.current,passages:localSnapshot.current.passages.map((item)=>item.id===id?next:item)}; setPassages((items)=>items.map((item)=>item.id===id?next:item)); const patch=changedPatch(current,next); const scheduled=passageSaveTimers.current.get(id); if(scheduled)window.clearTimeout(scheduled.timer); const combined={...(scheduled?.patch??{}),...patch}; const timer=window.setTimeout(()=>{passageSaveTimers.current.delete(id);void persistItem("passages",id,combined);},300); passageSaveTimers.current.set(id,{timer,patch:combined}); }
+  function createPassage(item:Passage) { setPassages((items)=>[item,...items]); void persistItem("passages",item.id,item,"create"); }
 
   async function enter(event: React.FormEvent) {
     event.preventDefault();
@@ -168,28 +222,45 @@ export function FlightBoard() {
     localStorage.setItem("passagem-de-pista-user",login); setUser(login);
   }
   function updateCheck(id: string,key: CheckKey,value: CheckValue) {
-    setFlights((items) => items.map((flight) => {
-      if(flight.id!==id||flight.cancelled) return flight;
-      const revision=flight.revision+1;
-      const realTime=new Date().toLocaleTimeString("pt-BR",{ hour: "2-digit",minute: "2-digit",hour12: false });
-      return { ...flight,[key]: value,...(key==="engineStart"? { actualEngineStart: value==="ok"? flight.actualEngineStart??realTime:undefined }:{}),...(key==="shutdown"? { actualShutdown: value==="ok"? flight.actualShutdown??realTime:undefined }:{}),actionBy: { ...flight.actionBy,[key]: user },history: [...(flight.history??[]),{ field: key,value,employeeNumber: user,at: new Date().toISOString() }],revision,updatedBy: user,acknowledged: { ...flight.acknowledged,[user]: revision } };
-    }));
+    const now=new Date(); const at=now.toISOString(); const realTime=now.toLocaleTimeString("pt-BR",{ hour:"2-digit",minute:"2-digit",hour12:false });
+    const fields=[key,...(key==="engineStart"?["actualEngineStart"]:[]),...(key==="shutdown"?["actualShutdown"]:[])];
+    changeFlight(id,fields,{field:key,value,employeeNumber:user,at},(flight)=>({ ...flight,[key]:value,...(key==="engineStart"?{actualEngineStart:value==="ok"?flight.actualEngineStart??realTime:undefined}:{}),...(key==="shutdown"?{actualShutdown:value==="ok"?flight.actualShutdown??realTime:undefined,completedAt:value==="ok"?at:undefined}:{}),actionBy:{...flight.actionBy,[key]:user} }));
+    if(key==="shutdown"&&value==="ok"&&alerts[id]) void setFlightAlert(id,null);
   }
   function updateFuel(id: string, fuelAmount: number, fuelUnit: FuelUnit) {
-    setFlights((items) => items.map((flight) => {
-      if(flight.id!==id||flight.cancelled||(flight.fuelAmount===fuelAmount&&flight.fuelUnit===fuelUnit)) return flight;
-      const revision=flight.revision+1;
-      return { ...flight,fuelAmount,fuelUnit,actionBy: { ...flight.actionBy,fuelAmount: user },history: [...(flight.history??[]),{ field: "fuelAmount",value: `${fuelAmount} ${fuelUnit}`,employeeNumber: user,at: new Date().toISOString() }],revision,updatedBy: user,acknowledged: { ...flight.acknowledged,[user]: revision } };
-    }));
+    const current=localSnapshot.current.flights.find((flight)=>flight.id===id); if(!current||current.fuelAmount===fuelAmount&&current.fuelUnit===fuelUnit)return;
+    changeFlight(id,["fuelAmount"],{field:"fuelAmount",value:`${fuelAmount} ${fuelUnit}`,employeeNumber:user,at:new Date().toISOString()},(flight)=>({...flight,fuelAmount,fuelUnit,actionBy:{...flight.actionBy,fuelAmount:user}}));
   }
   function updateFlightField(id: string,field: "departure"|"duration"|"actualEngineStart"|"actualShutdown",value: string) {
-    setFlights((items) => items.map((flight) => { if(flight.id!==id||flight.cancelled) return flight; const revision=flight.revision+1; const parsed=field==="duration"? clockToDuration(value):value; return { ...flight,[field]: parsed,actionBy: { ...flight.actionBy,[field]: user },history: [...(flight.history??[]),{ field,value,employeeNumber:user,at:new Date().toISOString() }],revision,updatedBy:user,acknowledged:{ ...flight.acknowledged,[user]:revision } }; }));
+    const parsed=field==="duration"?clockToDuration(value):value; changeFlight(id,[field],{field,value,employeeNumber:user,at:new Date().toISOString()},(flight)=>({...flight,[field]:parsed,...(field==="actualShutdown"?{completedAt:value?new Date().toISOString():undefined}:{}),actionBy:{...flight.actionBy,[field]:user}}));
+    if(field==="actualShutdown"&&value&&alerts[id]) void setFlightAlert(id,null);
   }
-  function cancelFlight(id: string,reason: string) { setFlights((items) => items.map((flight) => { if(flight.id!==id) return flight; const revision=flight.revision+1; return { ...flight,cancelled:true,cancellationReason:reason,actionBy:{ ...flight.actionBy,cancelled:user },history:[...(flight.history??[]),{field:"cancelled",value:reason,employeeNumber:user,at:new Date().toISOString()}],revision,updatedBy:user,acknowledged:{...flight.acknowledged,[user]:revision} }; })); }
-  function moveFlightToTrash(id: string) { if(user!=="0001") return; setFlights((items)=>items.map((flight)=>flight.id===id?{...flight,deletedAt:new Date().toISOString(),deletedBy:user}:flight)); }
-  function restoreFlight(id: string) { if(user!=="0001") return; setFlights((items)=>items.map((flight)=>flight.id===id?{...flight,deletedAt:undefined,deletedBy:undefined}:flight)); }
-  function permanentlyDeleteFlight(id: string) { if(user!=="0001") return; setFlights((items)=>items.filter((flight)=>flight.id!==id)); }
-  function acknowledge(id: string) { setFlights((items) => items.map((flight) => flight.id===id? { ...flight,acknowledged: { ...flight.acknowledged,[user]: flight.revision } }:flight)); }
+  function cancelFlight(id: string,reason: string) { const at=new Date().toISOString(); changeFlight(id,["cancelled"],{field:"cancelled",value:reason,employeeNumber:user,at},(flight)=>({...flight,cancelled:true,cancellationReason:reason,cancelledAt:at,actionBy:{...flight.actionBy,cancelled:user}})); if(alerts[id])void setFlightAlert(id,null); }
+  function moveFlightToTrash(id: string) { if(user!=="0001") return; changeFlight(id,["deletedAt"],null,(flight)=>({...flight,deletedAt:new Date().toISOString(),deletedBy:user})); if(alerts[id])void setFlightAlert(id,null); }
+  function restoreFlight(id: string) { if(user!=="0001") return; const current=localSnapshot.current.flights.find((flight)=>flight.id===id); if(!current)return; const next={...current,deletedAt:undefined,deletedBy:undefined}; setFlights((items)=>items.map((flight)=>flight.id===id?next:flight)); void persistItem("flights",id,{deletedAt:null,deletedBy:null}); }
+  function permanentlyDeleteFlight(id: string) { if(user!=="0001") return; setFlights((items)=>items.filter((flight)=>flight.id!==id)); void persistItem("flights",id,{},"delete"); }
+  function acknowledge(id: string) { const flight=localSnapshot.current.flights.find((item)=>item.id===id); if(!flight)return; const patch={acknowledged:{[user]:flight.revision}}; setFlights((items)=>items.map((item)=>item.id===id?{...item,acknowledged:{...item.acknowledged,[user]:item.revision}}:item)); void persistItem("flights",id,patch,"update",[],null,false); }
+  async function ensurePushSubscription() {
+    if(!supabase||!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window)) throw new Error("Este aparelho não oferece notificações Web Push.");
+    const registration=await navigator.serviceWorker.register("/sw.js");
+    const permission=Notification.permission==="granted"?"granted":await Notification.requestPermission();
+    if(permission!=="granted") throw new Error("Permissão de notificações não concedida.");
+    let subscription=await registration.pushManager.getSubscription();
+    if(!subscription) subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(vapidPublicKey)});
+    const json=subscription.toJSON();
+    const {error}=await supabase.rpc("save_push_subscription",{p_endpoint:subscription.endpoint,p_p256dh:json.keys?.p256dh??"",p_auth:json.keys?.auth??"",p_user_agent:navigator.userAgent});
+    if(error) throw error;
+  }
+  async function setFlightAlert(id:string,minutes:number|null) {
+    try {
+      if(!supabase) throw new Error("Serviço de notificações indisponível.");
+      if(minutes!==null) await ensurePushSubscription();
+      const {error}=await supabase.rpc("set_flight_alert",{p_flight_id:id,p_minutes_before:minutes??10,p_enabled:minutes!==null});
+      if(error) throw error;
+      setAlerts((current)=>{ const next={...current}; if(minutes===null) delete next[id]; else next[id]=minutes; return next; });
+      setSyncError("");
+    } catch(error) { setSyncError(error instanceof Error?error.message:"Não foi possível configurar a notificação."); }
+  }
 
   if(!hydrated) return null;
   if(!user) return <LoginScreen login={login} password={password} error={loginError} setLogin={setLogin} setPassword={setPassword} onSubmit={enter} />;
@@ -208,11 +279,11 @@ export function FlightBoard() {
         {workspace==="flights"? <><section className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><p className="mb-1 text-sm font-medium text-[#1769e0]">Visão operacional</p><h2 className="text-2xl font-bold tracking-[-.035em] sm:text-[30px]">Linha do tempo de voos</h2><p className="mt-1 text-sm text-[#6a7d93]">Acompanhe cada aeronave do pré-voo ao corte.</p></div><div className="flex flex-wrap gap-2">{isAdmin?<button onClick={()=>setTrashOpen(true)} className="flex h-11 items-center gap-2 rounded-xl border border-[#d5e0eb] bg-white px-4 text-sm font-bold text-[#52677f]"><Trash2 size={17}/> Lixeira ({flights.filter((flight)=>flight.deletedAt).length})</button>:null}<button onClick={() => setNewOpen(true)} className="flex h-11 items-center gap-2 rounded-xl bg-[#1268d8] px-4 text-sm font-bold text-white shadow-[0_8px_20px_#1268d833] transition hover:-translate-y-0.5 hover:bg-[#095cbf]"><Plus size={18} /> Lançar voo</button></div></section>
         <section className="mb-7 rounded-2xl border border-[#dce6f0] bg-white p-4 shadow-[0_8px_30px_#173b6210]"><button onClick={() => setFiltersOpen((value) => !value)} className="flex w-full items-center justify-between font-bold md:hidden"><span className="flex items-center gap-2"><Search size={17} /> Filtros</span><ChevronDown size={18} className={filtersOpen? "rotate-180":""} /></button><div className={`${filtersOpen? "grid":"hidden"} mt-4 gap-3 md:mt-0 md:grid md:grid-cols-4`}><Filter label="Data" icon={<CalendarDays size={15} />}><input type="date" value={filters.date} onChange={(e) => setFilters({ ...filters,date: e.target.value })} /></Filter><Filter label="Base de operação"><select value={filters.base} onChange={(e) => setFilters({ ...filters,base: e.target.value })}><option value="">Todas as bases</option>{options.bases.map((value) => <option key={value}>{value}</option>)}</select></Filter><Filter label="Modelo"><select value={filters.model} onChange={(e) => setFilters({ ...filters,model: e.target.value })}><option value="">Todos os modelos</option>{options.models.map((value) => <option key={value}>{value}</option>)}</select></Filter><Filter label="Prefixo"><select value={filters.prefix} onChange={(e) => setFilters({ ...filters,prefix: e.target.value })}><option value="">Todos os prefixos</option>{options.prefixes.map((value) => <option key={value}>{value}</option>)}</select></Filter></div></section>
         <div className="mb-4 flex items-center justify-between"><p className="text-sm font-semibold text-[#52677f]">{visible.length} {visible.length===1? "voo encontrado":"voos encontrados"}</p><StatusLegend /></div>
-        <section className="relative grid gap-5 pb-12 lg:grid-cols-2">{visible.map((flight,index) => <FlightCard key={flight.id} flight={flight} user={user} index={index} isAdmin={isAdmin} onCheck={updateCheck} onFuel={updateFuel} onField={updateFlightField} onCancel={cancelFlight} onDelete={(id)=>{if(window.confirm("Mover este voo para a lixeira?"))moveFlightToTrash(id);}} onAcknowledge={acknowledge} />)}{visible.length===0? <div className="col-span-full rounded-2xl border border-dashed border-[#becddd] bg-white px-6 py-16 text-center"><Plane className="mx-auto mb-3 text-[#9bb0c7]" /><h3 className="font-bold">Nenhum voo encontrado</h3><p className="mt-1 text-sm text-[#718197]">Ajuste os filtros ou lance um novo voo.</p></div>:null}</section></>:<RunwayHandover passages={passages} catalogs={catalogs} user={user} isAdmin={isAdmin} onCreate={(item)=>setPassages((items)=>[item,...items])} onChange={(id,change)=>setPassages((items)=>items.map((item)=>item.id===id?change(item):item))} onDelete={(id)=>{if(isAdmin&&window.confirm("Excluir definitivamente esta passagem?"))setPassages((items)=>items.filter((item)=>item.id!==id));}}/>}
+        <section className="relative grid gap-5 pb-12 lg:grid-cols-2">{visible.map((flight,index) => <FlightCard key={flight.id} flight={flight} user={user} index={index} isAdmin={isAdmin} alertMinutes={alerts[flight.id]} onAlert={(minutes)=>void setFlightAlert(flight.id,minutes)} onCheck={updateCheck} onFuel={updateFuel} onField={updateFlightField} onCancel={cancelFlight} onDelete={(id)=>{if(window.confirm("Mover este voo para a lixeira?"))moveFlightToTrash(id);}} onAcknowledge={acknowledge} />)}{visible.length===0? <div className="col-span-full rounded-2xl border border-dashed border-[#becddd] bg-white px-6 py-16 text-center"><Plane className="mx-auto mb-3 text-[#9bb0c7]" /><h3 className="font-bold">Nenhum voo encontrado</h3><p className="mt-1 text-sm text-[#718197]">Ajuste os filtros ou lance um novo voo.</p></div>:null}</section></>:<RunwayHandover passages={passages} catalogs={catalogs} user={user} isAdmin={isAdmin} onCreate={createPassage} onChange={changePassage} onDelete={(id)=>{if(isAdmin&&window.confirm("Excluir definitivamente esta passagem?")){setPassages((items)=>items.filter((item)=>item.id!==id));void persistItem("passages",id,{},"delete");}}}/>} {/* workspaces */}
       </main>
-      {newOpen? <NewFlightModal user={user} catalogs={catalogs} onClose={() => setNewOpen(false)} onCreate={(flight) => { setFlights((items) => [flight,...items]); setNewOpen(false); setFilters((current) => ({ ...current,date: flight.date })); }} />:null}
+      {newOpen? <NewFlightModal user={user} catalogs={catalogs} onClose={() => setNewOpen(false)} onCreate={(flight) => { createFlight(flight); setNewOpen(false); setFilters((current) => ({ ...current,date: flight.date })); }} />:null}
       {adminOpen? <AdminModal catalogs={catalogs} user={user} onChange={setCatalogs} onClose={() => setAdminOpen(false)} />:null}
-      {aiOpen? <AiAssistant flights={flights} catalogs={catalogs} user={user} onClose={() => setAiOpen(false)} onCreate={(created) => setFlights((items) => [...created,...items])} />:null}
+      {aiOpen? <AiAssistant flights={flights} catalogs={catalogs} user={user} onClose={() => setAiOpen(false)} onCreate={(created) => created.forEach(createFlight)} />:null}
       {trashOpen?<FlightTrash flights={flights.filter((flight)=>flight.deletedAt)} onClose={()=>setTrashOpen(false)} onRestore={restoreFlight} onDelete={permanentlyDeleteFlight}/>:null}
     </div>
   );
@@ -225,9 +296,9 @@ function LoginScreen({ login,password,error,setLogin,setPassword,onSubmit }: { l
 function Filter({ label,icon,children }: { label: string; icon?: React.ReactNode; children: React.ReactNode; }) { return <label><span className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-[#64788e]">{icon}{label}</span><div className="[&>input]:h-10 [&>input]:w-full [&>input]:rounded-lg [&>input]:border [&>input]:border-[#d6e1ec] [&>input]:bg-white [&>input]:px-3 [&>input]:text-sm [&>input]:outline-none [&>select]:h-10 [&>select]:w-full [&>select]:rounded-lg [&>select]:border [&>select]:border-[#d6e1ec] [&>select]:bg-white [&>select]:px-3 [&>select]:text-sm [&>select]:outline-none">{children}</div></label>; }
 function StatusLegend() { return <div className="desktop-only flex items-center gap-4 text-[11px] font-semibold text-[#718197]">{[["#f2b824","Atenção"],["#2383e2","Ciente"],["#22a06b","Em voo"],["#94a3b8","Encerrado"]].map(([color,label]) => <span key={label} className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />{label}</span>)}</div>; }
 
-function FlightCard({ flight,user,index,isAdmin,onCheck,onFuel,onField,onCancel,onDelete,onAcknowledge }: { flight: Flight; user: string; index: number; isAdmin:boolean; onCheck: (id: string,key: CheckKey,value: CheckValue) => void; onFuel: (id: string,value: number,unit: FuelUnit) => void; onField: (id:string,field:"departure"|"duration"|"actualEngineStart"|"actualShutdown",value:string)=>void; onCancel:(id:string,reason:string)=>void; onDelete:(id:string)=>void; onAcknowledge: (id: string) => void; }) {
+function FlightCard({ flight,user,index,isAdmin,alertMinutes,onAlert,onCheck,onFuel,onField,onCancel,onDelete,onAcknowledge }: { flight: Flight; user: string; index: number; isAdmin:boolean; alertMinutes?:number; onAlert:(minutes:number|null)=>void; onCheck: (id: string,key: CheckKey,value: CheckValue) => void; onFuel: (id: string,value: number,unit: FuelUnit) => void; onField: (id:string,field:"departure"|"duration"|"actualEngineStart"|"actualShutdown",value:string)=>void; onCancel:(id:string,reason:string)=>void; onDelete:(id:string)=>void; onAcknowledge: (id: string) => void; }) {
   const status=flightStatus(flight,user); const locked=Boolean(flight.cancelled);
-  return <article className="animate-rise overflow-hidden rounded-2xl border bg-white shadow-[0_10px_35px_#173b6210]" style={{ borderColor: status.color,borderLeftWidth: 5,animationDelay: `${index*60}ms` }}><div className="flex items-start justify-between gap-3 border-b border-[#e6edf4] p-5"><div className="flex gap-3"><div className="grid h-11 w-11 place-items-center rounded-xl bg-[#edf5ff] text-[#1769e0]"><Plane size={21} /></div><div><div className="flex flex-wrap items-center gap-2"><h3 className="font-mono text-xl font-bold tracking-[-.02em]">{flight.prefix}</h3><span className="rounded-md bg-[#edf2f7] px-2 py-1 text-[10px] font-bold text-[#607388]">{flight.model}</span></div><p className="mt-1 text-xs text-[#718197]">{flight.base}</p></div></div><span className="flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ color: status.color,backgroundColor: `${status.color}18` }}><i className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: status.color }} />{status.label}</span></div><div className="grid grid-cols-2 gap-3 border-b border-[#e6edf4] bg-[#fafcff] px-5 py-3 text-xs sm:grid-cols-5"><div><span className="block text-[#7d8da0]">Saída prevista</span><strong className="mt-1 flex items-center gap-1.5"><CalendarDays size={13} />{flight.date.split("-").reverse().join("/")} · {flight.departure}</strong></div><div><span className="block text-[#7d8da0]">Tempo previsto</span><strong className="mt-1 flex items-center gap-1.5"><Clock3 size={13} />{flight.duration.toLocaleString("pt-BR")}h</strong></div><div><span className="block text-[#7d8da0]">Acionamento real</span><strong className="mt-1 flex items-center gap-1.5"><Clock3 size={13} />{flight.actualEngineStart??"—"}</strong></div><div><span className="block text-[#7d8da0]">Pouso previsto</span><strong className="mt-1 flex items-center gap-1.5"><Plane size={13} className="rotate-90" />{arrivalTime(flight)}</strong><small className="mt-0.5 block text-[9px] text-[#8a9aad]">{flight.actualEngineStart? "Baseado no acionamento real":"Baseado na saída prevista"}</small></div><div><span className="block text-[#7d8da0]">Corte real</span><strong className="mt-1 flex items-center gap-1.5"><Clock3 size={13} />{flight.actualShutdown??"—"}</strong></div></div><div className="p-5"><FlightEditableTimes flight={flight} disabled={locked} onSave={(field,value) => onField(flight.id,field,value)} onCancel={(reason) => onCancel(flight.id,reason)} /><div className="mb-3 flex items-center justify-between"><p className="text-xs font-bold uppercase tracking-[.12em] text-[#73869a]">Checklist operacional</p><FuelAmountEditor key={flight.revision} value={flight.fuelAmount} unit={flight.fuelUnit} signature={flight.actionBy?.fuelAmount} disabled={locked} onSave={(value,unit) => onFuel(flight.id,value,unit)} /></div><div className="grid gap-2 sm:grid-cols-2">{(Object.keys(checkLabels) as CheckKey[]).map((key) => <CheckRow key={key} label={checkLabels[key]} value={flight[key]} disabled={locked} onChange={(value) => onCheck(flight.id,key,value)} signature={flight.actionBy?.[key]} full={key==="shutdown"} />)}</div></div><footer className="flex items-center justify-between gap-3 border-t border-[#e6edf4] bg-[#fbfcfe] px-5 py-3"><ActionSignatures flight={flight} /><div className="flex shrink-0 flex-col items-end gap-2">{status.key==="attention"? <button onClick={() => onAcknowledge(flight.id)} className="flex items-center gap-1.5 rounded-lg bg-[#fff7dd] px-3 py-2 text-xs font-bold text-[#926b00] hover:bg-[#ffefb8]"><Check size={14} /> Marcar ciência</button>:<span className="flex items-center gap-1 text-xs font-semibold text-[#63778e]"><Check size={14} /> Atualizado</span>}{isAdmin?<button onClick={() => { if(window.confirm(`Excluir definitivamente o voo ${flight.prefix}?`)) onDelete(flight.id); }} className="flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1.5 text-[10px] font-bold text-red-700"><Trash2 size={13}/> Excluir voo</button>:null}</div></footer></article>;
+  return <article className="animate-rise overflow-hidden rounded-2xl border bg-white shadow-[0_10px_35px_#173b6210]" style={{ borderColor: status.color,borderLeftWidth: 5,animationDelay: `${index*60}ms` }}><div className="flex items-start justify-between gap-3 border-b border-[#e6edf4] p-5"><div className="flex gap-3"><div className="grid h-11 w-11 place-items-center rounded-xl bg-[#edf5ff] text-[#1769e0]"><Plane size={21} /></div><div><div className="flex flex-wrap items-center gap-2"><h3 className="font-mono text-xl font-bold tracking-[-.02em]">{flight.prefix}</h3><span className="rounded-md bg-[#edf2f7] px-2 py-1 text-[10px] font-bold text-[#607388]">{flight.model}</span></div><p className="mt-1 text-xs text-[#718197]">{flight.base}</p></div></div><span className="flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ color: status.color,backgroundColor: `${status.color}18` }}><i className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: status.color }} />{status.label}</span></div><div className="grid grid-cols-2 gap-3 border-b border-[#e6edf4] bg-[#fafcff] px-5 py-3 text-xs sm:grid-cols-5"><div><span className="block text-[#7d8da0]">Saída prevista</span><strong className="mt-1 flex items-center gap-1.5"><CalendarDays size={13} />{flight.date.split("-").reverse().join("/")} · {flight.departure}</strong></div><div><span className="block text-[#7d8da0]">Tempo previsto</span><strong className="mt-1 flex items-center gap-1.5"><Clock3 size={13} />{durationToClock(flight.duration)}</strong></div><div><span className="block text-[#7d8da0]">Acionamento real</span><strong className="mt-1 flex items-center gap-1.5"><Clock3 size={13} />{flight.actualEngineStart??"—"}</strong></div><div><span className="block text-[#7d8da0]">Pouso previsto</span><strong className="mt-1 flex items-center gap-1.5"><Plane size={13} className="rotate-90" />{arrivalTime(flight)}</strong><small className="mt-0.5 block text-[9px] text-[#8a9aad]">{flight.actualEngineStart? "Baseado no acionamento real":"Baseado na saída prevista"}</small></div><div><span className="block text-[#7d8da0]">Corte real</span><strong className="mt-1 flex items-center gap-1.5"><Clock3 size={13} />{flight.actualShutdown??"—"}</strong></div></div><div className="p-5"><FlightEditableTimes flight={flight} user={user} disabled={locked} onSave={(field,value) => onField(flight.id,field,value)} onCancel={(reason) => onCancel(flight.id,reason)} /><div className={`mb-3 flex items-center justify-between rounded-lg p-2 ${fieldChanged(flight,user,"fuelAmount")?"bg-amber-100 ring-2 ring-amber-400":""}`}><p className="text-xs font-bold uppercase tracking-[.12em] text-[#73869a]">Checklist operacional{fieldChanged(flight,user,"fuelAmount")?<small className="ml-2 text-amber-700">Alterado</small>:null}</p><FuelAmountEditor key={flight.revision} value={flight.fuelAmount} unit={flight.fuelUnit} signature={flight.actionBy?.fuelAmount} disabled={locked} onSave={(value,unit) => onFuel(flight.id,value,unit)} /></div><div className="grid gap-2 sm:grid-cols-2">{(Object.keys(checkLabels) as CheckKey[]).map((key) => <CheckRow key={key} label={checkLabels[key]} value={flight[key]} changed={fieldChanged(flight,user,key)} disabled={locked} onChange={(value) => onCheck(flight.id,key,value)} signature={flight.actionBy?.[key]} full={key==="shutdown"} />)}</div><FlightAlertControl minutes={alertMinutes} disabled={locked||flight.shutdown==="ok"} onChange={onAlert}/></div><footer className="flex items-center justify-between gap-3 border-t border-[#e6edf4] bg-[#fbfcfe] px-5 py-3"><ActionSignatures flight={flight} /><div className="flex shrink-0 flex-col items-end gap-2">{status.key==="attention"? <button onClick={() => onAcknowledge(flight.id)} className="flex items-center gap-1.5 rounded-lg bg-[#fff7dd] px-3 py-2 text-xs font-bold text-[#926b00] hover:bg-[#ffefb8]"><Check size={14} /> Marcar ciência</button>:<span className="flex items-center gap-1 text-xs font-semibold text-[#63778e]"><Check size={14} /> Atualizado</span>}{isAdmin?<button onClick={() => { if(window.confirm(`Excluir definitivamente o voo ${flight.prefix}?`)) onDelete(flight.id); }} className="flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1.5 text-[10px] font-bold text-red-700"><Trash2 size={13}/> Excluir voo</button>:null}</div></footer></article>;
 }
 
 function ActionSignatures({ flight }: { flight:Flight }) {
@@ -243,14 +314,16 @@ function ActionSignatures({ flight }: { flight:Flight }) {
   return <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">{signatures.map(([label,employee])=><span key={label} className={`rounded-md px-2 py-1 text-[9px] ${employee?"bg-[#eaf3ff] font-bold text-[#315b86]":"bg-[#f1f4f7] text-[#8a98a8]"}`}>{label}: {employee?`mat. ${employee}`:"—"}</span>)}</div>;
 }
 
-function CheckRow({ label,value,disabled,onChange,signature,full }: { label: string; value: CheckValue; disabled: boolean; onChange: (value: CheckValue) => void; signature?: string; full?: boolean; }) { return <div className={`flex items-center justify-between rounded-xl border border-[#e1e9f1] p-2.5 ${full? "sm:col-span-2":""}`}><span className="text-xs font-semibold">{label}{signature? <small className="mt-0.5 block font-normal text-[#718197]">Matrícula {signature}</small>:null}</span><div className="flex gap-1"><button disabled={disabled} onClick={() => onChange("ok")} className={`rounded-md px-2.5 py-1.5 text-[10px] font-bold transition ${value==="ok"? "bg-[#daf5e8] text-[#13764a] ring-1 ring-[#96d8b9]":"bg-[#f1f4f7] text-[#728397] hover:bg-[#e5ebf1]"}`}>OK</button><button disabled={disabled} onClick={() => onChange("no")} className={`rounded-md px-2.5 py-1.5 text-[10px] font-bold transition ${value==="no"? "bg-[#fee8e8] text-[#b42318] ring-1 ring-[#efb1ad]":"bg-[#f1f4f7] text-[#728397] hover:bg-[#e5ebf1]"}`}>NO</button></div></div>; }
+function CheckRow({ label,value,changed,disabled,onChange,signature,full }: { label: string; value: CheckValue; changed:boolean; disabled: boolean; onChange: (value: CheckValue) => void; signature?: string; full?: boolean; }) { return <div className={`flex items-center justify-between rounded-xl border p-2.5 ${full? "sm:col-span-2":""} ${changed?"border-amber-400 bg-amber-50 ring-2 ring-amber-300":"border-[#e1e9f1]"}`}><span className="text-xs font-semibold">{label}{changed?<small className="ml-1 rounded bg-amber-200 px-1 text-[9px] font-bold text-amber-800">Alterado</small>:null}{signature? <small className="mt-0.5 block font-normal text-[#718197]">Matrícula {signature}</small>:null}</span><div className="flex gap-1"><button disabled={disabled} onClick={() => onChange("ok")} className={`rounded-md px-2.5 py-1.5 text-[10px] font-bold transition ${value==="ok"? "bg-[#daf5e8] text-[#13764a] ring-1 ring-[#96d8b9]":"bg-[#f1f4f7] text-[#728397] hover:bg-[#e5ebf1]"}`}>OK</button><button disabled={disabled} onClick={() => onChange("no")} className={`rounded-md px-2.5 py-1.5 text-[10px] font-bold transition ${value==="no"? "bg-[#fee8e8] text-[#b42318] ring-1 ring-[#efb1ad]":"bg-[#f1f4f7] text-[#728397] hover:bg-[#e5ebf1]"}`}>NO</button></div></div>; }
 
-function FlightEditableTimes({ flight,disabled,onSave,onCancel }: { flight: Flight; disabled:boolean; onSave:(field:"departure"|"duration"|"actualEngineStart"|"actualShutdown",value:string)=>void; onCancel:(reason:string)=>void }) {
+function FlightEditableTimes({ flight,user,disabled,onSave,onCancel }: { flight: Flight; user:string; disabled:boolean; onSave:(field:"departure"|"duration"|"actualEngineStart"|"actualShutdown",value:string)=>void; onCancel:(reason:string)=>void }) {
   const [reason,setReason]=useState("");
-  return <div className="mb-4 grid gap-2 rounded-xl bg-[#f5f8fc] p-3 sm:grid-cols-2"><TimeEdit label="Saída prevista" type="time" value={flight.departure} signature={flight.actionBy?.departure} disabled={disabled} onSave={(value)=>onSave("departure",value)} /><TimeEdit label="Tempo previsto (HH:MM)" type="time" value={durationToClock(flight.duration)} signature={flight.actionBy?.duration} disabled={disabled} onSave={(value)=>onSave("duration",value)} /><TimeEdit label="Acionamento real" type="time" value={flight.actualEngineStart??""} signature={flight.actionBy?.actualEngineStart??flight.actionBy?.engineStart} disabled={disabled} onSave={(value)=>onSave("actualEngineStart",value)} /><TimeEdit label="Corte real" type="time" value={flight.actualShutdown??""} signature={flight.actionBy?.actualShutdown??flight.actionBy?.shutdown} disabled={disabled} onSave={(value)=>onSave("actualShutdown",value)} />{flight.cancelled? <p className="text-xs font-bold text-red-700 sm:col-span-2">Motivo: {flight.cancellationReason} · matrícula {flight.actionBy?.cancelled}</p>:<div className="flex gap-2 sm:col-span-2"><select aria-label="Motivo do cancelamento" value={reason} onChange={(event)=>setReason(event.target.value)} className="h-9 min-w-0 flex-1 rounded-lg border border-[#d5dfeb] bg-white px-2 text-xs"><option value="">Selecione o motivo</option><option value="Indisponível">Indisponível</option><option value="Mau tempo">Mau tempo</option><option value="Retorno por pane">Retorno por pane</option><option value="Retorno por mau tempo">Retorno por mau tempo</option><option value="Outros">Outros</option></select><button disabled={!reason} onClick={()=>onCancel(reason)} className="rounded-lg bg-red-50 px-3 text-xs font-bold text-red-700">Cancelar voo</button></div>}</div>;
+  return <div className="mb-4 grid gap-2 rounded-xl bg-[#f5f8fc] p-3 sm:grid-cols-2"><TimeEdit key={`departure-${flight.departure}`} label="Saída prevista" type="time" value={flight.departure} changed={fieldChanged(flight,user,"departure")} signature={flight.actionBy?.departure} disabled={disabled} onSave={(value)=>onSave("departure",value)} /><TimeEdit key={`duration-${flight.duration}`} label="Tempo previsto (HH:MM)" type="time" value={durationToClock(flight.duration)} changed={fieldChanged(flight,user,"duration")} signature={flight.actionBy?.duration} disabled={disabled} onSave={(value)=>onSave("duration",value)} /><TimeEdit key={`start-${flight.actualEngineStart}`} label="Acionamento real" type="time" value={flight.actualEngineStart??""} changed={fieldChanged(flight,user,"engineStart")||fieldChanged(flight,user,"actualEngineStart")} signature={flight.actionBy?.actualEngineStart??flight.actionBy?.engineStart} disabled={disabled} onSave={(value)=>onSave("actualEngineStart",value)} /><TimeEdit key={`shutdown-${flight.actualShutdown}`} label="Corte real" type="time" value={flight.actualShutdown??""} changed={fieldChanged(flight,user,"shutdown")||fieldChanged(flight,user,"actualShutdown")} signature={flight.actionBy?.actualShutdown??flight.actionBy?.shutdown} disabled={disabled} onSave={(value)=>onSave("actualShutdown",value)} />{flight.cancelled? <p className={`text-xs font-bold text-red-700 sm:col-span-2 ${fieldChanged(flight,user,"cancelled")?"rounded-lg bg-amber-100 p-2 ring-2 ring-amber-400":""}`}>Motivo: {flight.cancellationReason} · matrícula {flight.actionBy?.cancelled}</p>:<div className="flex gap-2 sm:col-span-2"><select aria-label="Motivo do cancelamento" value={reason} onChange={(event)=>setReason(event.target.value)} className="h-9 min-w-0 flex-1 rounded-lg border border-[#d5dfeb] bg-white px-2 text-xs"><option value="">Selecione o motivo</option><option value="Indisponível">Indisponível</option><option value="Mau tempo">Mau tempo</option><option value="Retorno por pane">Retorno por pane</option><option value="Retorno por mau tempo">Retorno por mau tempo</option><option value="Outros">Outros</option></select><button disabled={!reason} onClick={()=>onCancel(reason)} className="rounded-lg bg-red-50 px-3 text-xs font-bold text-red-700">Cancelar voo</button></div>}</div>;
 }
 
-function TimeEdit({ label,type,value,signature,disabled,onSave }: { label:string; type:"time"|"number"; value:string; signature?:string; disabled:boolean; onSave:(value:string)=>void }) { const [draft,setDraft]=useState(value); return <label className="text-[10px] font-bold text-[#64788e]">{label}<input type={type} min={type==="number"?"0.1":undefined} step={type==="number"?"0.1":undefined} disabled={disabled} value={draft} onChange={(event)=>setDraft(event.target.value)} onBlur={()=>{if(draft&&draft!==value) onSave(draft)}} className="mt-1 h-9 w-full rounded-lg border border-[#d5dfeb] bg-white px-2 text-xs" />{signature?<small className="font-normal">Matrícula {signature}</small>:null}</label>; }
+function TimeEdit({ label,type,value,changed,signature,disabled,onSave }: { label:string; type:"time"|"number"; value:string; changed:boolean; signature?:string; disabled:boolean; onSave:(value:string)=>void }) { const [draft,setDraft]=useState(value); return <label className={`rounded-lg p-1 text-[10px] font-bold text-[#64788e] ${changed?"bg-amber-100 ring-2 ring-amber-400":""}`}>{label}{changed?<small className="ml-1 rounded bg-amber-200 px-1 text-[9px] text-amber-800">Alterado</small>:null}<input type={type} min={type==="number"?"0.1":undefined} step={type==="number"?"0.1":undefined} disabled={disabled} value={draft} onChange={(event)=>setDraft(event.target.value)} onBlur={()=>{if(draft&&draft!==value) onSave(draft)}} className="mt-1 h-9 w-full rounded-lg border border-[#d5dfeb] bg-white px-2 text-xs" />{signature?<small className="font-normal">Matrícula {signature}</small>:null}</label>; }
+
+function FlightAlertControl({minutes,disabled,onChange}:{minutes?:number;disabled:boolean;onChange:(minutes:number|null)=>void}) { const [draft,setDraft]=useState(minutes??10); return <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-[#dbe6f0] bg-[#f8fbff] p-2.5"><Bell size={16} className={minutes?"text-[#1268d8]":"text-[#718197]"}/><span className="mr-auto text-xs font-bold">Aviso antes do pouso</span>{minutes?<><label className="flex items-center gap-1 text-[11px]">Antecedência <input aria-label="Minutos antes do pouso" type="number" min="1" max="1440" value={draft} onChange={(event)=>setDraft(Number(event.target.value))} onBlur={()=>{if(draft>=1&&draft<=1440&&draft!==minutes)onChange(draft)}} className="h-8 w-16 rounded-lg border border-[#cbd9e7] px-2 text-right font-bold"/> min</label><button onClick={()=>onChange(null)} className="rounded-lg bg-red-50 px-2.5 py-1.5 text-[10px] font-bold text-red-700">Desativar</button></>:<button disabled={disabled} onClick={()=>onChange(10)} className="rounded-lg bg-[#e8f2ff] px-3 py-2 text-[10px] font-bold text-[#0e5fbd] disabled:opacity-50">Ativar · 10 min</button>}</div>; }
 
 function FuelAmountEditor({ value,unit,signature,disabled,onSave }: { value: number; unit: FuelUnit; signature?: string; disabled: boolean; onSave: (value: number,unit: FuelUnit) => void }) {
   const [draft,setDraft]=useState(String(value));
