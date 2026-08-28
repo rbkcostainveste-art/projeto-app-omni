@@ -264,6 +264,10 @@ export function FlightBoard() {
       } else ({error}=await supabase.rpc("set_flight_alert",{p_flight_id:id,p_minutes_before:10,p_enabled:false}));
       if(error) throw error;
       setAlerts((current)=>{ const next={...current}; if(minutes===null) delete next[id]; else next[id]=minutes; return next; });
+      if(minutes!==null&&"serviceWorker" in navigator) {
+        const registration=await navigator.serviceWorker.ready;
+        await registration.showNotification("Alerta de voo ativado",{body:`Você será avisado ${minutes} min antes do pouso previsto.`,icon:"/favicon.ico",badge:"/favicon.ico",tag:`flight-alert-confirmation-${id}`});
+      }
       setSyncError("");
     } catch(error) { setSyncError(error instanceof Error?error.message:"Não foi possível configurar a notificação."); }
   }
