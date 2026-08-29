@@ -27,7 +27,7 @@ Deno.serve(async(request)=>{
     const flight=(state?.flights??[]).find((item:any)=>item.id===body.flightId);
     if(!target) return json({error:"Este aparelho ainda não possui uma inscrição push válida."},409);
     if(!flight) return json({error:"Voo não encontrado."},404);
-    if(flight.cancelled||flight.deletedAt||flight.shutdown==="ok"||flight.actualShutdown) return json({error:"Voos encerrados, cancelados ou excluídos não recebem alertas."},409);
+    if(flight.cancelled||flight.returned||flight.deletedAt||flight.shutdown==="ok"||flight.actualShutdown) return json({error:"Voos encerrados, cancelados, retornados ou excluídos não recebem alertas."},409);
     try {
       await webpush.sendNotification({endpoint:target.endpoint,keys:{p256dh:target.p256dh,auth:target.auth}},JSON.stringify({title:`Teste de alerta · ${flight.prefix}`,body:"A entrega de notificações neste aparelho está funcionando.",url:"/",tag:`flight-alert-test-${flight.id}`}));
       return json({ok:true});
@@ -48,7 +48,7 @@ Deno.serve(async(request)=>{
   const now=Date.now(); let sent=0;
   for(const alert of alerts??[]) {
     const flight:any=flights.get(alert.flight_id);
-    const closedReason=!flight?"Voo removido":flight.cancelled?"Voo cancelado":flight.deletedAt?"Voo excluído":flight.shutdown==="ok"||flight.actualShutdown?"Voo encerrado":null;
+    const closedReason=!flight?"Voo removido":flight.cancelled?"Voo cancelado":flight.returned?"Retorno registrado":flight.deletedAt?"Voo excluído":flight.shutdown==="ok"||flight.actualShutdown?"Voo encerrado":null;
     if(closedReason) { await db.from("flight_alerts").update({enabled:false,status:"closed",closed_reason:closedReason,closed_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("auth_user_id",alert.auth_user_id).eq("flight_id",alert.flight_id); continue; }
     const start=flight.actualEngineStart??flight.departure;
     if(!flight.date||!start||!Number.isFinite(Number(flight.duration))) { await db.from("flight_alerts").update({status:"failed",status_detail:"Horário do voo inválido",last_attempt_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("auth_user_id",alert.auth_user_id).eq("flight_id",alert.flight_id); continue; }
