@@ -1,0 +1,66 @@
+drop function if exists public.create_wall_action_from_maintenance_record(uuid,text,text,text[],text,text);
+drop function if exists public.create_wall_action_from_maintenance_record(uuid,text,text,text[]);
+
+create function public.create_wall_action_from_maintenance_record(
+  p_record_id uuid,
+  p_category text,
+  p_title text,
+  p_assigned_to text[],
+  p_result text,
+  p_tc text
+)
+returns text
+language plpgsql
+security definer
+set search_path=''
+as $$
+declare
+  v_identity public.device_identities;
+  v_record public.maintenance_records;
+  v_wall_id text:=gen_random_uuid()::text;
+  v_action_id text:=gen_random_uuid()::text;
+  v_execution_id text:=gen_random_uuid()::text;
+  v_at text:=now()::text;
+  v_origin text;
+  v_description text;
+  v_data jsonb;
+begin
+  select * into v_identity from public.device_identities where auth_user_id=auth.uid();
+  if v_identity.auth_user_id is null or not (v_identity.is_admin or v_identity.access_profile in ('legacy','mechanic','leader_inspector')) then
+    raise exception 'Sem acesso à manutenção';
+  end if;
+  if trim(coalesce(p_title,''))='' then raise exception 'Informe o título da ação'; end if;
+  if p_result not in ('satisfactory','nonconforming') then raise exception 'Resultado inválido'; end if;
+
+  select * into v_record from public.maintenance_records where id=p_record_id;
+  if v_record.id is null then raise exception 'Registro não encontrado'; end if;
+
+  v_origin:=case v_record.record_type when 'fault' then 'Pane' when 'discrepancy' then 'Discrepância' else 'Inspeção programada' end;
+  v_description:='Origem: '||v_origin||' '||v_record.prefix||' — '||v_record.title||case when nullif(trim(coalesce(p_tc,'')),'') is not null then ' · TC '||trim(p_tc) else '' end;
+  v_data:=jsonb_build_object(
+    'id',v_wall_id,'title',trim(p_title),'body',v_description,'base',v_record.base,'audienceArea','maintenance',
+    'category',trim(p_category),'priority',case when v_record.priority='urgent' then 'urgent' else 'routine' end,
+    'pinned',false,'essential',false,'resolved',false,'createdBy',v_identity.employee_number,'createdAt',v_at,'updatedAt',v_at,'revision',1,
+    'attachments','[]'::jsonb,'views','[]'::jsonb,'acknowledgements','[]'::jsonb,'comments','[]'::jsonb,
+    'history',jsonb_build_array(jsonb_build_object('employeeNumber',v_identity.employee_number,'at',v_at,'event',case when p_result='satisfactory' then 'Registrou ação · OK' else 'Registrou ação · Não OK' end)),
+    'actions',jsonb_build_array(jsonb_build_object(
+      'id',v_action_id,'prefix',v_record.prefix,'title',trim(p_title),'description',v_description,
+      'assignedTo',array_to_string(coalesce(p_assigned_to,'{}'),', '),'status',p_result,
+      'views','[]'::jsonb,'acknowledgements','[]'::jsonb,
+      'executions',jsonb_build_array(jsonb_build_object('id',v_execution_id,'employeeNumber',v_identity.employee_number,'at',v_at,'description',trim(p_title),'result',p_result,'attachments','[]'::jsonb)),
+      'createdAt',v_at
+    )),
+    'maintenanceRecordId',v_record.id::text,'maintenanceResult',p_result,'maintenanceResultAt',v_at,
+    'maintenanceResultBy',v_identity.employee_number,'maintenanceResultDescription',trim(p_title),
+    'tc',nullif(trim(coalesce(p_tc,'')),'')
+  );
+
+  insert into public.operational_wall_posts(id,base,audience_area,pinned,essential,resolved,data)
+  values(v_wall_id,v_record.base,'maintenance',false,false,false,v_data);
+  return v_wall_id;
+end
+$$;
+
+revoke all on function public.create_wall_action_from_maintenance_record(uuid,text,text,text[],text,text) from public,anon;
+grant execute on function public.create_wall_action_from_maintenance_record(uuid,text,text,text[],text,text) to authenticated;
+revoke all on function public.publish_maintenance_record_to_wall() from public,anon,authenticated;
