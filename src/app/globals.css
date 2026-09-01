@@ -1,12 +1,33 @@
 @import "tailwindcss";
 
-:root { --navy: #0b2342; --blue: #1769e0; --sky: #eaf3ff; --line: #dbe5f1; --muted: #64748b; }
+:root {
+  --navy: #17324d;
+  --blue: #1769d2;
+  --blue-deep: #0f4f9e;
+  --sky: #eaf3ff;
+  --canvas: #e7eff8;
+  --surface: #fcfdff;
+  --surface-soft: #f3f7fb;
+  --line: #cad8e6;
+  --muted: #526b82;
+  --success: #16835b;
+  --warning: #b77900;
+  --danger: #c43c3c;
+}
 * { box-sizing: border-box; }
-html { background: #f4f7fb; }
-body { margin: 0; color: var(--navy); font-family: "Geist", "Geist Fallback", Arial, sans-serif; }
-button, input, select { font: inherit; }
-button { cursor: pointer; }
+html { background: var(--canvas); }
+body { margin: 0; color: var(--navy); background: var(--canvas); font-family: "Manrope", "Avenir Next", "Segoe UI Variable", "Inter", system-ui, sans-serif; font-size: 15px; font-weight: 450; line-height: 1.5; letter-spacing: -.006em; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; transition: color .16s ease, background-color .16s ease, border-color .16s ease, box-shadow .16s ease, transform .16s ease; }
+button:active:not(:disabled) { transform: translateY(1px) scale(.99); }
 button:disabled { cursor: not-allowed; opacity: .62; }
+input, select, textarea { color: var(--navy); }
+input::placeholder, textarea::placeholder { color: #8294a8; opacity: 1; }
+:where(button, input, select, textarea):focus-visible { outline: 3px solid rgba(23,105,210,.2); outline-offset: 2px; border-color: var(--blue) !important; }
+::selection { background: #cfe3fb; color: #0c3769; }
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .animate-rise { animation: rise .35s ease-out both; }
+@keyframes saved-pulse { 0% { box-shadow: 0 0 0 0 rgba(22,131,91,.18); } 100% { box-shadow: 0 0 0 10px rgba(22,131,91,0); } }
+.status-confirmed { animation: saved-pulse .45s ease-out; }
 @media (max-width: 760px) { .desktop-only { display: none !important; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }

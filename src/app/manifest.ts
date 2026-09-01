@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Acompanhamento operacional de voos em tempo real",
     start_url: "/",
     display: "standalone",
-    background_color: "#f4f7fb",
+    background_color: "#e7eff8",
     theme_color: "#0d315e",
     lang: "pt-BR",
     icons: [{ src: "/favicon.ico",sizes: "any",type: "image/x-icon" }],
