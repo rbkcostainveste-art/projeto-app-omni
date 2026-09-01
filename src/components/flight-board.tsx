@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback,useEffect,useMemo,useRef,useState } from "react";
-import { Bell,Bot,CalendarDays,ChevronDown,Clock3,Eye,Filter as FilterIcon,Fuel,Gauge,History,LogOut,Menu,Mic,MicOff,Pencil,Plane,Plus,RotateCcw,Search,Settings,ShieldCheck,Trash2,Upload,UserRound,Wrench,X } from "lucide-react";
+import { Bell,Bot,CalendarDays,ChevronDown,Clock3,Eye,Filter as FilterIcon,Fuel,Gauge,History,LogOut,Mic,MicOff,Pencil,Plane,Plus,RotateCcw,Search,Settings,ShieldCheck,Trash2,Upload,UserRound,Wrench,X } from "lucide-react";
 import { createSupabaseClient } from "@/lib/supabase";
 import { Passage,RunwayHandover } from "@/components/runway-handover";
 import { AircraftPicker } from "@/components/aircraft-picker";
-import { OperationalWall,type WallAudience } from "@/components/operational-wall";
+import { OperationalWall,type WallAudience,type WallNotification,type WallPost } from "@/components/operational-wall";
 import { MaintenanceRecords } from "@/components/maintenance-records";
 
 type CheckValue="pending"|"ok"|"no";
@@ -42,6 +42,7 @@ type CheckKey=keyof typeof checkLabels;
 type FlightPhase="departure"|"shutdown"|"reopen";
 const supabase=createSupabaseClient();
 const vapidPublicKey="BBWuHqLMza7mVt6d3KJ34hlLQDAPiyzLS02IjP5wyiNMoUgegKawRUtrY0TBU3RSvZ9xmMZmbDWg4YX_HWSZPfU";
+const accessProfileLabels:Record<AccessProfile,string>={legacy:"Operador",pilot:"Piloto",coordination:"Coordenação",mechanic:"Mecânico",leader_inspector:"Líder / Inspetor",admin:"Administrador"};
 
 function readStoredJson<T>(key:string):T|null { try { const value=localStorage.getItem(key); return value?JSON.parse(value) as T:null; } catch { localStorage.removeItem(key); return null; } }
 function writeStoredJson(key:string,value:unknown) { try { localStorage.setItem(key,JSON.stringify(value)); } catch { localStorage.removeItem(key); } }
@@ -81,6 +82,7 @@ export function FlightBoard() {
   const [user,setUser]=useState("");
   const [accessProfile,setAccessProfile]=useState<AccessProfile>("legacy");
   const [assignedBase,setAssignedBase]=useState("");
+  const [assignedShift,setAssignedShift]=useState("");
   const isActualAdmin=user==="0001"||accessProfile==="admin";
   const [previewProfile,setPreviewProfile]=useState<AccessProfile|null>(null);
   const effectiveProfile=isActualAdmin&&previewProfile?previewProfile:accessProfile;
@@ -111,8 +113,12 @@ export function FlightBoard() {
   const [adminOpen,setAdminOpen]=useState(false);
   const [aircraftManagementOpen,setAircraftManagementOpen]=useState(false);
   const [peopleManagementOpen,setPeopleManagementOpen]=useState(false);
-  const [managementOpen,setManagementOpen]=useState(false);
   const [aiOpen,setAiOpen]=useState(false);
+  const [profileOpen,setProfileOpen]=useState(false);
+  const [profilePhoto,setProfilePhoto]=useState("");
+  const [notificationOpen,setNotificationOpen]=useState(false);
+  const [wallNotifications,setWallNotifications]=useState<WallNotification[]>([]);
+  const [notificationsSeenAt,setNotificationsSeenAt]=useState("");
   const [trashOpen,setTrashOpen]=useState(false);
   const [catalogs,setCatalogs]=useState<Catalogs>(demoCatalogs);
   const [filtersOpen,setFiltersOpen]=useState(false);
@@ -144,7 +150,7 @@ export function FlightBoard() {
         const isCurrentCatalog=localStorage.getItem("passagem-de-pista-catalogs-version")==="3";
         setCatalogs({ ...parsed,users: parsed.users??demoCatalogs.users,aircraft: parsed.aircraft.map((item) => ({ ...item,available: item.available??true,base: isCurrentCatalog&&item.base? item.base:demoCatalogs.aircraft.find((demo) => demo.prefix===item.prefix)?.base||parsed.bases[0]||"" })) });
       }
-      if(storedUser) { const storedFilters=readStoredJson<{model:string;prefix:string}>(`passagem-de-pista-trail-filters-${storedUser}`);setFilters((current)=>({...current,date:todayLocal(),model:storedFilters?.model??"",prefix:storedFilters?.prefix??""}));setUser(storedUser); }
+      if(storedUser) { const storedFilters=readStoredJson<{model:string;prefix:string}>(`passagem-de-pista-trail-filters-${storedUser}`);setFilters((current)=>({...current,date:todayLocal(),model:storedFilters?.model??"",prefix:storedFilters?.prefix??""}));setProfilePhoto(localStorage.getItem(`flight-ia-profile-photo-${storedUser}`)??"");setNotificationsSeenAt(localStorage.getItem(`flight-ia-notifications-seen-${storedUser}`)??"");setUser(storedUser); }
       setHydrated(true);
     },0);
     return () => window.clearTimeout(restore);
@@ -166,7 +172,7 @@ export function FlightBoard() {
       if(!sessionData.session) { const { error }=await supabase!.auth.signInAnonymously(); if(error) { if(active) setSyncError(error.message); return; } }
       const { data:claimData,error:claimError }=await supabase!.rpc("claim_device_identity",{ p_employee_number:user,p_password:"1234" });
       if(claimError) { if(active) setSyncError(claimError.message); return; }
-      if(active){const claim=claimData as {accessProfile?:AccessProfile;assignedBase?:string|null}|null;const profile=claim?.accessProfile??"legacy";const base=claim?.assignedBase??"";setAccessProfile(profile);setAssignedBase(base);setFilters((current)=>({...current,base}));}
+      if(active){const claim=claimData as {accessProfile?:AccessProfile;assignedBase?:string|null;workShift?:string|null}|null;const profile=claim?.accessProfile??"legacy";const base=claim?.assignedBase??"";setAccessProfile(profile);setAssignedBase(base);setAssignedShift(claim?.workShift??"");setFilters((current)=>({...current,base}));}
       const { data,error }=await supabase!.from("shared_app_state").select("flights,catalogs,revision").eq("id","main").maybeSingle();
       if(error) { if(active) setSyncError(error.message); return; }
       if(data) { const serialized=JSON.stringify({flights:data.flights,catalogs:data.catalogs}); lastRemoteState.current=serialized; lastRemoteCatalogs.current=JSON.stringify(data.catalogs); if(active) { setFlights(data.flights as Flight[]); setCatalogs(data.catalogs as Catalogs); } }
@@ -189,6 +195,7 @@ export function FlightBoard() {
 
   const refreshAlerts=useCallback(async()=>{ if(!supabase)return; const {data,error}=await supabase.rpc("get_my_flight_alerts"); if(error){setSyncError(error.message);return;} setAlerts(Object.fromEntries(((data??[]) as AlertInfo[]).map((alert)=>[alert.flight_id,alert]))); },[]);
   useEffect(() => { if(!syncReady||!supabase)return; void supabase.rpc("get_my_flight_alerts").then(({data,error})=>{ if(error){setSyncError(error.message);return;} setAlerts(Object.fromEntries(((data??[]) as AlertInfo[]).map((alert)=>[alert.flight_id,alert]))); }); },[syncReady,user]);
+  useEffect(()=>{if(!syncReady||!supabase||!user)return;let active=true;async function loadWallFeed(){const {data,error}=await supabase!.from("operational_wall_posts").select("data,updated_at").order("updated_at",{ascending:false}).limit(40);if(error||!active)return;const items=((data??[]) as {data:WallPost;updated_at:string}[]).flatMap(({data:post})=>{const meaningfulHistory=post.history.filter((entry)=>{const event=entry.event.toLowerCase();return !event.includes("visualizou")&&!event.includes("comentário")&&!event.includes("deu ok")&&!event.includes("ciência");});const executions=post.actions.flatMap((action)=>action.executions.map((execution)=>({at:execution.at,event:`${action.prefix} · ${execution.result==="satisfactory"?"Atividade concluída":"Atividade não conforme"}`})));const latest=[...meaningfulHistory.map((entry)=>({at:entry.at,event:entry.event})),...executions].sort((a,b)=>Date.parse(b.at)-Date.parse(a.at))[0]??{at:post.createdAt,event:post.category==="Comunicado"?"Novo aviso no mural":post.category};const eventDate=new Date(latest.at);const eventDay=`${eventDate.getFullYear()}-${String(eventDate.getMonth()+1).padStart(2,"0")}-${String(eventDate.getDate()).padStart(2,"0")}`;if(todayLocal()!==eventDay)return[];return [{id:`${post.id}-${latest.at}`,title:latest.event,description:post.title,at:latest.at}];}).sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)).slice(0,30);setWallNotifications(items);}void loadWallFeed();const channel=supabase.channel("header-wall-notifications").on("postgres_changes",{event:"*",schema:"public",table:"operational_wall_posts"},()=>void loadWallFeed()).subscribe();return()=>{active=false;void supabase!.removeChannel(channel);};},[syncReady,user]);
 
   useEffect(() => {
     if(!syncReady||!supabase||!user) return;
@@ -308,9 +315,9 @@ export function FlightBoard() {
   async function enter(event: React.FormEvent) {
     event.preventDefault();
     if(password!=="1234") { setLoginError("Matrícula não cadastrada ou senha inválida."); return; }
-    if(supabase) { const { data }=await supabase.auth.getSession(); if(!data.session) { const { error }=await supabase.auth.signInAnonymously(); if(error) { setLoginError("Não foi possível conectar ao serviço compartilhado."); return; } } const {data:claimData,error}=await supabase.rpc("claim_device_identity",{p_employee_number:login,p_password:password}); if(error) { setLoginError("Matrícula não autorizada no servidor."); return; } const claim=claimData as {accessProfile?:AccessProfile;assignedBase?:string|null}|null;const profile=claim?.accessProfile??"legacy";const base=claim?.assignedBase??"";setAccessProfile(profile);setAssignedBase(base);setFilters((current)=>({...current,base})); }
+    if(supabase) { const { data }=await supabase.auth.getSession(); if(!data.session) { const { error }=await supabase.auth.signInAnonymously(); if(error) { setLoginError("Não foi possível conectar ao serviço compartilhado."); return; } } const {data:claimData,error}=await supabase.rpc("claim_device_identity",{p_employee_number:login,p_password:password}); if(error) { setLoginError("Matrícula não autorizada no servidor."); return; } const claim=claimData as {accessProfile?:AccessProfile;assignedBase?:string|null;workShift?:string|null}|null;const profile=claim?.accessProfile??"legacy";const base=claim?.assignedBase??"";setAccessProfile(profile);setAssignedBase(base);setAssignedShift(claim?.workShift??"");setFilters((current)=>({...current,base})); }
     else if(login!=="0001"&&!catalogs.users.some((item)=>item.employeeNumber===login)) { setLoginError("Matrícula não cadastrada ou senha inválida."); return; }
-    const storedFilters=readStoredJson<{model:string;prefix:string}>(`passagem-de-pista-trail-filters-${login}`);setFilters((current)=>({...current,date:todayLocal(),model:storedFilters?.model??"",prefix:storedFilters?.prefix??""}));localStorage.setItem("passagem-de-pista-user",login); setUser(login);
+    const storedFilters=readStoredJson<{model:string;prefix:string}>(`passagem-de-pista-trail-filters-${login}`);setFilters((current)=>({...current,date:todayLocal(),model:storedFilters?.model??"",prefix:storedFilters?.prefix??""}));localStorage.setItem("passagem-de-pista-user",login);setProfilePhoto(localStorage.getItem(`flight-ia-profile-photo-${login}`)??"");setNotificationsSeenAt(localStorage.getItem(`flight-ia-notifications-seen-${login}`)??"");setUser(login);
   }
   function updateCheck(id: string,key: CheckKey,value: CheckValue) {
     if(!canConfirmFlightChecks)return;
@@ -377,15 +384,29 @@ export function FlightBoard() {
     finally{setTestingAlert(null);}
   }
 
+  const currentUser=catalogs.users.find((item)=>item.employeeNumber===user);
+  const unreadWallNotifications=wallNotifications.filter((item)=>!notificationsSeenAt||Date.parse(item.at)>Date.parse(notificationsSeenAt));
+  const currentShift=assignedShift==="day"?"Diurno":assignedShift==="night"?"Noturno":"Não definido";
+  function toggleNotifications(){const opening=!notificationOpen;setNotificationOpen(opening);setProfileOpen(false);if(opening&&wallNotifications.length){const seenAt=wallNotifications[0].at;setNotificationsSeenAt(seenAt);localStorage.setItem(`flight-ia-notifications-seen-${user}`,seenAt);}}
+  function logout(){localStorage.removeItem("passagem-de-pista-user");setProfileOpen(false);setNotificationOpen(false);setUser("");}
+
   if(!hydrated) return null;
   if(!user) return <LoginScreen login={login} password={password} error={loginError} setLogin={setLogin} setPassword={setPassword} onSubmit={enter} />;
   return (
     <div className="min-h-screen bg-transparent">
       <header className="sticky top-0 z-30 border-b border-[#c8d7e6] bg-[#fcfdff]/95 shadow-[0_4px_18px_#17324d0b] backdrop-blur">
         <div className="mx-auto flex min-h-[72px] max-w-[1280px] flex-wrap items-center gap-3 px-4 py-2 sm:px-8 md:flex-nowrap md:gap-4 md:py-0">
-          <button className="rounded-xl p-2 text-[#66768a] hover:bg-[#edf4fb] md:hidden" aria-label="Abrir menu"><Menu size={22} /></button>
-          <div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-xl bg-[#1167d8] text-white shadow-[0_8px_20px_#1167d833]"><Plane size={21} /></div><div><p className="text-[11px] font-bold uppercase tracking-[.18em] text-[#6480a0]">Operações aéreas</p><h1 className="text-lg font-bold tracking-[-.02em]">Flight IA</h1></div></div><select aria-label="Área de trabalho" value={workspace} onChange={(event)=>setWorkspace(event.target.value as "wall"|"flights"|"maintenance")} className="order-last h-10 w-full rounded-xl border border-[#dce6f0] bg-white px-3 text-xs font-bold md:order-none md:w-auto"><option value="wall">Mural</option><option value="flights">Trilho das Aeronaves</option>{canAccessMaintenance?<option value="maintenance">Manutenção</option>:null}</select>{isActualAdmin?<select aria-label="Visualizar como" value={previewProfile??"admin"} onChange={(event)=>{const value=event.target.value;setPreviewProfile(value==="admin"?null:value as AccessProfile);if(value==="pilot"||value==="coordination")setWorkspace((current)=>current==="maintenance"?"wall":current);}} className="order-last h-10 w-full rounded-xl border border-amber-300 bg-amber-50 px-3 text-xs font-bold text-amber-900 md:order-none md:w-auto"><option value="admin">Visualizar como ADM</option><option value="pilot">Visualizar como Piloto</option><option value="coordination">Visualizar como Coordenação</option><option value="mechanic">Visualizar como Mecânico</option><option value="leader_inspector">Visualizar como Líder/Inspetor</option></select>:null}
-          <div className="ml-auto flex items-center gap-2"><button aria-label="Assistente IA" onClick={() => setAiOpen(true)} className="flex items-center gap-2 rounded-xl bg-[#0d315e] px-3 py-2.5 text-xs font-bold text-white"><Bot size={17} /><span className="desktop-only">Assistente IA</span></button>{canManagePeople||canManageAircraft?<div className="relative"><button aria-label="Abrir gestão" onClick={()=>setManagementOpen((value)=>!value)} className="flex min-h-11 items-center gap-2 rounded-xl border border-[#c8d7e6] bg-white px-3 text-xs font-extrabold text-[#36546f] shadow-sm hover:bg-[#f3f7fb]"><Settings size={16}/>Gestão<ChevronDown size={14} className={managementOpen?"rotate-180":""}/></button>{managementOpen?<div className="absolute right-0 top-12 z-50 w-56 rounded-2xl border border-[#c8d7e6] bg-white p-2 shadow-[0_16px_40px_#17324d24]">{canManagePeople?<button onClick={()=>{setPeopleManagementOpen(true);setManagementOpen(false);}} className="flex w-full items-center gap-2 rounded-xl px-3 py-3 text-left text-xs font-bold text-[#36546f] hover:bg-[#edf4fb]"><UserRound size={16}/>Gestão de pessoas</button>:null}{canManageAircraft?<button onClick={()=>{setAircraftManagementOpen(true);setManagementOpen(false);}} className="flex w-full items-center gap-2 rounded-xl px-3 py-3 text-left text-xs font-bold text-[#36546f] hover:bg-[#edf4fb]"><Plane size={16}/>Gestão da aeronave</button>:null}</div>:null}</div>:null}{isAdmin? <button aria-label="Cadastros" onClick={() => setAdminOpen(true)} className="flex items-center gap-2 rounded-xl border border-[#bcd4f2] bg-[#edf5ff] px-3 py-2.5 text-xs font-bold text-[#1268d8] hover:bg-[#dcecff]"><Settings size={17} /><span className="desktop-only">Cadastros</span></button>:null}<button className="relative rounded-xl border border-[#dce6f0] p-2.5 text-[#52677f] hover:bg-[#f2f7fc]" aria-label="Notificações"><Bell size={19} /><span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#f0b429] ring-2 ring-white" /></button><div className="desktop-only ml-2 flex items-center gap-3 border-l border-[#e1e8f0] pl-4"><div className="grid h-9 w-9 place-items-center rounded-full bg-[#dcebff] text-[#1769e0]"><UserRound size={18} /></div><div><p className="text-xs text-[#718197]">{isAdmin? "Administrador":"Matrícula"}</p><p className="text-sm font-bold">{user}</p></div></div><button onClick={() => { localStorage.removeItem("passagem-de-pista-user"); setUser(""); }} className="rounded-xl p-2.5 text-[#718197] hover:bg-[#edf4fb]" aria-label="Sair"><LogOut size={19} /></button></div>
+          <div className="relative flex items-center gap-3">
+            <button onClick={()=>{setProfileOpen((open)=>!open);setNotificationOpen(false);}} aria-label="Abrir perfil e opções" aria-expanded={profileOpen} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#1167d8] text-white shadow-[0_8px_20px_#1167d833] transition hover:-translate-y-0.5"><Plane size={22}/></button>
+            <div><p className="text-[11px] font-bold uppercase tracking-[.18em] text-[#6480a0]">Operações aéreas</p><h1 className="text-lg font-bold tracking-[-.02em]">Flight IA</h1></div>
+            {profileOpen?<ProfileMenu photo={profilePhoto} name={currentUser?.name??(isActualAdmin?"Administrador":"Usuário")} employeeNumber={user} profile={accessProfileLabels[accessProfile]} base={assignedBase||"Não definida"} shift={currentShift} canManagePeople={isActualAdmin||canManagePeople} canManageAircraft={isActualAdmin||canManageAircraft} canOpenCatalogs={isActualAdmin} onPhoto={(photo)=>{setProfilePhoto(photo);localStorage.setItem(`flight-ia-profile-photo-${user}`,photo);}} onPeople={()=>{setPeopleManagementOpen(true);setProfileOpen(false);}} onAircraft={()=>{setAircraftManagementOpen(true);setProfileOpen(false);}} onCatalogs={()=>{setAdminOpen(true);setProfileOpen(false);}} onLogout={logout}/>:null}
+          </div>
+          <select aria-label="Área de trabalho" value={workspace} onChange={(event)=>setWorkspace(event.target.value as "wall"|"flights"|"maintenance")} className="order-last h-10 w-full rounded-xl border border-[#dce6f0] bg-white px-3 text-xs font-bold md:order-none md:w-auto"><option value="wall">Mural</option><option value="flights">Trilho das Aeronaves</option>{canAccessMaintenance?<option value="maintenance">Manutenção</option>:null}</select>
+          {isActualAdmin?<select aria-label="Visualizar como" value={previewProfile??"admin"} onChange={(event)=>{const value=event.target.value;setPreviewProfile(value==="admin"?null:value as AccessProfile);if(value==="pilot"||value==="coordination")setWorkspace((current)=>current==="maintenance"?"wall":current);}} className="order-last h-10 w-full rounded-xl border border-amber-300 bg-amber-50 px-3 text-xs font-bold text-amber-900 md:order-none md:w-auto"><option value="admin">Visualizar como ADM</option><option value="pilot">Visualizar como Piloto</option><option value="coordination">Visualizar como Coordenação</option><option value="mechanic">Visualizar como Mecânico</option><option value="leader_inspector">Visualizar como Líder/Inspetor</option></select>:null}
+          <div className="ml-auto flex items-center gap-2">
+            <button aria-label="Assistente IA" title="Assistente IA" onClick={()=>setAiOpen(true)} className="grid h-11 w-11 place-items-center rounded-xl bg-[#0d315e] text-white shadow-sm"><Bot size={19}/></button>
+            <div className="relative"><button onClick={toggleNotifications} className="relative grid h-11 w-11 place-items-center rounded-xl border border-[#dce6f0] text-[#52677f] hover:bg-[#f2f7fc]" aria-label={`Notificações: ${unreadWallNotifications.length} novas`} aria-expanded={notificationOpen}><Bell size={19}/>{unreadWallNotifications.length?<span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-[#f0b429] px-1 text-[10px] font-black text-[#3c2b00] ring-2 ring-white">{Math.min(unreadWallNotifications.length,99)}</span>:null}</button>{notificationOpen?<NotificationMenu items={wallNotifications} onOpen={()=>{setWorkspace("wall");setNotificationOpen(false);}}/>:null}</div>
+          </div>
         </div>
       </header>
       {!adminOpen?<main className="mx-auto max-w-[1280px] px-4 py-7 sm:px-8">
@@ -403,6 +424,15 @@ export function FlightBoard() {
       {trashOpen?<FlightTrash flights={flights.filter((flight)=>flight.deletedAt)} onClose={()=>setTrashOpen(false)} onRestore={restoreFlight} onDelete={permanentlyDeleteFlight}/>:null}
     </div>
   );
+}
+
+function ProfileMenu({photo,name,employeeNumber,profile,base,shift,canManagePeople,canManageAircraft,canOpenCatalogs,onPhoto,onPeople,onAircraft,onCatalogs,onLogout}:{photo:string;name:string;employeeNumber:string;profile:string;base:string;shift:string;canManagePeople:boolean;canManageAircraft:boolean;canOpenCatalogs:boolean;onPhoto:(photo:string)=>void;onPeople:()=>void;onAircraft:()=>void;onCatalogs:()=>void;onLogout:()=>void}){
+  function choosePhoto(file?:File){if(!file)return;if(file.size>1_500_000){window.alert("Escolha uma foto de até 1,5 MB.");return;}const reader=new FileReader();reader.onload=()=>onPhoto(String(reader.result));reader.readAsDataURL(file);}
+  return <aside className="absolute left-0 top-14 z-50 w-[min(340px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[#ccd9e6] bg-white shadow-[0_20px_55px_#102a442f]" aria-label="Perfil e opções"><div className="bg-gradient-to-br from-[#e9f3ff] to-white p-4"><div className="flex items-center gap-3"><label className="group relative grid h-16 w-16 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-2xl bg-[#1268d8] bg-cover bg-center text-white shadow-sm" style={photo?{backgroundImage:`url(${photo})`}:undefined}>{!photo?<UserRound size={27}/>:null}<span className="absolute inset-x-0 bottom-0 bg-[#071a30]/75 py-1 text-center text-[9px] font-bold text-white opacity-0 transition group-hover:opacity-100">ALTERAR</span><input type="file" accept="image/*" className="hidden" onChange={(event)=>choosePhoto(event.target.files?.[0])}/></label><div className="min-w-0"><h2 className="truncate text-lg font-extrabold text-[#16324d]">{name}</h2><p className="text-xs font-bold text-[#1769e0]">{profile}</p><label className="mt-1 inline-flex cursor-pointer items-center gap-1 text-[10px] font-bold text-[#6d8195]">Adicionar foto<input type="file" accept="image/*" className="hidden" onChange={(event)=>choosePhoto(event.target.files?.[0])}/></label></div></div><dl className="mt-4 grid grid-cols-2 gap-2 text-xs"><div className="rounded-xl bg-white p-2.5"><dt className="text-[#718197]">Matrícula</dt><dd className="mt-0.5 font-bold">{employeeNumber}</dd></div><div className="rounded-xl bg-white p-2.5"><dt className="text-[#718197]">Base</dt><dd className="mt-0.5 truncate font-bold">{base}</dd></div><div className="rounded-xl bg-white p-2.5"><dt className="text-[#718197]">Função</dt><dd className="mt-0.5 truncate font-bold">{profile}</dd></div><div className="rounded-xl bg-white p-2.5"><dt className="text-[#718197]">Turno atual</dt><dd className="mt-0.5 font-bold">{shift}</dd></div></dl></div><nav className="space-y-1 p-2">{canManagePeople?<button onClick={onPeople} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-bold text-[#36546f] hover:bg-[#edf4fb]"><UserRound size={17}/>Gestão de pessoas</button>:null}{canManageAircraft?<button onClick={onAircraft} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-bold text-[#36546f] hover:bg-[#edf4fb]"><Plane size={17}/>Gestão de aeronaves</button>:null}{canOpenCatalogs?<button onClick={onCatalogs} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-bold text-[#36546f] hover:bg-[#edf4fb]"><Settings size={17}/>Cadastros</button>:null}<button onClick={onLogout} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-bold text-red-700 hover:bg-red-50"><LogOut size={17}/>Sair do aplicativo</button></nav></aside>;
+}
+
+function NotificationMenu({items,onOpen}:{items:WallNotification[];onOpen:()=>void}){
+  return <aside className="absolute right-0 top-14 z-50 w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-[#ccd9e6] bg-white shadow-[0_20px_55px_#102a442f]" aria-label="Notificações do mural"><header className="border-b border-[#e1e8f0] p-4"><p className="text-xs font-extrabold uppercase tracking-[.13em] text-[#1769e0]">Notificações</p><h2 className="mt-1 font-bold">Novidades do mural</h2></header><div className="max-h-[60dvh] space-y-1 overflow-y-auto p-2">{items.map((item)=><button key={item.id} onClick={onOpen} className="w-full rounded-xl px-3 py-3 text-left hover:bg-[#edf4fb]"><div className="flex items-start justify-between gap-3"><strong className="text-sm text-[#27435f]">{item.title}</strong><time className="shrink-0 text-[10px] text-[#8192a5]">{new Date(item.at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</time></div><p className="mt-1 line-clamp-2 text-xs leading-5 text-[#60758c]">{item.description}</p></button>)}{!items.length?<div className="p-8 text-center"><Bell className="mx-auto text-[#9bb0c7]"/><p className="mt-2 text-sm font-bold">Nenhuma novidade</p><p className="mt-1 text-xs text-[#718197]">As novas panes, discrepâncias, ações e avisos aparecerão aqui.</p></div>:null}</div></aside>;
 }
 
 function LoginScreen({ login,password,error,setLogin,setPassword,onSubmit }: { login: string; password: string; error: string; setLogin: (value: string) => void; setPassword: (value: string) => void; onSubmit: (event: React.FormEvent) => void; }) {
