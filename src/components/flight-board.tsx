@@ -147,7 +147,7 @@ export function FlightBoard() {
   const [userDirectory,setUserDirectory]=useState<UserDirectory>({});
   const [notificationOpen,setNotificationOpen]=useState(false);
   const [wallNotifications,setWallNotifications]=useState<WallNotification[]>([]);
-  const [toolNotifications,setToolNotifications]=useState<AppNotification[]>([]);
+  const [,setToolNotifications]=useState<AppNotification[]>([]);
   const [pendingAssignmentCount,setPendingAssignmentCount]=useState(0);
   const [toolPendingCount,setToolPendingCount]=useState(0);
   const [toolOperationToOpen,setToolOperationToOpen]=useState<string|null>(null);
@@ -464,7 +464,7 @@ export function FlightBoard() {
   }
 
   const currentUser=catalogs.users.find((item)=>item.employeeNumber===user);
-  const appNotifications=useMemo<AppNotification[]>(()=>[...wallNotifications.map((item)=>({...item,destination:"wall" as const})),...toolNotifications].sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)),[wallNotifications,toolNotifications]);
+  const appNotifications=useMemo<AppNotification[]>(()=>wallNotifications.map((item)=>({...item,destination:"wall" as const})).sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)),[wallNotifications]);
   const unreadWallNotifications=appNotifications.filter((item)=>!notificationsSeenAt||Date.parse(item.at)>Date.parse(notificationsSeenAt));
   const totalPendingAssignments=pendingAssignmentCount+toolPendingCount;
   const currentShift=assignedShift==="day"?"Diurno":assignedShift==="night"?"Noturno":"Não definido";
