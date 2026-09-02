@@ -13,7 +13,7 @@ type Dashboard={boxes:Box[];operations:Operation[];events:ToolEvent[];people:Per
 type FormMode="assign"|"take"|null;
 
 const empty:Dashboard={boxes:[],operations:[],events:[],people:[]};
-const privilegedRoles=new Set(["admin","app_manager","legacy","toolroom","maintenance_manager","maintenance_coordinator","maintenance_leader","maintenance_inspector"]);
+const privilegedRoles=new Set(["admin","app_manager","legacy","toolroom","maintenance_director","maintenance_manager","maintenance_coordinator","maintenance_leader","maintenance_inspector"]);
 const boxStatus:Record<Box["status"],string>={available:"Disponível e conferida",awaiting_receipt:"Aguardando aceite",in_use:"Em uso",awaiting_return:"Aguardando assinatura da devolução",divergence:"Com divergência"};
 
 async function preparePhotos(files:FileList|null){if(!files)return[];const result:string[]=[];for(const file of Array.from(files).slice(0,4)){if(!file.type.startsWith("image/"))continue;const bitmap=await createImageBitmap(file);const scale=Math.min(1,1280/Math.max(bitmap.width,bitmap.height));const canvas=document.createElement("canvas");canvas.width=Math.round(bitmap.width*scale);canvas.height=Math.round(bitmap.height*scale);canvas.getContext("2d")!.drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();result.push(canvas.toDataURL("image/jpeg",.72));}return result;}
