@@ -25,7 +25,7 @@ export function FlightCoordination({flights,aircraft,people,user,onCreate,onConf
  const [message,setMessage]=useState("");
  const [selectedDate,setSelectedDate]=useState(today());
  const [excludedConfirmations,setExcludedConfirmations]=useState<Set<string>>(()=>new Set());
- const crew=people.filter((person)=>["commander","copilot"].includes(person.profile??""));
+ const crew=people.filter((person)=>["commander","copilot","pilot"].includes(person.profile??""));
  const attendants=people.filter((person)=>person.profile==="flight_attendant");
  const active=flights.filter((flight)=>!flight.deletedAt&&Boolean(flight.planningStatus)&&flight.date===selectedDate);
  const groups=useMemo(()=>{const map=new Map<string,{date:string;wave:number;items:CoordinatedFlight[]}>();for(const flight of active.sort((a,b)=>a.date.localeCompare(b.date)||a.departure.localeCompare(b.departure))){const wave=flight.wave??1;const key=`${flight.date}:${wave}`;const current=map.get(key)??{date:flight.date,wave,items:[]};current.items.push(flight);map.set(key,current);}return [...map.values()].sort((a,b)=>a.date.localeCompare(b.date)||a.wave-b.wave);},[active]);
