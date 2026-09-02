@@ -365,8 +365,8 @@ export function FlightBoard() {
       pendingMutations.current=Math.max(0,pendingMutations.current-1);
     }
   }
-  function changeFlight(id:string,changedFields:string[],historyEvent:FlightHistory|null,change:(flight:Flight)=>Flight) {
-    if(!canEditFlights)return;
+  function changeFlight(id:string,changedFields:string[],historyEvent:FlightHistory|null,change:(flight:Flight)=>Flight,allowOperationalPhase=false) {
+    if(!canEditFlights&&!allowOperationalPhase)return;
     const current=localSnapshot.current.flights.find((flight)=>flight.id===id);
     if(!current) return;
     const revision=current.revision+1;
@@ -407,11 +407,11 @@ export function FlightBoard() {
     if(!current||current.cancelled||phase==="reopen"&&!isAdmin)return;
     const now=new Date(); const at=now.toISOString(); const realTime=now.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",hour12:false});
     if(phase==="departure") {
-      changeFlight(id,["engineStart","actualEngineStart"],{field:"departureConfirmed",value:realTime,employeeNumber:user,at},(flight)=>({...flight,engineStart:"ok",actualEngineStart:realTime,actionBy:{...flight.actionBy,engineStart:user,actualEngineStart:user}}));
+      changeFlight(id,["engineStart","actualEngineStart"],{field:"departureConfirmed",value:realTime,employeeNumber:user,at},(flight)=>({...flight,engineStart:"ok",actualEngineStart:realTime,actionBy:{...flight.actionBy,engineStart:user,actualEngineStart:user}}),true);
       return;
     }
     if(phase==="shutdown") {
-      changeFlight(id,["shutdown","actualShutdown"],{field:"shutdownConfirmed",value:realTime,employeeNumber:user,at},(flight)=>({...flight,shutdown:"ok",actualShutdown:realTime,completedAt:at,actionBy:{...flight.actionBy,shutdown:user,actualShutdown:user}}));
+      changeFlight(id,["shutdown","actualShutdown"],{field:"shutdownConfirmed",value:realTime,employeeNumber:user,at},(flight)=>({...flight,shutdown:"ok",actualShutdown:realTime,completedAt:at,actionBy:{...flight.actionBy,shutdown:user,actualShutdown:user}}),true);
       if(alerts[id]?.enabled)void setFlightAlert(id,null,"Voo encerrado");
       return;
     }
