@@ -164,6 +164,7 @@ export function FlightBoard() {
   const [flightFilterOpen,setFlightFilterOpen]=useState(false);
   const [syncReady,setSyncReady]=useState(false);
   const [syncError,setSyncError]=useState("");
+  const [networkOnline,setNetworkOnline]=useState(true);
   const [alerts,setAlerts]=useState<Record<string,AlertInfo>>({});
   const [testingAlert,setTestingAlert]=useState<string|null>(null);
   function selectPreviewUser(employeeNumber:string){setPreviewEmployee(employeeNumber);const person=previewPeople.find((item)=>item.employeeNumber===employeeNumber);if(person){localStorage.setItem("flight-ia-presentation-user",employeeNumber);localStorage.setItem("flight-ia-presentation-fleets",JSON.stringify(person.fleets));setFilters((current)=>({...current,base:person.assignedBase}));}else{localStorage.removeItem("flight-ia-presentation-user");localStorage.removeItem("flight-ia-presentation-fleets");setFilters((current)=>({...current,base:assignedBase}));}}
@@ -217,6 +218,7 @@ export function FlightBoard() {
   useEffect(() => { passagesSnapshot.current=passages; },[passages]);
   useEffect(() => { let knownDay=todayLocal(); const timer=window.setInterval(() => { const currentDay=todayLocal(); if(currentDay!==knownDay) { knownDay=currentDay; setFilters((current)=>({ ...current,date:currentDay })); } },60000); return () => window.clearInterval(timer); },[]);
   useEffect(() => { if("serviceWorker" in navigator) void navigator.serviceWorker.register("/sw.js").then((registration)=>registration.update()).catch(()=>undefined); },[]);
+  useEffect(()=>{const update=()=>setNetworkOnline(navigator.onLine);update();window.addEventListener("online",update);window.addEventListener("offline",update);return()=>{window.removeEventListener("online",update);window.removeEventListener("offline",update);};},[]);
 
   useEffect(() => {
     if(!hydrated||!user||!supabase) return;
@@ -339,23 +341,31 @@ export function FlightBoard() {
     const serialized=JSON.stringify({flights:data.flights,catalogs:data.catalogs});
     lastRemoteState.current=serialized; lastRemoteCatalogs.current=JSON.stringify(data.catalogs);
     setFlights(data.flights as Flight[]); setCatalogs(data.catalogs as Catalogs);
+    setSyncError("");
   }
   async function persistItem(collection:"flights",id:string,patch:object,operation:"create"|"update"|"delete"="update",changedFields:string[]=[],historyEvent:FlightHistory|null=null,incrementRevision=true) {
     if(!supabase) { setSyncError("Serviço de sincronização indisponível."); return false; }
     if(!syncReady) { setSyncError("Aguarde a sincronização concluir antes de salvar."); return false; }
     pendingMutations.current++;
-    const {data,error}=await supabase.rpc("mutate_shared_item",{p_collection:collection,p_item_id:id,p_patch:patch,p_operation:operation,p_changed_fields:changedFields,p_history_event:historyEvent,p_increment_revision:incrementRevision});
-    pendingMutations.current=Math.max(0,pendingMutations.current-1);
-    if(error) { setSyncError(`Alteração não sincronizada: ${error.message}`); await reloadSharedState(); return false; }
-    const result=data as {item:Flight|null};
-    if(operation==="delete") {
-      setFlights((items)=>items.filter((item)=>item.id!==id));
-    } else if(result.item) {
-      const serverItem=result.item as Flight;
-      setFlights((items)=>{ const existing=items.find((item)=>item.id===id); if(existing&&existing.revision>serverItem.revision)return items; return existing?items.map((item)=>item.id===id?serverItem:item):[serverItem,...items]; });
+    try {
+      const {data,error}=await supabase.rpc("mutate_shared_item",{p_collection:collection,p_item_id:id,p_patch:patch,p_operation:operation,p_changed_fields:changedFields,p_history_event:historyEvent,p_increment_revision:incrementRevision});
+      if(error) { setSyncError(`Alteração não sincronizada: ${error.message}`); await reloadSharedState(); return false; }
+      const result=data as {item:Flight|null};
+      if(operation==="delete") {
+        setFlights((items)=>items.filter((item)=>item.id!==id));
+      } else if(result.item) {
+        const serverItem=result.item as Flight;
+        setFlights((items)=>{ const existing=items.find((item)=>item.id===id); if(existing&&existing.revision>serverItem.revision)return items; return existing?items.map((item)=>item.id===id?serverItem:item):[serverItem,...items]; });
+      }
+      setSyncError("");
+      return true;
+    } catch(error) {
+      setSyncError(error instanceof Error?`Reconectando: ${error.message}`:"Reconectando ao sistema…");
+      await reloadSharedState();
+      return false;
+    } finally {
+      pendingMutations.current=Math.max(0,pendingMutations.current-1);
     }
-    setSyncError("");
-    return true;
   }
   function changeFlight(id:string,changedFields:string[],historyEvent:FlightHistory|null,change:(flight:Flight)=>Flight) {
     if(!canEditFlights)return;
@@ -477,7 +487,7 @@ export function FlightBoard() {
           {canPreviewProfiles?<select aria-label="Visualizar como" value={previewProfile??accessProfile} onChange={(event)=>{const value=event.target.value as AccessProfile;setPreviewProfile(value===accessProfile?null:value);if(!["mechanic","maintenance_assistant","toolroom","maintenance_director","maintenance_manager","maintenance_coordinator","maintenance_leader","maintenance_inspector","admin","app_manager","legacy"].includes(value))setWorkspace((current)=>current==="maintenance"||current==="activities"||current==="tools"?"wall":current);}} className="ml-auto hidden h-10 rounded-xl border border-white/30 bg-white/15 px-3 text-xs font-bold text-white outline-none backdrop-blur md:block [&>option]:text-[#17324d]"><AccessProfileOptions/></select>:null}
           {canPreviewProfiles&&previewProfile?<select aria-label="Escolher usuário para apresentação" value={previewEmployee} onChange={(event)=>selectPreviewUser(event.target.value)} className="hidden h-10 max-w-56 rounded-xl border border-white/30 bg-white/15 px-3 text-xs font-bold text-white outline-none backdrop-blur md:block [&>option]:text-[#17324d]"><option value="">Usuário de exemplo</option>{previewPeople.filter((person)=>person.profile===previewProfile).map((person)=><option key={person.employeeNumber} value={person.employeeNumber}>{person.displayName} · {person.employeeNumber}</option>)}</select>:null}
           <div className="ml-auto flex items-center gap-2">
-            <span role="status" aria-label={syncError?`Falha de sincronização: ${syncError}`:syncReady?"Sincronizado em tempo real":"Conectando ao sistema"} title={syncError?`Falha de sincronização: ${syncError}`:syncReady?"Sincronizado em tempo real":"Conectando ao sistema"} className={`h-3 w-3 shrink-0 rounded-full ring-2 ring-white/30 ${syncError?"bg-red-400":syncReady?"bg-emerald-400":"animate-pulse bg-sky-300"}`}/>
+            <span role="status" aria-label={!networkOnline?"Sem conexão com a internet":syncError?`Reconectando: ${syncError}`:syncReady?"Sincronizado em tempo real":"Conectando ao sistema"} title={!networkOnline?"Sem conexão com a internet":syncError?`Reconectando: ${syncError}`:syncReady?"Sincronizado em tempo real":"Conectando ao sistema"} className={`h-3 w-3 shrink-0 rounded-full ring-2 ring-white/30 ${!networkOnline?"bg-red-400":syncError?"animate-pulse bg-amber-300":syncReady?"bg-emerald-400":"animate-pulse bg-sky-300"}`}/>
             <button aria-label="Assistente IA" title="Assistente IA" onClick={()=>setAiOpen(true)} className="grid h-11 w-11 place-items-center rounded-xl bg-white/15 text-white backdrop-blur transition hover:bg-white/25"><Bot size={20}/></button>
             <div className="relative"><button onClick={toggleNotifications} className="relative grid h-11 w-11 place-items-center rounded-xl bg-white/15 text-white backdrop-blur transition hover:bg-white/25" aria-label={`Notificações: ${unreadWallNotifications.length} novas`} aria-expanded={notificationOpen}><Bell size={20}/>{unreadWallNotifications.length?<span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-[#ffd452] px-1 text-[10px] font-black text-[#3c2b00] ring-2 ring-[#1268d8]">{Math.min(unreadWallNotifications.length,99)}</span>:null}</button>{notificationOpen?<NotificationMenu items={appNotifications} onOpen={(item)=>{if(item.destination==="tools"&&item.operationId){setToolOperationToOpen(item.operationId);setWorkspace("tools");}else{setWallPostToOpen(item.postId);setWorkspace("wall");}setNotificationOpen(false);}}/>:null}</div>
           </div>
