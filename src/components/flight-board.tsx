@@ -34,7 +34,7 @@ const demoCatalogs: Catalogs={
   aircraft: [
     { prefix: "PR-OMN",model: "H145",base: "Jacarepaguá" },{ prefix: "PP-AZU",model: "S-76C++",base: "Macaé" },{ prefix: "PR-LFT",model: "AW139",base: "Cabo Frio" },
   ],
-  users: [{ employeeNumber: "1024",name: "Operador de teste" },{ employeeNumber: "1031",name: "Operador 1031" },{ employeeNumber: "1048",name: "Operador 1048" }],
+  users: [],
 };
 
 const demoFlights: Flight[]=[];
@@ -111,8 +111,8 @@ export function FlightBoard() {
   const isCrew=["commander","copilot","flight_attendant"].includes(effectiveProfile);
   const wallAudience:"all"|Exclude<WallAudience,"general">=isAdminView||effectiveProfile==="legacy"?"all":isCrew?"pilots":effectiveProfile==="coordination"?"coordination":"maintenance";
   const allowedWallAudiences:WallAudience[]=isAdminView||effectiveProfile==="legacy"?["pilots","coordination","maintenance","general"]:maintenanceLeadership?["maintenance"]:[];
-  const [login,setLogin]=useState("1024");
-  const [password,setPassword]=useState("1234");
+  const [login,setLogin]=useState("");
+  const [password,setPassword]=useState("");
   const [loginError,setLoginError]=useState("");
   const [flights,setFlights]=useState<Flight[]>(demoFlights);
   const [passages,setPassages]=useState<Passage[]>([]);
@@ -201,7 +201,7 @@ export function FlightBoard() {
       const { data:sessionData }=await supabase!.auth.getSession();
       if(!sessionData.session) { const { error }=await supabase!.auth.signInAnonymously(); if(error) { if(active) setSyncError(error.message); return; } }
       const { data:claimData,error:claimError }=await supabase!.rpc("claim_device_identity",{ p_employee_number:user,p_password:"1234" });
-      if(claimError) { if(active) setSyncError(claimError.message); return; }
+      if(claimError) { if(active) { localStorage.removeItem("passagem-de-pista-user"); setSyncError(""); setUser(""); setLogin(""); setPassword(""); } return; }
       if(active){const claim=claimData as {accessProfile?:AccessProfile;assignedBase?:string|null;workShift?:string|null;avatarDataUrl?:string|null}|null;const profile=claim?.accessProfile??"legacy";const base=claim?.assignedBase??"";setAccessProfile(profile);setAssignedBase(base);setAssignedShift(claim?.workShift??"");setProfilePhoto(claim?.avatarDataUrl??"");setFilters((current)=>({...current,base}));}
       const {data:directoryData,error:directoryError}=await supabase!.rpc("get_user_directory");
       if(directoryError){if(active)setSyncError(directoryError.message);return;}
