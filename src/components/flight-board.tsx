@@ -72,7 +72,6 @@ function flightStatus(flight: Flight,user: string) {
   if(flight.cancelled) return { key: "cancelled",label: "Voo cancelado",color: "#dc2626" };
   if(flight.shutdown==="ok"||flight.actualShutdown) return { key: flight.returned?"returned":"finished",label: flight.returned?"Retorno encerrado":"Voo encerrado",color: flight.returned?"#ea580c":"#94a3b8" };
   if(flight.engineStart==="ok"||flight.actualEngineStart) return { key: "flying",label: flight.returned?"Em voo · retorno":"Em voo",color: "#22a06b" };
-  if(flight.planningStatus==="confirmed")return{key:"confirmed",label:"Voo confirmado",color:"#2383e2"};
   if((flight.acknowledged[user]??0)>=flight.revision) return { key: "aware",label: "Ciente",color: "#2383e2" };
   return { key: "attention",label: "Aguardando ciência",color: "#f2b824" };
 }

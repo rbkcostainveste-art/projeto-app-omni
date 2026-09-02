@@ -53,16 +53,16 @@ export function CrewDashboard({supabase,user,base,fleets,flights,requireSignatur
   </section>;
 }
 
-export function useCrewMaintenanceActions(supabase:SupabaseClient|null,user:string,fleets:string[],enabled:boolean,onError:(message:string)=>void){
+export function useCrewMaintenanceActions(supabase:SupabaseClient|null,user:string,fleets:string[],enabled:boolean,onError:(message:string)=>void,subscriptionKey="main"){
   const [items,setItems]=useState<Action[]>([]);
-  useEffect(()=>{if(!supabase||!enabled)return;let active=true;const load=async()=>{const {data,error}=await supabase.from("operational_wall_posts").select("id,data").order("updated_at",{ascending:false});if(error){onError(error.message);return;}if(active)setItems(((data??[]) as Row[]).flatMap((row)=>(row.data.actions??[]).filter((item)=>item.createdAt.slice(0,10)===today()&&assigned(item.assignedTo,user,fleets))));};void load();const channel=supabase.channel(`crew-maintenance-trail-${user}`).on("postgres_changes",{event:"*",schema:"public",table:"operational_wall_posts"},()=>void load()).subscribe();return()=>{active=false;void supabase.removeChannel(channel);};},[supabase,user,fleets,enabled,onError]);
+  useEffect(()=>{if(!supabase||!enabled)return;let active=true;const load=async()=>{const {data,error}=await supabase.from("operational_wall_posts").select("id,data").order("updated_at",{ascending:false});if(error){onError(error.message);return;}if(active)setItems(((data??[]) as Row[]).flatMap((row)=>(row.data.actions??[]).filter((item)=>item.createdAt.slice(0,10)===today()&&assigned(item.assignedTo,user,fleets))));};void load();const channel=supabase.channel(`crew-maintenance-trail-${user}-${subscriptionKey}`).on("postgres_changes",{event:"*",schema:"public",table:"operational_wall_posts"},()=>void load()).subscribe();return()=>{active=false;void supabase.removeChannel(channel);};},[supabase,user,fleets,enabled,onError,subscriptionKey]);
   return enabled?items:[];
 }
 
 export function CrewMaintenanceCard({item}:{item:CrewMaintenanceAction}){return <article className="rounded-xl border-l-4 border-violet-500 bg-white p-3 shadow-sm"><div className="flex items-start justify-between gap-2"><strong className="font-mono">{item.prefix}</strong><span className="rounded-full bg-violet-100 px-2 py-1 text-[10px] font-bold text-violet-800">Voo de manutenção</span></div><p className="mt-1 text-sm font-bold">{item.title}</p><p className="line-clamp-1 text-xs text-[#718197]">{item.description}</p></article>}
 
 export function CrewMaintenanceTimeline({supabase,user,fleets,nextFlightAt,position,onError}:{supabase:SupabaseClient|null;user:string;fleets:string[];nextFlightAt:number;position:"before"|"after";onError:(message:string)=>void}){
-  const items=useCrewMaintenanceActions(supabase,user,fleets,true,onError);
+  const items=useCrewMaintenanceActions(supabase,user,fleets,true,onError,position);
   const positioned=items.filter((item)=>position==="before"?Date.parse(item.createdAt)<=nextFlightAt:Date.parse(item.createdAt)>nextFlightAt).sort((a,b)=>Date.parse(a.createdAt)-Date.parse(b.createdAt));
   if(!positioned.length)return null;
   return <section className="mb-5"><div className="mb-2 flex items-center gap-2 text-[#17324d]"><Wrench size={18}/><h2 className="font-extrabold">Voo de manutenção · conforme a próxima ação</h2></div><div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">{positioned.map((item)=><CrewMaintenanceCard key={item.id} item={item}/>)}</div></section>;
