@@ -330,9 +330,9 @@ export function FlightBoard() {
   ),[flights,filters,isCrew,effectiveEmployee,crewDateEnd]);
   const timelineCounts=useMemo(() => Object.fromEntries((["maintenance","planned","launched","flying","finished","cancelled","returned"] as FlightView[]).map((key)=>[key,key==="maintenance"?0:filteredFlights.filter((flight)=>timelineCategory(flight)===key).length])) as Record<FlightView,number>,[filteredFlights]);
   const visible=useMemo(() => filteredFlights.filter((flight)=>flightViews.size===0||flightViews.has(timelineCategory(flight))).sort((a,b) => { const group=(flight:Flight)=>{const category=timelineCategory(flight);return category==="planned"?3:category==="launched"||category==="flying"?0:category==="finished"?1:2;}; const groupDifference=group(a)-group(b); if(groupDifference)return groupDifference; if(group(a)===0)return nextOperationalActionTime(a)-nextOperationalActionTime(b); return timelineTime(b)-timelineTime(a); }),[filteredFlights,flightViews]);
-  const nextCrewFlightAt=useMemo(()=>Math.min(...visible.filter((flight)=>flight.planningStatus!=="planned"&&!flight.cancelled&&!flight.actualShutdown&&flight.shutdown!=="ok").map(nextOperationalActionTime)),[visible]);
   const operationalVisible=useMemo(()=>isCrew?visible.filter((flight)=>flight.planningStatus!=="planned"):visible,[isCrew,visible]);
   const crewPlannedVisible=useMemo(()=>isCrew?visible.filter((flight)=>flight.planningStatus==="planned"):[],[isCrew,visible]);
+  const nextCrewFlightAt=useMemo(()=>Math.min(...visible.filter((flight)=>flight.planningStatus!=="planned"&&!flight.cancelled&&!flight.actualShutdown&&flight.shutdown!=="ok").map(nextOperationalActionTime)),[visible]);
 
   async function reloadSharedState() {
     if(!supabase) return;

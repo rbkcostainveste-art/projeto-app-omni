@@ -9,7 +9,8 @@ export type CrewFlight = {
   duration:number; fuelAmount:number; fuelUnit:string; planningStatus?:"planned"|"confirmed";
   commander?:string; copilot?:string; flightAttendant?:string; cancelled?:boolean; actualEngineStart?:string|null; actualShutdown?:string|null;
 };
-type Action={id:string;prefix:string;title:string;description:string;assignedTo:string;status:string;createdAt:string};
+export type CrewMaintenanceAction={id:string;prefix:string;title:string;description:string;assignedTo:string;status:string;createdAt:string};
+type Action=CrewMaintenanceAction;
 type PostData={id:string;title:string;category:string;createdAt:string;actions?:Action[]};
 type Row={id:string;data:PostData};
 type DryingTask={id:string;prefix:string;model:string;base:string;reason:string;status:"pending"|"completed";triggered_by:string|null;triggered_at:string;completed_by:string|null;completed_at:string|null};
@@ -48,13 +49,19 @@ export function CrewDashboard({supabase,user,base,fleets,flights,requireSignatur
   </section>;
 }
 
-export function CrewMaintenanceTimeline({supabase,user,fleets,nextFlightAt,position,onError}:{supabase:SupabaseClient|null;user:string;fleets:string[];nextFlightAt:number;position:"before"|"after";onError:(message:string)=>void}){
+export function useCrewMaintenanceActions(supabase:SupabaseClient|null,user:string,fleets:string[],enabled:boolean,onError:(message:string)=>void){
   const [items,setItems]=useState<Action[]>([]);
-  useEffect(()=>{if(!supabase)return;let active=true;void supabase.from("operational_wall_posts").select("id,data").order("updated_at",{ascending:false}).then(({data,error})=>{if(error){onError(error.message);return;}if(active)setItems(((data??[]) as Row[]).flatMap((row)=>(row.data.actions??[]).filter((item)=>item.createdAt.slice(0,10)===today()&&assigned(item.assignedTo,user,fleets))));});return()=>{active=false;};},[supabase,user,fleets,onError]);
-  const maintenanceAt=Math.min(...items.map((item)=>Date.parse(item.createdAt)));
-  const belongsHere=position==="before"?maintenanceAt<=nextFlightAt:maintenanceAt>nextFlightAt;
-  if(!items.length||!belongsHere)return null;
-  return <section className="mb-5"><div className="mb-2 flex items-center gap-2 text-[#17324d]"><Wrench size={18}/><h2 className="font-extrabold">Próxima ação · voo de manutenção</h2></div><div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">{items.map((item)=><article key={item.id} className="rounded-xl border-l-4 border-violet-500 bg-white p-3 shadow-sm"><strong className="font-mono">{item.prefix}</strong><p className="mt-1 text-sm font-bold">{item.title}</p><p className="line-clamp-1 text-xs text-[#718197]">{item.description}</p></article>)}</div></section>;
+  useEffect(()=>{if(!supabase||!enabled)return;let active=true;const load=async()=>{const {data,error}=await supabase.from("operational_wall_posts").select("id,data").order("updated_at",{ascending:false});if(error){onError(error.message);return;}if(active)setItems(((data??[]) as Row[]).flatMap((row)=>(row.data.actions??[]).filter((item)=>item.createdAt.slice(0,10)===today()&&assigned(item.assignedTo,user,fleets))));};void load();const channel=supabase.channel(`crew-maintenance-trail-${user}`).on("postgres_changes",{event:"*",schema:"public",table:"operational_wall_posts"},()=>void load()).subscribe();return()=>{active=false;void supabase.removeChannel(channel);};},[supabase,user,fleets,enabled,onError]);
+  return enabled?items:[];
+}
+
+export function CrewMaintenanceCard({item}:{item:CrewMaintenanceAction}){return <article className="rounded-xl border-l-4 border-violet-500 bg-white p-3 shadow-sm"><div className="flex items-start justify-between gap-2"><strong className="font-mono">{item.prefix}</strong><span className="rounded-full bg-violet-100 px-2 py-1 text-[10px] font-bold text-violet-800">Voo de manutenção</span></div><p className="mt-1 text-sm font-bold">{item.title}</p><p className="line-clamp-1 text-xs text-[#718197]">{item.description}</p></article>}
+
+export function CrewMaintenanceTimeline({supabase,user,fleets,nextFlightAt,position,onError}:{supabase:SupabaseClient|null;user:string;fleets:string[];nextFlightAt:number;position:"before"|"after";onError:(message:string)=>void}){
+  const items=useCrewMaintenanceActions(supabase,user,fleets,true,onError);
+  const positioned=items.filter((item)=>position==="before"?Date.parse(item.createdAt)<=nextFlightAt:Date.parse(item.createdAt)>nextFlightAt).sort((a,b)=>Date.parse(a.createdAt)-Date.parse(b.createdAt));
+  if(!positioned.length)return null;
+  return <section className="mb-5"><div className="mb-2 flex items-center gap-2 text-[#17324d]"><Wrench size={18}/><h2 className="font-extrabold">Voo de manutenção · conforme a próxima ação</h2></div><div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">{positioned.map((item)=><CrewMaintenanceCard key={item.id} item={item}/>)}</div></section>;
 }
 
 export function CrewPlannedFlights({flights,onOpenTrail}:{flights:CrewFlight[];onOpenTrail:(flight:CrewFlight)=>void}){
