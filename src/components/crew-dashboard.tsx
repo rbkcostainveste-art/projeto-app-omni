@@ -41,11 +41,19 @@ export function CrewDashboard({supabase,user,fleets,flights,requireSignature,onO
   </section>;
 }
 
-export function CrewMaintenanceTimeline({supabase,user,fleets,onError}:{supabase:SupabaseClient|null;user:string;fleets:string[];onError:(message:string)=>void}){
+export function CrewMaintenanceTimeline({supabase,user,fleets,nextFlightAt,position,onError}:{supabase:SupabaseClient|null;user:string;fleets:string[];nextFlightAt:number;position:"before"|"after";onError:(message:string)=>void}){
   const [items,setItems]=useState<Action[]>([]);
   useEffect(()=>{if(!supabase)return;let active=true;void supabase.from("operational_wall_posts").select("id,data").order("updated_at",{ascending:false}).then(({data,error})=>{if(error){onError(error.message);return;}if(active)setItems(((data??[]) as Row[]).flatMap((row)=>(row.data.actions??[]).filter((item)=>item.createdAt.slice(0,10)===today()&&assigned(item.assignedTo,user,fleets))));});return()=>{active=false;};},[supabase,user,fleets,onError]);
-  if(!items.length)return null;
-  return <section className="mb-5"><div className="mb-2 flex items-center gap-2 text-[#17324d]"><Wrench size={18}/><h2 className="font-extrabold">Primeiro: manutenção designada</h2></div><div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">{items.map((item)=><article key={item.id} className="rounded-xl border-l-4 border-violet-500 bg-white p-3 shadow-sm"><strong className="font-mono">{item.prefix}</strong><p className="mt-1 text-sm font-bold">{item.title}</p><p className="line-clamp-1 text-xs text-[#718197]">{item.description}</p></article>)}</div></section>;
+  const maintenanceAt=Math.min(...items.map((item)=>Date.parse(item.createdAt)));
+  const belongsHere=position==="before"?maintenanceAt<=nextFlightAt:maintenanceAt>nextFlightAt;
+  if(!items.length||!belongsHere)return null;
+  return <section className="mb-5"><div className="mb-2 flex items-center gap-2 text-[#17324d]"><Wrench size={18}/><h2 className="font-extrabold">Próxima ação · voo de manutenção</h2></div><div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">{items.map((item)=><article key={item.id} className="rounded-xl border-l-4 border-violet-500 bg-white p-3 shadow-sm"><strong className="font-mono">{item.prefix}</strong><p className="mt-1 text-sm font-bold">{item.title}</p><p className="line-clamp-1 text-xs text-[#718197]">{item.description}</p></article>)}</div></section>;
+}
+
+export function CrewPlannedFlights({flights,onOpenTrail}:{flights:CrewFlight[];onOpenTrail:(flight:CrewFlight)=>void}){
+  const [selected,setSelected]=useState<CrewFlight|null>(null);
+  if(!flights.length)return null;
+  return <section className="mt-5 rounded-2xl border border-orange-200 bg-orange-50/50 p-4"><h2 className="mb-1 flex items-center gap-2 font-extrabold text-[#17324d]"><CalendarClock size={18}/>Planejados · ainda não confirmados</h2><p className="mb-3 text-xs text-[#718197]">Aparecem por último porque ainda dependem da confirmação da Coordenação.</p><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{flights.map((flight)=><CrewFlightCard key={flight.id} flight={flight} onOpen={()=>setSelected(flight)}/>)}</div>{selected?<FlightDetails flight={selected} onClose={()=>setSelected(null)} onOpenTrail={()=>onOpenTrail(selected)}/>:null}</section>;
 }
 
 function Summary({actions,confirmed,planned}:{actions:number;confirmed:number;planned:number}){return <div className="grid grid-cols-3 gap-2">{[["Manutenção",actions,"bg-violet-50 text-violet-800"],["Confirmados",confirmed,"bg-blue-50 text-blue-800"],["Planejados",planned,"bg-orange-50 text-orange-800"]].map(([label,count,tone])=><div key={String(label)} className={`rounded-xl p-3 text-center ${tone}`}><strong className="block text-xl">{count}</strong><span className="text-[10px] font-bold uppercase tracking-wide">{label}</span></div>)}</div>}
