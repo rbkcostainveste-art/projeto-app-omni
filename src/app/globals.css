@@ -31,3 +31,23 @@ input::placeholder, textarea::placeholder { color: #8294a8; opacity: 1; }
 .status-confirmed { animation: saved-pulse .45s ease-out; }
 @media (max-width: 760px) { .desktop-only { display: none !important; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+@media (max-width: 767px) {
+  .mobile-flight-controls + section,
+  .mobile-flight-controls ~ div[class*="relative"][class*="mb-4"] {
+    display: none;
+  }
+
+  .mobile-chrome-hidden nav[aria-label="Navegação principal"] {
+    transform: translateY(100%);
+  }
+
+  nav[aria-label="Navegação principal"] {
+    transition: transform 200ms ease;
+  }
+}
+
+@media (min-width: 768px) {
+  .mobile-flight-controls {
+    display: none;
+  }
+}
