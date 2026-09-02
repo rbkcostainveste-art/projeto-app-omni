@@ -34,7 +34,11 @@ export function CrewDashboard({supabase,user,base,fleets,flights,requireSignatur
   async function completeDrying(task:DryingTask){if(!supabase)return;await requireSignature(async()=>{const {error}=await supabase.rpc("complete_compressor_drying",{p_task_id:task.id});if(error){onError(`Secagem não confirmada: ${error.message}`);return;}setDryingTasks((items)=>items.filter((item)=>item.id!==task.id));},`Confirmar secagem do ${task.prefix}`);}
   function toggleFleet(fleet:string){const next=effectiveSelectedFleets.includes(fleet)?effectiveSelectedFleets.filter((item)=>item!==fleet):[...effectiveSelectedFleets,fleet];const selection=next.length?next:[fleet];localStorage.setItem(fleetStorageKey,JSON.stringify(selection));window.dispatchEvent(new Event("crew-fleet-selection"));}
   const relevantDryingTasks=useMemo(()=>dryingTasks.filter((task)=>(!base||normalized(task.base)===normalized(base))&&effectiveSelectedFleets.some((fleet)=>fleetMatches(task.model,fleet))),[dryingTasks,base,effectiveSelectedFleets]);
-  const daily=useMemo(()=>flights.filter((item)=>item.date===today()&&!item.cancelled&&(!base||normalized(item.base)===normalized(base))&&effectiveSelectedFleets.some((fleet)=>fleetMatches(item.model,fleet))).sort((a,b)=>a.departure.localeCompare(b.departure)),[flights,base,effectiveSelectedFleets]);
+  const daily=useMemo(()=>flights.filter((item)=>{
+    const belongsToAuthorizedFleet=fleets.some((fleet)=>fleetMatches(item.model,fleet));
+    const belongsToSelectedFleet=effectiveSelectedFleets.some((fleet)=>fleetMatches(item.model,fleet));
+    return item.date===today()&&!item.cancelled&&(!base||normalized(item.base)===normalized(base))&&(!belongsToAuthorizedFleet||belongsToSelectedFleet);
+  }).sort((a,b)=>a.departure.localeCompare(b.departure)),[flights,base,fleets,effectiveSelectedFleets]);
   const confirmed=daily.filter((item)=>item.planningStatus!=="planned");
   const planned=daily.filter((item)=>item.planningStatus==="planned");
   return <section className="space-y-5">
