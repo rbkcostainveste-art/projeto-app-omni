@@ -5,7 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { CheckCircle2, ChevronDown, Clock3, FileAudio, FileImage, FileVideo, Link2, MessageCircle, Paperclip, Plus, RotateCcw, Search, Send, UserCheck, Wrench, X } from "lucide-react";
 import { UserAvatar, type UserDirectory } from "@/components/user-avatar";
 
-type Profile = "legacy" | "admin" | "app_manager" | "mechanic" | "commander" | "copilot" | "flight_attendant" | "coordination" | "dispatch" | "maintenance_manager" | "maintenance_coordinator" | "maintenance_leader" | "maintenance_inspector";
+type Profile = "legacy" | "admin" | "app_manager" | "mechanic" | "toolroom" | "commander" | "copilot" | "flight_attendant" | "coordination" | "dispatch" | "maintenance_manager" | "maintenance_coordinator" | "maintenance_leader" | "maintenance_inspector";
 type Aircraft = { prefix: string; model: string; base: string ;};
 type Person = { employeeNumber: string; displayName: string; profile: Profile; assignedBase: string; fleets: string[]; mission: string; workShift: string ;};
 type CommentAttachment = { id: string; name: string; type: "image" | "video" | "audio"; url: string ;};
