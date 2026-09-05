@@ -33,7 +33,22 @@ begin
  perform set_config('request.jwt.claim.sub',pilot::text,true);execute 'set local role authenticated';
  if not exists(select 1 from public.list_crew_maintenance_actions() a where a->>'prefix'=prefix) then raise exception 'Pending action disappeared after midnight';end if;
  execute 'reset role';
+ perform set_config('request.jwt.claim.sub',inspector::text,true);
+ update operational_wall_posts set data=jsonb_set(data,'{category}','"Procedimentos"') where id=w;
+ execute 'set local role authenticated';
+ if not exists(select 1 from operational_wall_posts where id=w) then raise exception 'Inspector lost procedure';end if;
+ execute 'reset role';
+ perform set_config('request.jwt.claim.sub',coord::text,true);execute 'set local role authenticated';
+ if exists(select 1 from operational_wall_posts where id=w) then raise exception 'Procedure leaked to coordination';end if;
+ execute 'reset role';
+ perform set_config('request.jwt.claim.sub',pilot::text,true);execute 'set local role authenticated';
+ if exists(select 1 from public.list_crew_maintenance_actions() a where a->>'prefix'=prefix) then raise exception 'Procedure leaked to assigned pilot';end if;
+ execute 'reset role';
+ perform set_config('request.jwt.claim.sub',mech::text,true);execute 'set local role authenticated';
+ if not exists(select 1 from operational_wall_posts where id=w) then raise exception 'Assigned mechanic lost procedure';end if;
+ execute 'reset role';
+
 end $$;
-select 'PASS: creation, atomic link, inspector, assigned mechanic, coordination, assigned aircraft pilot, unassigned denial, pending across days' result;
+select 'PASS: creation, atomic link, inspector, assigned mechanic, coordination, assigned aircraft pilot, unassigned denial, pending across days; procedures visible only to maintenance' result;
 rollback;
 
