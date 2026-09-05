@@ -20,29 +20,59 @@ export function flightToDraft(flight: CoordinatedFlight): Draft {
   };
 }
 
+export type FlightScope = "this" | "future";
+export type FlightAction = "edit" | "delete" | "cancel";
+
+export function recurrenceKey(flight: CoordinatedFlight) {
+  return flight.recurrenceId || (flight.recurrenceLabel
+    ? `legacy:${JSON.stringify([flight.prefix, flight.destination ?? "", flight.recurrenceLabel, flight.createdBy, flight.history?.find((event) => event.field === "created")?.at.slice(0, 10) ?? ""])}`
+    : "");
+}
+
 export function editableOccurrences(flight: CoordinatedFlight, flights: CoordinatedFlight[]) {
+  const key = recurrenceKey(flight);
   return flights.filter((item) => item.id !== flight.id && !item.deletedAt && !item.cancelled
-    && item.planningStatus === "planned" && !item.actualEngineStart && !item.actualShutdown
-    && item.engineStart === "pending" && item.shutdown === "pending" && item.date > flight.date
-    && (flight.recurrenceId ? item.recurrenceId === flight.recurrenceId
-      : Boolean(flight.recurrenceLabel) && !item.recurrenceId && item.prefix === flight.prefix
-        && item.recurrenceLabel === flight.recurrenceLabel))
+    && Boolean(item.planningStatus) && !item.actualEngineStart && !item.actualShutdown
+    && item.engineStart === "pending" && item.shutdown === "pending"
+    && `${item.date}T${item.departure}` > `${flight.date}T${flight.departure}`
+    && Boolean(key) && recurrenceKey(item) === key)
     .sort((a, b) => a.date.localeCompare(b.date) || a.departure.localeCompare(b.departure));
 }
 
-type EditOperation = { kind: "create" | "update"; flight: CoordinatedFlight };
+export type EditOperation = { kind: "create" | "update"; flight: CoordinatedFlight };
+
+export function planFlightAction(original: CoordinatedFlight, flights: CoordinatedFlight[], action: "delete" | "cancel", scope: FlightScope, user: string, reason = ""): EditOperation[] {
+  const targets = scope === "future" ? [...editableOccurrences(original, flights), original] : [original];
+  const at = new Date().toISOString();
+  return targets.map((flight) => ({ kind: "update", flight: { ...flight, updatedBy: user,
+    ...(action === "delete" ? { deletedAt: at, deletedBy: user }
+      : { cancelled: true, cancelledAt: at, cancellationReason: reason.trim() }),
+  } }));
+}
 
 // Keep existing occurrence IDs; only newly selected dates need new flights.
 export function planFlightEdit(original: CoordinatedFlight, updated: CoordinatedFlight, draft: Draft,
-  future: CoordinatedFlight[], allFlights: CoordinatedFlight[], user: string): EditOperation[] {
+  future: CoordinatedFlight[], allFlights: CoordinatedFlight[], user: string, scope: FlightScope = "this"): EditOperation[] {
   const operations: EditOperation[] = [];
-  const label = recurrenceLabel(draft);
+  const existingKey = recurrenceKey(original);
+  if (scope === "this" && existingKey) {
+    return [{ kind: "update", flight: { ...updated, recurrenceLabel: original.recurrenceLabel, recurrenceId: existingKey, updatedBy: user } }];
+  }
   const previous = flightToDraft(original);
-  const scheduleChanged = recurrenceLabel(previous) !== label || original.date !== draft.date;
-  const recurrenceId = draft.repeat ? original.recurrenceId || (scheduleChanged ? crypto.randomUUID() : "") : "";
+  const scheduleChanged = recurrenceLabel(previous) !== recurrenceLabel(draft);
+  const label = scope === "future" && draft.repeat && !scheduleChanged && updated.departure !== original.departure
+    ? recurrenceLabel({ ...draft, weekdayTimes: Object.fromEntries(draft.weekdays.map((day) => [day, updated.departure])) })
+    : recurrenceLabel(draft);
+  const recurrenceId = draft.repeat ? existingKey || crypto.randomUUID() : "";
+  const commonFields = ["prefix", "model", "base", "destination", "duration", "fuelAmount", "fuelUnit", "departure"] as const;
+  const commonPatch = Object.fromEntries(commonFields.filter((field) => original[field] !== updated[field]).map((field) => [field, updated[field]]));
+  const targets = scope === "future" ? future : [];
   operations.push({ kind: "update", flight: { ...updated, recurrenceLabel: label, recurrenceId, updatedBy: user } });
-  // Changing ordinary flight fields does not regenerate its schedule.
-  if (!scheduleChanged) return operations;
+  // Broadcast only changed flight fields. Dates and crew belong to each occurrence.
+  if (!scheduleChanged) {
+    for (const item of targets) operations.push({ kind: "update", flight: { ...item, ...commonPatch, recurrenceLabel: label, recurrenceId, updatedBy: user } });
+    return operations;
+  }
   const at = new Date().toISOString();
   const end = new Date(`${draft.date}T12:00:00`);
   end.setDate(end.getDate() + 83);
@@ -55,16 +85,15 @@ export function planFlightEdit(original: CoordinatedFlight, updated: Coordinated
   }
   // A confirmed or operated occurrence already occupying a date is preserved.
   for (const item of allFlights) {
-    const sameSeries = original.recurrenceId ? item.recurrenceId === original.recurrenceId
-      : Boolean(original.recurrenceLabel) && item.prefix === original.prefix && item.recurrenceLabel === original.recurrenceLabel;
-    if (sameSeries && item.id !== original.id && !item.deletedAt
-      && !future.some((candidate) => candidate.id === item.id)) wanted.delete(item.date);
+    const sameSeries = Boolean(existingKey) && recurrenceKey(item) === existingKey;
+    if (sameSeries && item.id !== original.id
+      && !targets.some((candidate) => candidate.id === item.id)) wanted.delete(item.date);
   }
-  for (const item of future) {
+  for (const item of targets) {
     const departure = wanted.get(item.date);
     if (departure) {
       // Keep this occurrence's own assignment; never copy crew from the edited flight.
-      operations.push({ kind: "update", flight: { ...item, departure, recurrenceLabel: label, recurrenceId, updatedBy: user } });
+      operations.push({ kind: "update", flight: { ...item, ...commonPatch, departure, recurrenceLabel: label, recurrenceId, updatedBy: user } });
       wanted.delete(item.date);
     } else {
       operations.push({ kind: "update", flight: { ...item, deletedAt: at, recurrenceLabel: "", recurrenceId: "", updatedBy: user } });
