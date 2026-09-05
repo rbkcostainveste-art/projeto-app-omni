@@ -7,7 +7,7 @@ begin
  select d.auth_user_id,d.employee_number into pilot,pilot_emp from device_identities d join authorized_users u using(employee_number) where u.active and u.job_role='commander' and d.assigned_base=b limit 1;
  select d.auth_user_id into coord from device_identities d join authorized_users u using(employee_number) where u.active and u.job_role='coordination' limit 1;
  perform set_config('request.jwt.claim.sub',inspector::text,true);
- insert into maintenance_records(id,record_type,base,model,prefix,priority,status,title,created_by,data) values(r,'fault',b,'S92','TEST-TRAIL','routine','open','Vazamento de teste',inspector_emp,'{"entries":[]}');
+ insert into maintenance_records(id,record_type,base,model,prefix,priority,status,title,created_by,data) values(r,'fault',b,'S92','TEST-TRAIL','urgent','open','Vazamento de teste',inspector_emp,'{"entries":[]}');
  execute 'set local role authenticated';
  w:=public.create_maintenance_request(r,'Giro em baixa','Finalidade e FC-123',array[emp],null,jsonb_build_object('spot','P4','commander',pilot_emp,'crewRequirement','Conforme FC-123'));
  second_w:=public.create_maintenance_request(r,'Giro em alta','Outra tarefa',array[emp],null,'{}');
@@ -15,6 +15,7 @@ begin
  execute 'reset role';
  select f->>'id' into fid from shared_app_state s,jsonb_array_elements(s.flights) f where f->>'maintenancePostId'=w;
  if fid is null then raise exception 'No operational card created';end if;
+ if not exists(select 1 from shared_app_state s,jsonb_array_elements(s.flights) f where f->>'id'=fid and f->>'maintenancePriority'='urgent') then raise exception 'Urgency was lost';end if;
  if exists(select 1 from shared_app_state s,jsonb_array_elements(s.flights) f where f->>'maintenancePostId'=procedure_w) then raise exception 'Procedure became operational';end if;
  perform set_config('request.jwt.claim.sub',pilot::text,true);execute 'set local role authenticated';
  op:=public.get_flight_operation(fid);
@@ -49,6 +50,19 @@ begin
  perform public.mark_wall_read(w,now(),null);
  execute 'reset role';
  if exists(select 1 from wall_read_receipts where post_id=w and employee_number=inspector_emp and comments_at is not null) then raise exception 'Content read consumed unseen comments';end if;
+-- Deleting a source retires its card but keeps operational event history.
+ perform set_config('request.jwt.claim.sub',inspector::text,true);
+ execute 'set local role authenticated';
+ perform public.delete_own_operational_wall_post(second_w);
+ execute 'reset role';
+ if not exists(select 1 from shared_app_state s,jsonb_array_elements(s.flights) f where f->>'maintenancePostId'=second_w and f->>'deletedAt' is not null and (f->>'maintenanceSourceDeleted')::boolean) then raise exception 'Orphan card remains active';end if;
+ perform set_config('request.jwt.claim.sub',coord::text,true);execute 'set local role authenticated';
+ if exists(select 1 from public.list_maintenance_operation_cards() c where c->>'title'='Outra tarefa') then raise exception 'Deleted task remains visible';end if;
+ execute 'reset role';
+perform set_config('request.jwt.claim.sub',inspector::text,true);execute 'set local role authenticated';
+ perform public.delete_own_operational_wall_post(w);
+ execute 'reset role';
+ if (select jsonb_array_length(events) from public.flight_operation_records where flight_id=fid)<>3 then raise exception 'Operational history lost on source deletion';end if;
 end $$;
-select 'PASS operational card, schedule, crew, procedures excluded, minimal checks, APU-only finish, linked/idempotent results, privacy, separate read markers' result;
+select 'PASS operational card, schedule, crew, procedures excluded, minimal checks, APU-only finish, linked/idempotent results, privacy, separate read markers, urgency and orphan retirement preserving events' result;
 rollback;
