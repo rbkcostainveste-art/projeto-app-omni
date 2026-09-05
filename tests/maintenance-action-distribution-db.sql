@@ -1,0 +1,39 @@
+begin;
+do $$
+declare inspector uuid; mech uuid; pilot uuid; coord uuid; emp text; pilot_emp text; b text; r uuid:=gen_random_uuid(); w text; other_w text; prefix text:='TEST-ACTION';
+begin
+ select d.auth_user_id,d.assigned_base into inspector,b from device_identities d join authorized_users u using(employee_number) where u.active and u.job_role='maintenance_inspector' limit 1;
+ select d.auth_user_id,d.employee_number into mech,emp from device_identities d join authorized_users u using(employee_number) where u.active and u.job_role='mechanic' and d.assigned_base=b limit 1;
+ select d.auth_user_id,d.employee_number into pilot,pilot_emp from device_identities d join authorized_users u using(employee_number) where u.active and u.job_role='commander' and d.assigned_base=b limit 1;
+ select d.auth_user_id into coord from device_identities d join authorized_users u using(employee_number) where u.active and u.job_role='coordination' limit 1;
+ if inspector is null or mech is null or pilot is null or coord is null then raise exception 'Missing test identities';end if;
+ perform set_config('request.jwt.claim.sub',inspector::text,true);
+ insert into maintenance_records(id,record_type,base,model,prefix,priority,status,title,created_by,data) values(r,'fault',b,'S92',prefix,'routine','open','TEST action distribution',emp,'{"entries":[]}');
+ execute 'set local role authenticated';
+ w:=public.create_wall_action_from_maintenance_record(r,'Giro em baixa','TEST pending',array[emp],null,'TC-TEST');
+ if not exists(select 1 from operational_wall_posts where id=w and data#>>'{actions,0,status}'='pending') then raise exception 'Inspector cannot see pending action';end if;
+ if not exists(select 1 from maintenance_records where id=r and data#>>'{entries,0,wallPostId}'=w::text) then raise exception 'Missing atomic technical link';end if;
+ execute 'reset role';
+ perform set_config('request.jwt.claim.sub',mech::text,true);execute 'set local role authenticated';
+ if not exists(select 1 from operational_wall_posts where id=w and data#>>'{actions,0,assignedTo}'=emp) then raise exception 'Mechanic missing assignment';end if;
+ begin perform public.create_wall_action_from_maintenance_record(r,'Giro','Unauthorized',array[emp],null,null);raise exception 'Mechanic generated action unexpectedly';exception when others then if sqlerrm='Mechanic generated action unexpectedly' then raise;end if;end;
+ execute 'reset role';
+ perform set_config('request.jwt.claim.sub',coord::text,true);execute 'set local role authenticated';
+ if not exists(select 1 from operational_wall_posts where id=w) then raise exception 'Coordination missing action';end if;
+ execute 'reset role';
+ perform set_config('request.jwt.claim.sub',pilot::text,true);execute 'set local role authenticated';
+ if exists(select 1 from public.list_crew_maintenance_actions() a where a->>'prefix'=prefix) then raise exception 'Unassigned pilot sees action';end if;
+ execute 'reset role';
+ update shared_app_state set flights=flights||jsonb_build_array(jsonb_build_object('id',gen_random_uuid(),'prefix',prefix,'base',b,'date',to_char(now() at time zone 'America/Sao_Paulo','YYYY-MM-DD'),'commander',pilot_emp)) where id='main';
+ execute 'set local role authenticated';
+ if not exists(select 1 from public.list_crew_maintenance_actions() a where a->>'prefix'=prefix) then raise exception 'Assigned aircraft pilot missing action';end if;
+ execute 'reset role';
+ perform set_config('request.jwt.claim.sub',inspector::text,true);
+ update operational_wall_posts set data=jsonb_set(data,'{actions,0,createdAt}',to_jsonb((now()-interval '2 days')::text)) where id=w;
+ perform set_config('request.jwt.claim.sub',pilot::text,true);execute 'set local role authenticated';
+ if not exists(select 1 from public.list_crew_maintenance_actions() a where a->>'prefix'=prefix) then raise exception 'Pending action disappeared after midnight';end if;
+ execute 'reset role';
+end $$;
+select 'PASS: creation, atomic link, inspector, assigned mechanic, coordination, assigned aircraft pilot, unassigned denial, pending across days' result;
+rollback;
+
