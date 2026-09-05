@@ -9,12 +9,27 @@ begin
  perform set_config('request.jwt.claim.sub',inspector::text,true);
  insert into maintenance_records(id,record_type,base,model,prefix,priority,status,title,created_by,data) values(r,'fault',b,'S92','TEST-TRAIL','urgent','open','Vazamento de teste',inspector_emp,'{"entries":[]}');
  execute 'set local role authenticated';
- w:=public.create_maintenance_request(r,'Giro em baixa','Finalidade e FC-123',array[emp],null,jsonb_build_object('spot','P4','commander',pilot_emp,'crewRequirement','Conforme FC-123'));
+ w:=public.create_maintenance_request(r,'Giro em baixa','Finalidade e FC-123',array[emp],null,jsonb_build_object('spot','pátio p4','commander',pilot_emp,'crewRequirement','Conforme FC-123'));
  second_w:=public.create_maintenance_request(r,'Giro em alta','Outra tarefa',array[emp],null,'{}');
  procedure_w:=public.create_maintenance_request(r,'Procedimentos','Interno',array[emp],null,'{}');
  execute 'reset role';
  select f->>'id' into fid from shared_app_state s,jsonb_array_elements(s.flights) f where f->>'maintenancePostId'=w;
  if fid is null then raise exception 'No operational card created';end if;
+ -- Individual edits are acknowledged without reading private results/comments.
+ update operational_wall_posts set data=jsonb_set(data,'{actions,0,editedAt}',to_jsonb((now()-interval '2 minutes')::text)) where id=w;
+ perform set_config('request.jwt.claim.sub',pilot::text,true);execute 'set local role authenticated';
+ perform public.mark_maintenance_edit_read(w,now()-interval '2 minutes');
+ begin perform public.mark_maintenance_edit_read(procedure_w,now());raise exception 'Pilot acknowledged private procedure';exception when others then if sqlerrm='Pilot acknowledged private procedure' then raise;end if;end;
+ execute 'reset role';
+ if not exists(select 1 from wall_read_receipts where post_id=w and employee_number=pilot_emp and edit_at=now()-interval '2 minutes' and content_at is null and comments_at is null) then raise exception 'Safe read consumed technical content or did not persist';end if;
+ if exists(select 1 from wall_read_receipts where post_id=w and employee_number=inspector_emp) then raise exception 'Read leaked to another user';end if;
+ perform set_config('request.jwt.claim.sub',inspector::text,true);
+ update operational_wall_posts set data=jsonb_set(data,'{actions,0,editedAt}',to_jsonb((now()-interval '1 minute')::text)) where id=w;
+ if not exists(select 1 from wall_read_receipts where post_id=w and employee_number=pilot_emp and edit_at<now()-interval '1 minute') then raise exception 'Old receipt consumed newer edit';end if;
+ perform set_config('request.jwt.claim.sub',coord::text,true);execute 'set local role authenticated';
+ perform public.mark_maintenance_edit_read(w,now()-interval '1 minute');
+ execute 'reset role';
+
  if not exists(select 1 from shared_app_state s,jsonb_array_elements(s.flights) f where f->>'id'=fid and f->>'maintenancePriority'='urgent') then raise exception 'Urgency was lost';end if;
  if exists(select 1 from shared_app_state s,jsonb_array_elements(s.flights) f where f->>'maintenancePostId'=procedure_w) then raise exception 'Procedure became operational';end if;
  perform set_config('request.jwt.claim.sub',pilot::text,true);execute 'set local role authenticated';
@@ -42,7 +57,7 @@ begin
  perform set_config('request.jwt.claim.sub',coord::text,true);execute 'set local role authenticated';
  if exists(select 1 from operational_wall_posts where id=w) then raise exception 'Coordination sees technical post';end if;
  select c into card from public.list_maintenance_operation_cards() c where c->>'flightId'=fid;
- if card is null or card->>'spot'<>'P4' or card->>'category'<>'Giro em baixa' or card::text like '%SECRET%' or card::text like '%PAN-%' then raise exception 'Invalid operational projection';end if;
+ if card is null or card->>'spot'<>'PÁTIO P4' or card->>'category'<>'Giro em baixa' or card::text like '%SECRET%' or card::text like '%PAN-%' then raise exception 'Invalid operational projection';end if;
  execute 'reset role';perform set_config('request.jwt.claim.sub',pilot::text,true);execute 'set local role authenticated';
  select c into card from public.list_crew_maintenance_actions() c where c->>'flightId'=fid;
  if card is null or card::text like '%SECRET%' then raise exception 'Pilot projection failed';end if;
