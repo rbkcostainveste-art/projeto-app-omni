@@ -32,7 +32,7 @@ export function recurrenceKey(flight: CoordinatedFlight) {
 export function editableOccurrences(flight: CoordinatedFlight, flights: CoordinatedFlight[]) {
   const key = recurrenceKey(flight);
   return flights.filter((item) => item.id !== flight.id && !item.deletedAt && !item.cancelled
-    && Boolean(item.planningStatus) && !item.actualEngineStart && !item.actualShutdown
+    && Boolean(item.planningStatus) && !item.operationStartedAt && !item.actualEngineStart && !item.actualShutdown
     && item.engineStart === "pending" && item.shutdown === "pending"
     && `${item.date}T${item.departure}` > `${flight.date}T${flight.departure}`
     && Boolean(key) && recurrenceKey(item) === key)

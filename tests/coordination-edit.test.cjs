@@ -16,6 +16,11 @@ const flight = {
 };
 const future = { ...flight, id: 'future', date: '2026-09-11', fuel: 'pending', preflight: 'pending', commander: '', copilot: '', flightAttendant: '' };
 
+test('bulk recurrence changes preserve an operation started before takeoff', () => {
+  const starting = { ...future, operationStartedAt: '2026-09-11T12:00:00Z' };
+  assert.equal(editableOccurrences(flight, [flight, starting]).length, 0);
+});
+
 test('loads every field and the current weekday times', () => {
   const draft = flightToDraft(flight);
   assert.equal(draft.duration, '01:30');
