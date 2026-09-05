@@ -13,7 +13,7 @@ export function flightToDraft(flight: CoordinatedFlight): Draft {
   const minutes = Math.round(flight.duration * 60);
   return {
     id: flight.id, prefix: flight.prefix, date: flight.date, departure: flight.departure,
-    destination: flight.destination ?? "", duration: `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`,
+    destination: flight.destination ?? "", spot:flight.spot??"", duration: `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`,
     fuelAmount: String(flight.fuelAmount ?? 0), fuelUnit: flight.fuelUnit,
     commander: flight.commander ?? "", copilot: flight.copilot ?? "", flightAttendant: flight.flightAttendant ?? "",
     repeat: Boolean(flight.recurrenceLabel), weekdays: Object.keys(weekdayTimes).map(Number), weekdayTimes,
@@ -64,7 +64,7 @@ export function planFlightEdit(original: CoordinatedFlight, updated: Coordinated
     ? recurrenceLabel({ ...draft, weekdayTimes: Object.fromEntries(draft.weekdays.map((day) => [day, updated.departure])) })
     : recurrenceLabel(draft);
   const recurrenceId = draft.repeat ? existingKey || crypto.randomUUID() : "";
-  const commonFields = ["prefix", "model", "base", "destination", "duration", "fuelAmount", "fuelUnit", "departure"] as const;
+  const commonFields = ["prefix", "model", "base", "destination", "spot", "duration", "fuelAmount", "fuelUnit", "departure"] as const;
   const commonPatch = Object.fromEntries(commonFields.filter((field) => original[field] !== updated[field]).map((field) => [field, updated[field]]));
   const targets = scope === "future" ? future : [];
   operations.push({ kind: "update", flight: { ...updated, recurrenceLabel: label, recurrenceId, updatedBy: user } });
@@ -103,7 +103,7 @@ export function planFlightEdit(original: CoordinatedFlight, updated: Coordinated
     const wave = Math.max(0, ...allFlights.filter((item) => !item.deletedAt && item.prefix === updated.prefix && item.date === date).map((item) => item.wave ?? 1)) + 1;
     operations.push({ kind: "create", flight: {
       id: crypto.randomUUID(), prefix: updated.prefix, model: updated.model, base: updated.base,
-      date, departure, destination: updated.destination, duration: updated.duration, fuelAmount: updated.fuelAmount, fuelUnit: updated.fuelUnit,
+      date, departure, destination: updated.destination,spot:updated.spot, duration: updated.duration, fuelAmount: updated.fuelAmount, fuelUnit: updated.fuelUnit,
       fuel: "pending", preflight: "pending", hums: "pending", engineStart: "pending", shutdown: "pending",
       planningStatus: "planned", wave, revision: 1, acknowledged: { [user]: 1 },
       commander: "", copilot: "", flightAttendant: "", recurrenceLabel: label, recurrenceId,

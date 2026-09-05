@@ -1,9 +1,9 @@
-type WaveFlight = { date: string; departure: string; wave?: number; planningStatus?: string; cancelled?: boolean; deletedAt?: string; shutdown?: string; actualShutdown?: string | null; operationEndedAt?: string };
+type WaveFlight = { maintenancePostId?:string; date: string; departure: string; wave?: number; planningStatus?: string; cancelled?: boolean; deletedAt?: string; shutdown?: string; actualShutdown?: string | null; operationEndedAt?: string };
 
 export function operationalWaves<T extends WaveFlight>(flights: T[], date: string) {
   const groups = new Map<number, T[]>();
   for (const flight of flights) {
-    if (flight.date !== date || !flight.planningStatus || flight.cancelled || flight.deletedAt || flight.shutdown === 'ok' || flight.actualShutdown || flight.operationEndedAt) continue;
+    if (flight.maintenancePostId || flight.date !== date || !flight.planningStatus || flight.cancelled || flight.deletedAt || flight.shutdown === 'ok' || flight.actualShutdown || flight.operationEndedAt) continue;
     const wave = flight.wave ?? 1;
     groups.set(wave, [...(groups.get(wave) ?? []), flight]);
   }

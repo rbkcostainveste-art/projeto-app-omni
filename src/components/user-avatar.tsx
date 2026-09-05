@@ -1,4 +1,4 @@
-export type UserDirectory=Record<string,{name:string;avatar:string}>;
+export type UserDirectory=Record<string,{name:string;avatar:string;role?:string}>;
 
 function initials(name:string,employeeNumber:string){
   const parts=name.trim().split(/\s+/).filter(Boolean);

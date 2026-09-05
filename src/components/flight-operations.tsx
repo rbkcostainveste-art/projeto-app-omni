@@ -5,7 +5,7 @@ import type {SupabaseClient} from '@supabase/supabase-js';
 import {X} from 'lucide-react';
 import {activeEquipment,eventAvailable,eventLabels,isS92,operationTotals,pendingEndEvents,type OperationData} from '@/lib/flight-operations';
 
-type Props={supabase:SupabaseClient|null;flight:{id:string;prefix:string;model:string;cancelled?:boolean};readOnly?:boolean;requireSignature:(action:()=>void|Promise<void>,label?:string)=>Promise<boolean>};
+type Props={supabase:SupabaseClient|null;flight:{id:string;prefix:string;model:string;maintenancePostId?:string;cancelled?:boolean};readOnly?:boolean;requireSignature:(action:()=>void|Promise<void>,label?:string)=>Promise<boolean>};
 const localInput=(value:string)=>{const date=new Date(value);return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}T${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;};
 
 export function FlightOperations({supabase,flight,readOnly=false,requireSignature}:Props){
@@ -26,13 +26,14 @@ export function FlightOperations({supabase,flight,readOnly=false,requireSignatur
   finally{lock.current=false;setBusy(false);}
  }
  const disabled=busy||retry||readOnly||Boolean(flight.cancelled);
+ const maintenanceReady=!flight.maintenancePostId||Boolean(data?.events.length)||(data?.checks.fuel?.approval?.result==='ok'&&data?.checks.inspection?.approval?.result==='ok');
  const sign=(key:string,result:string)=>void requireSignature(()=>send('approve',{key,result}),'Conferir e assinar verificação');
  const controls=<>{error?<p role="alert" className="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>:null}{retry?<div className="my-3 flex gap-2"><button disabled={busy} onClick={()=>void send('',{})} className="rounded-xl border px-3 py-2 text-sm">Tentar novamente</button><button disabled={busy} onClick={()=>{pending.current=null;setRetry(false);setError('');void load();}} className="rounded-xl border px-3 py-2 text-sm">Recarregar e conferir</button></div>:null}</>;
  if(!data)return <div className="rounded-xl border p-3 text-sm">{error||'Carregando registros operacionais…'}<button onClick={()=>void load()} className="ml-3 text-blue-700">Recarregar</button></div>;
- const keys=[...(data.first?['drain']:[]),'fuel','inspection','hums',...(data.closed&&data.nextFlightId===null?['postflight']:[])];
+ const keys=flight.maintenancePostId?['fuel','inspection']:[...(data.first?['drain']:[]),'fuel','inspection','hums',...(data.closed&&data.nextFlightId===null?['postflight']:[])];
  const labels:Record<string,string>={drain:'Dreno de combustível',fuel:'Abastecimento',inspection:data.first?'Pré-voo':'Entre voos',hums:'HUMS',postflight:'Inspeção após o último voo do dia'};
  return <section className="space-y-3">
-  <p className="text-xs text-[#60758c]">{data.first?'Primeira operação do dia · dreno e pré-voo':'Operação seguinte · sem dreno de combustível'} · {data.day.split('-').reverse().join('/')}</p>
+  <p className="text-xs text-[#60758c]">{flight.maintenancePostId?'Voo/giro de manutenção · pré-voo e abastecimento':data.first?'Primeira operação do dia · dreno e pré-voo':'Operação seguinte · sem dreno de combustível'} · {data.day.split('-').reverse().join('/')}</p>
   <div className="grid gap-3 sm:grid-cols-2">{keys.map(key=>{
    const expectedKind=key==='inspection'?(data.first?'preflight':'between'):key;
    const expectedTarget=key==='inspection'&&!data.first?data.previousFlightId:flight.id;
@@ -50,9 +51,9 @@ export function FlightOperations({supabase,flight,readOnly=false,requireSignatur
   {!open?controls:null}
   <button onClick={()=>setOpen(true)} className="min-h-12 w-full rounded-xl bg-[#1268d8] px-4 py-3 text-sm font-extrabold text-white">{data.events.length?'Eventos da operação':data.canPilot?'Acionar · registrar eventos':'Ver eventos da operação'}</button>
   {open?<OperationDialog title={`${flight.prefix} · ${flight.model}`} onClose={()=>{if(!busy)setOpen(false);}}>
-   <p className="text-sm text-[#60758c]">Cada toque registra o evento e o horário neste voo.</p>
+   <p className="text-sm text-[#60758c]">Cada toque registra o evento e o horário neste voo.</p>{!maintenanceReady?<p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Aguarde a manutenção confirmar pré-voo e abastecimento antes de iniciar.</p>:null}
    {closing&&!data.closed?<section aria-label="Concluir operação" className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4"><h4 className="font-extrabold">Concluir operação</h4><p className="mt-2 text-sm">{pendingEndEvents(data.events).length?'Ainda faltam os registros abaixo. Confirme cada evento quando ele realmente acontecer.':'Todos os cortes foram registrados. A operação pode ser encerrada.'}</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{pendingEndEvents(data.events).map(type=><button key={type} disabled={disabled||!data.canPilot||!eventAvailable(data.events,type,flight.model)} onClick={()=>void send('event',{type,at:new Date().toISOString()})} className="min-h-12 rounded-lg border bg-white p-3 text-sm font-bold disabled:opacity-40">Registrar: {eventLabels[type]}</button>)}</div><div className="mt-3 flex gap-2"><button disabled={disabled||!data.canPilot||!eventAvailable(data.events,'finish',flight.model)} onClick={()=>void send('event',{type:'finish',at:new Date().toISOString()})} className="min-h-12 flex-1 rounded-lg bg-green-700 p-3 text-sm font-bold text-white disabled:opacity-40">Confirmar encerramento</button><button onClick={()=>setClosing(false)} className="rounded-lg border px-3 text-sm font-bold">Voltar</button></div></section>:null}
-   <div className="mt-4 grid grid-cols-2 gap-3">{[...(isS92(flight.model)?['apu']:[]),'engine1','engine2'].map(equipment=>{const on=activeEquipment(data.events,equipment);const type=`${equipment}_${on?'off':'on'}`;const total=operationTotals(data.events,equipment);return <button key={equipment} disabled={disabled||!data.canPilot||!eventAvailable(data.events,type,flight.model)||data.closed} onClick={()=>void send('event',{type,at:new Date().toISOString()})} className={`min-h-24 rounded-xl border p-4 text-left disabled:opacity-40 ${on?'border-green-400 bg-green-50':'border-blue-200 bg-blue-50'}`}><strong className="block text-sm">{eventLabels[type]}</strong><span className="mt-2 block text-xs">{total.activations} acionamento(s) · {total.minutes} min concluídos{total.running?' · ligado':''}</span></button>;})}
+   <div className="mt-4 grid grid-cols-2 gap-3">{[...(isS92(flight.model)?['apu']:[]),'engine1','engine2'].map(equipment=>{const on=activeEquipment(data.events,equipment);const type=`${equipment}_${on?'off':'on'}`;const total=operationTotals(data.events,equipment);return <button key={equipment} disabled={disabled||!maintenanceReady||!data.canPilot||!eventAvailable(data.events,type,flight.model)||data.closed} onClick={()=>void send('event',{type,at:new Date().toISOString()})} className={`min-h-24 rounded-xl border p-4 text-left disabled:opacity-40 ${on?'border-green-400 bg-green-50':'border-blue-200 bg-blue-50'}`}><strong className="block text-sm">{eventLabels[type]}</strong><span className="mt-2 block text-xs">{total.activations} acionamento(s) · {total.minutes} min concluídos{total.running?' · ligado':''}</span></button>;})}
     {['takeoff','landing','rotor_brake','finish'].map(type=>{
      const recorded=data.events.filter(event=>event.type===type).at(-1);
      const available=(type==='finish'?data.events.length>0:eventAvailable(data.events,type,flight.model))&&!data.closed;

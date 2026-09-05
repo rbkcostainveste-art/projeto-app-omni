@@ -19,12 +19,15 @@ begin
  begin perform public.create_wall_action_from_maintenance_record(r,'Giro','Unauthorized',array[emp],null,null);raise exception 'Mechanic generated action unexpectedly';exception when others then if sqlerrm='Mechanic generated action unexpectedly' then raise;end if;end;
  execute 'reset role';
  perform set_config('request.jwt.claim.sub',coord::text,true);execute 'set local role authenticated';
- if not exists(select 1 from operational_wall_posts where id=w) then raise exception 'Coordination missing action';end if;
+ if exists(select 1 from operational_wall_posts where id=w) then raise exception 'Technical post leaked to coordination';end if;
+ if not exists(select 1 from public.list_maintenance_operation_cards() c where c->>'prefix'=prefix) then raise exception 'Missing safe card';end if;
  execute 'reset role';
  perform set_config('request.jwt.claim.sub',pilot::text,true);execute 'set local role authenticated';
  if exists(select 1 from public.list_crew_maintenance_actions() a where a->>'prefix'=prefix) then raise exception 'Unassigned pilot sees action';end if;
  execute 'reset role';
- update shared_app_state set flights=flights||jsonb_build_array(jsonb_build_object('id',gen_random_uuid(),'prefix',prefix,'base',b,'date',to_char(now() at time zone 'America/Sao_Paulo','YYYY-MM-DD'),'commander',pilot_emp)) where id='main';
+ perform set_config('request.jwt.claim.sub',inspector::text,true);
+ perform public.configure_maintenance_operation(w,jsonb_build_object('commander',pilot_emp));
+ perform set_config('request.jwt.claim.sub',pilot::text,true);
  execute 'set local role authenticated';
  if not exists(select 1 from public.list_crew_maintenance_actions() a where a->>'prefix'=prefix) then raise exception 'Assigned aircraft pilot missing action';end if;
  execute 'reset role';
@@ -46,7 +49,7 @@ begin
  if not exists(select 1 from public.list_crew_maintenance_actions() a where a->>'prefix'=prefix and a->>'title'='Check corrigido - referência FC 123' and a->>'editedAt' is not null) then raise exception 'Pilot missing edited text and indicator';end if;
  execute 'reset role';
  perform set_config('request.jwt.claim.sub',inspector::text,true);
- update operational_wall_posts set data=jsonb_set(data,'{category}','"Procedimentos"') where id=w;
+ w:=public.create_maintenance_request(r,'Procedimentos','Procedimento interno',array[emp],null,'{}');
  execute 'set local role authenticated';
  if not exists(select 1 from operational_wall_posts where id=w) then raise exception 'Inspector lost procedure';end if;
  execute 'reset role';
@@ -54,7 +57,7 @@ begin
  if exists(select 1 from operational_wall_posts where id=w) then raise exception 'Procedure leaked to coordination';end if;
  execute 'reset role';
  perform set_config('request.jwt.claim.sub',pilot::text,true);execute 'set local role authenticated';
- if exists(select 1 from public.list_crew_maintenance_actions() a where a->>'prefix'=prefix) then raise exception 'Procedure leaked to assigned pilot';end if;
+ if exists(select 1 from public.list_crew_maintenance_actions() a where a->>'title'='Procedimento interno') then raise exception 'Procedure leaked to assigned pilot';end if;
  execute 'reset role';
  perform set_config('request.jwt.claim.sub',mech::text,true);execute 'set local role authenticated';
  if not exists(select 1 from operational_wall_posts where id=w) then raise exception 'Assigned mechanic lost procedure';end if;

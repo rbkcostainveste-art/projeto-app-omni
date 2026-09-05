@@ -155,3 +155,11 @@ for (const action of ['delete', 'cancel']) {
     assert.ok(operations.every((op) => action === 'delete' ? op.flight.deletedAt : op.flight.cancelled));
   });
 }
+
+test('optional spot propagates through a bulk edit while retaining individual crew',()=>{
+ const updated={...flight,spot:'P4'};const draft=flightToDraft(updated);
+ const operations=planFlightEdit(flight,updated,draft,[future],[flight,future],'0600','future');
+ assert.equal(draft.spot,'P4');
+ assert.equal(operations.find(op=>op.flight.id===future.id).flight.spot,'P4');
+ assert.equal(operations.find(op=>op.flight.id===future.id).flight.commander,'');
+});
