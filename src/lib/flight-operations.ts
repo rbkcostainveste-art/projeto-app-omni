@@ -6,6 +6,9 @@ export const maintenanceSigners=['mechanic','maintenance_director','maintenance_
 export function isS92(model:string){return model.toUpperCase().replace(/[^A-Z0-9]/g,'').includes('S92');}
 export function activeEquipment(events:OperationEvent[],equipment:string){return events.filter(e=>e.type===`${equipment}_on`||e.type===`${equipment}_off`).at(-1)?.type===`${equipment}_on`;}
 export function isAirborne(events:OperationEvent[]){return events.filter(e=>e.type==='takeoff'||e.type==='landing').at(-1)?.type==='takeoff';}
+export function pendingEndEvents(events:OperationEvent[]){
+ return [...(isAirborne(events)?['landing']:[]),...['engine1','engine2','apu'].filter(equipment=>activeEquipment(events,equipment)).map(equipment=>`${equipment}_off`)];
+}
 export function eventAvailable(events:OperationEvent[],type:string,model:string){
  if(events.some(e=>e.type==='finish'))return false;
  if(type.startsWith('apu_')&&!isS92(model))return false;

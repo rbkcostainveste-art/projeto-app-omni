@@ -19,3 +19,13 @@ test('maintenance signers never include auxiliary, pilots or administrative prof
  for(const role of ['maintenance_assistant','commander','copilot','admin','app_manager','legacy','coordination','toolroom'])assert.equal(lib.maintenanceSigners.includes(role),false);
  assert.equal(lib.maintenanceSigners.includes('mechanic'),true);assert.equal(lib.maintenanceSigners.includes('maintenance_inspector'),true);
 });
+test('closing guides the pilot through missing records without assuming cuts or landing',()=>{
+ const events=[event('apu_on'),event('engine1_on'),event('engine2_on'),event('takeoff')];
+ assert.deepEqual(lib.pendingEndEvents(events),['landing','engine1_off','engine2_off','apu_off']);
+ events.push(event('landing'),event('rotor_brake'));
+ assert.deepEqual(lib.pendingEndEvents(events),['engine1_off','engine2_off','apu_off']);
+ assert.equal(lib.eventAvailable(events,'finish','S92'),false);
+ events.push(event('engine1_off'),event('engine2_off'),event('apu_off'));
+ assert.deepEqual(lib.pendingEndEvents(events),[]);
+ assert.equal(lib.eventAvailable(events,'finish','S92'),true);
+});
