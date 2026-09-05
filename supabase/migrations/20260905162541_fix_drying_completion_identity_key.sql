@@ -1,0 +1,1 @@
+do $$ declare definition text; begin select pg_get_functiondef('public.complete_compressor_drying(uuid)'::regprocedure) into definition; definition:=replace(definition,'actor.id is null','actor.auth_user_id is null');execute definition;end $$;
