@@ -113,6 +113,7 @@ function FlightEditDialog({flight,flights,user,aircraft,onSave,onCreate,renderFi
  const [item,setItem]=useState(()=>flightToDraft(flight));
  const candidates=editableOccurrences(original,flights);
  const [scope,setScope]=useState<FlightScope>("this");
+ const [confirmingScope,setConfirmingScope]=useState(false);
  const [action,setAction]=useState<FlightAction>(initialAction);
  const [reason,setReason]=useState("");
  const recurring=Boolean(recurrenceKey(original));
@@ -129,19 +130,22 @@ function FlightEditDialog({flight,flights,user,aircraft,onSave,onCreate,renderFi
  const scheduleChanged=recurrenceLabel(flightToDraft(original))!==recurrenceLabel(item);
  function change(patch:Partial<Draft>){setItem((current)=>({...current,...patch}));setError("");}
  function toggleDay(day:number){change({weekdays:item.weekdays.includes(day)?item.weekdays.filter((value)=>value!==day):[...item.weekdays,day],weekdayTimes:{...item.weekdayTimes,[day]:item.weekdayTimes[day]??item.departure}});}
- async function save(){
+ async function save(chosenScope?:FlightScope){
   if(busy.current||!onSave)return;
+  const effectiveScope=chosenScope??scope;
+  if(chosenScope){setScope(chosenScope);setConfirmingScope(false);}
   const plane=options.find((candidate)=>candidate.prefix===item.prefix);
-  if(action==="edit"&&(!plane||!item.date||!item.departure||!item.destination.trim()||!item.duration||clockToDuration(item.duration)<=0||!Number.isFinite(Number(item.fuelAmount))||Number(item.fuelAmount)<0||(item.repeat&&(!recurring||scope==="future")&&(!item.weekdays.length||item.weekdays.some((day)=>!item.weekdayTimes[day]))))){
+  if(action==="edit"&&(!plane||!item.date||!item.departure||!item.destination.trim()||!item.duration||clockToDuration(item.duration)<=0||!Number.isFinite(Number(item.fuelAmount))||Number(item.fuelAmount)<0||(item.repeat&&(!recurring||effectiveScope==="future")&&(!item.weekdays.length||item.weekdays.some((day)=>!item.weekdayTimes[day]))))){
    setError("Preencha aeronave, data, saída, destino e duração. Para repetir, selecione os dias e horários.");return;
   }
+  if(recurring&&!retrying&&!chosenScope){setConfirmingScope(true);return;}
   busy.current=true;setSaving(true);setError("");
   try{
    if(!pending.current){
-    if(action!=="edit"){pending.current=planFlightAction(flight,flights,action,scope,user,reason);}
+    if(action!=="edit"){pending.current=planFlightAction(flight,flights,action,effectiveScope,user,reason);}
     else {
     const updated={...flight,prefix:plane!.prefix,model:plane!.model,base:plane!.base,date:item.date,departure:item.departure,destination:item.destination.trim(),duration:clockToDuration(item.duration),fuelAmount:Number(item.fuelAmount),fuelUnit:item.fuelUnit,commander:item.commander,copilot:item.copilot,flightAttendant:isS92(plane!.model)?item.flightAttendant:""};
-    pending.current=planFlightEdit(original,updated,item,editableOccurrences(original,flights),flights,user,scope);
+    pending.current=planFlightEdit(original,updated,item,editableOccurrences(original,flights),flights,user,effectiveScope);
     }
    }
    while(pending.current.length){
@@ -172,6 +176,24 @@ function FlightEditDialog({flight,flights,user,aircraft,onSave,onCreate,renderFi
    </fieldset>
    <footer className="sticky bottom-0 border-t border-[#d8e4ef] bg-white p-4">{error?<p role="alert" className="mb-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>:null}<div className="flex flex-wrap justify-end gap-2">{action==="edit"?<><button type="button" disabled={saving||retrying} onClick={()=>setAction("delete")} className="mr-auto rounded-xl border border-red-200 px-3 py-2 text-sm font-bold text-red-600 disabled:opacity-40">Excluir voo</button><button type="button" disabled={saving||retrying||Boolean(flight.cancelled)} onClick={()=>setAction("cancel")} className="rounded-xl border border-amber-300 px-3 py-2 text-sm font-bold text-amber-800 disabled:opacity-40">Cancelar voo</button></>:<button type="button" disabled={saving||retrying} onClick={()=>setAction("edit")} className="mr-auto rounded-xl border px-3 py-2 text-sm font-bold">Voltar à edição</button>}<button type="button" disabled={saving} onClick={onClose} className="rounded-xl border border-[#cbd9e7] px-4 py-2 text-sm font-bold disabled:opacity-40">Fechar</button><button type="submit" disabled={saving||!onSave} className={"rounded-xl px-4 py-3 text-sm font-bold text-white disabled:opacity-40 "+(action==="delete"?"bg-red-600":action==="cancel"?"bg-amber-700":"bg-[#1268d8]")}>{saving?"Salvando…":retrying?"Tentar novamente":action==="delete"?"Confirmar exclusão":action==="cancel"?"Confirmar cancelamento":"Salvar alterações"}</button></div></footer>
   </form>
+  {confirmingScope?<FlightScopeConfirmation action={action} futureCount={candidates.length} scheduleChanged={scheduleChanged} onBack={()=>setConfirmingScope(false)} onChoose={(chosen)=>void save(chosen)}/>:null}
+ </dialog>;
+}
+
+function FlightScopeConfirmation({action,futureCount,scheduleChanged,onBack,onChoose}:{action:FlightAction;futureCount:number;scheduleChanged:boolean;onBack:()=>void;onChoose:(scope:FlightScope)=>void}){
+ const dialog=useRef<HTMLDialogElement>(null);
+ useEffect(()=>{const element=dialog.current;element?.showModal();return()=>element?.close();},[]);
+ const verb=action==="delete"?"Excluir":action==="cancel"?"Cancelar":"Alterar";
+ return <dialog ref={dialog} aria-labelledby="flight-scope-title" onCancel={(event)=>{event.preventDefault();onBack();}} className="m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-2xl bg-white p-5 text-[#17324d] shadow-2xl backdrop:bg-[#071a30]/60">
+  <h3 id="flight-scope-title" className="text-xl font-extrabold">{verb} quais voos?</h3>
+  <p className="mt-3 text-sm">Este voo faz parte de uma repetição. Escolha onde aplicar {action==="delete"?"a exclusão":action==="cancel"?"o cancelamento":"as alterações"}.</p>
+  <div className="mt-5 grid gap-3">
+   <button type="button" onClick={()=>onChoose("this")} className="rounded-xl border border-[#1268d8] p-4 text-left text-[#1268d8]"><strong className="block">Somente este voo</strong><span className="mt-1 block text-xs">Os próximos voos mantêm a configuração atual.</span></button>
+   <button type="button" onClick={()=>onChoose("future")} className="rounded-xl border border-[#1268d8] bg-blue-50 p-4 text-left text-[#1268d8]"><strong className="block">Este e todos os futuros da repetição</strong><span className="mt-1 block text-xs">Inclui {futureCount} próximo(s) voo(s) elegível(is) já programado(s).</span></button>
+  </div>
+  <p className="mt-4 text-xs leading-5 text-[#52677f]">Voos anteriores, iniciados, encerrados ou já cancelados são preservados. A tripulação continua sendo definida individualmente em cada voo.</p>
+  {action==="edit"&&scheduleChanged?<p className="mt-2 text-xs leading-5 text-[#52677f]">Mudanças nos dias ou na configuração da repetição só serão aplicadas ao escolher este e todos os futuros.</p>:null}
+  <button type="button" autoFocus onClick={onBack} className="mt-5 min-h-11 w-full rounded-xl border px-4 py-2 text-sm font-bold">Voltar sem salvar</button>
  </dialog>;
 }
 
