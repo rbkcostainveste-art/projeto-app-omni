@@ -37,12 +37,31 @@ begin
  if jsonb_array_length(v->'events')<>12 or not (v->>'closed')::boolean then raise exception 'Event sequence not preserved';end if;
  v:=public.record_flight_operation(fid,gen_random_uuid(),16,'correct',jsonb_build_object('id',v#>>'{events,2,id}','at',ts+interval '2.5 seconds'));
  if jsonb_array_length(v#>'{events,2,corrections}')<>1 then raise exception 'Correction audit missing';end if;
+ v:=public.record_flight_operation(fid,gen_random_uuid(),17,'delete_event',jsonb_build_object('id',v#>>'{events,10,id}'));
+ if jsonb_array_length(v->'events')<>11 or exists(select 1 from jsonb_array_elements(v->'events') where value->>'type'='rotor_brake') then raise exception 'Independent event not removed';end if;
+ if not exists(select 1 from public.flight_operation_records r,jsonb_array_elements(r.audit) a where r.flight_id=fid and a->>'action'='delete_event' and a#>>'{payload,removedEvent,type}'='rotor_brake') then raise exception 'Deletion audit missing';end if;
+ denied:=false;begin perform public.record_flight_operation(fid,gen_random_uuid(),18,'delete_event',jsonb_build_object('id',v#>>'{events,4,id}'));exception when others then denied:=true;end;if not denied then raise exception 'Dependent event deletion allowed';end if;
+ v:=public.record_flight_operation(fid,gen_random_uuid(),18,'delete_event',jsonb_build_object('id',v#>>'{events,10,id}'));
+ if (v->>'closed')::boolean then raise exception 'Removing finish did not reopen operation';end if;
+ if exists(select 1 from public.shared_app_state s,jsonb_array_elements(s.flights) x where s.id='main' and x->>'id'=fid and (x->>'shutdown'='ok' or nullif(x->>'actualShutdown','') is not null)) then raise exception 'Stale shutdown after removal';end if;
+ v:=public.record_flight_operation(fid,gen_random_uuid(),19,'event',jsonb_build_object('type','finish','at',now()));
  perform private.validate_operation_events('[{"type":"apu_on","at":"2026-09-04T23:55:00-03:00"},{"type":"apu_off","at":"2026-09-05T00:05:00-03:00"},{"type":"finish","at":"2026-09-05T00:06:00-03:00"}]','S92');
  v:=public.get_flight_operation(fid2);if (v->>'first')::boolean or v->>'previousFlightId'<>fid then raise exception 'Next operation not linked to previous';end if;
  perform set_config('request.jwt.claim.sub',mech_id::text,true);
  denied:=false;begin perform public.record_flight_operation(fid2,gen_random_uuid(),0,'approve','{"key":"drain","result":"ok"}');exception when others then denied:=true;end;if not denied then raise exception 'Drain allowed on second operation';end if;
  v:=public.record_flight_operation(fid2,gen_random_uuid(),0,'approve','{"key":"inspection","result":"ok"}');if v#>>'{checks,inspection,targetFlightId}'<>fid or v#>>'{checks,inspection,kind}'<>'between' then raise exception 'Between flight target incorrect';end if;
- v:=public.record_flight_operation(fid,gen_random_uuid(),17,'approve','{"key":"postflight","result":"ok"}');if v#>>'{checks,postflight,targetFlightId}'<>fid then raise exception 'Postflight without next flight incorrect';end if;
+ denied:=false;begin perform public.record_flight_operation(fid,gen_random_uuid(),20,'delete_event',jsonb_build_object('id',v#>>'{events,0,id}'));exception when others then denied:=sqlerrm like '%Somente piloto escalado%';end;if not denied then raise exception 'Mechanic deletion not denied by role';end if;
+ v:=public.record_flight_operation(fid,gen_random_uuid(),20,'approve','{"key":"postflight","result":"ok"}');if v#>>'{checks,postflight,targetFlightId}'<>fid then raise exception 'Postflight without next flight incorrect';end if;
+ perform set_config('request.jwt.claim.sub',pilot_id::text,true);v:=public.get_flight_operation(fid2);
+ foreach t in array array['engine1_on','engine2_on','takeoff'] loop
+  v:=public.record_flight_operation(fid2,gen_random_uuid(),(v->>'revision')::int,'event',jsonb_build_object('type',t,'at',now()));
+ end loop;
+ v:=public.record_flight_operation(fid2,gen_random_uuid(),(v->>'revision')::int,'delete_event',jsonb_build_object('id',v#>>'{events,2,id}'));
+ if exists(select 1 from public.shared_app_state s,jsonb_array_elements(s.flights) x where s.id='main' and x->>'id'=fid2 and (x->>'engineStart'='ok' or nullif(x->>'actualEngineStart','') is not null)) then raise exception 'Stale departure after removal';end if;
+ while jsonb_array_length(v->'events')>0 loop
+  v:=public.record_flight_operation(fid2,gen_random_uuid(),(v->>'revision')::int,'delete_event',jsonb_build_object('id',v->'events'->-1->>'id'));
+ end loop;
+ if exists(select 1 from public.shared_app_state s,jsonb_array_elements(s.flights) x where s.id='main' and x->>'id'=fid2 and nullif(x->>'operationStartedAt','') is not null) then raise exception 'Stale start after removing all events';end if;
  perform set_config('request.jwt.claim.sub',admin_id::text,true);perform public.mutate_shared_item('flights',fid2,'{"commander":"not-assigned"}','update');
  perform set_config('request.jwt.claim.sub',pilot_id::text,true);denied:=false;begin perform public.get_flight_operation(fid2);exception when others then denied:=true;end;if not denied then raise exception 'Pilot saw unassigned operation';end if;
  if has_table_privilege('authenticated','public.flight_operation_records','INSERT') or has_table_privilege('authenticated','public.flight_operation_records','UPDATE') or has_table_privilege('anon','public.flight_operation_records','SELECT') then raise exception 'Direct access to operation records';end if;

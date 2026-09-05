@@ -9,6 +9,7 @@ Esta versão registra no app. Não envia dados nem aprova registros no EDB.
 - `events`: eventos ordenados, com UUID, tipo, horário real, horário de registro e matrícula. Correções de horário preservam o valor anterior e o autor em `corrections`.
 - `checks`: execução e conferência separadas por tarefa. `execution` não é assinatura. Apenas `approval` representa a conferência da manutenção habilitada; seu resultado pode ser `ok` ou `no`.
 - `audit`: histórico de todos os comandos, com UUID idempotente, matrícula, horário e conteúdo.
+- `delete_event`: remove o evento da sequência ativa e preserva seu conteúdo completo em `audit.payload.removedEvent`. Recalcula decolagem, encerramento e contadores; rejeita exclusões que deixariam eventos dependentes sem seu antecedente. Somente pilotos escalados podem usar essa ação.
 - `revision`: controle de concorrência. Um dispositivo desatualizado precisa recarregar antes de gravar.
 
 O acesso direto à tabela é negado aos clientes. Os RPCs `get_flight_operation` e `record_flight_operation` verificam a identidade, a conta ativa, o cargo real, a base e a escala antes de acessar ou escrever. Perfis administrativos não recebem assinatura técnica automaticamente.
