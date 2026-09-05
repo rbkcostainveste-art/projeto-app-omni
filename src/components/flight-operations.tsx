@@ -29,8 +29,8 @@ export function FlightOperations({supabase,flight,readOnly=false,requireSignatur
  const sign=(key:string,result:string)=>void requireSignature(()=>send('approve',{key,result}),'Conferir e assinar verificação');
  const controls=<>{error?<p role="alert" className="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>:null}{retry?<div className="my-3 flex gap-2"><button disabled={busy} onClick={()=>void send('',{})} className="rounded-xl border px-3 py-2 text-sm">Tentar novamente</button><button disabled={busy} onClick={()=>{pending.current=null;setRetry(false);setError('');void load();}} className="rounded-xl border px-3 py-2 text-sm">Recarregar e conferir</button></div>:null}</>;
  if(!data)return <div className="rounded-xl border p-3 text-sm">{error||'Carregando registros operacionais…'}<button onClick={()=>void load()} className="ml-3 text-blue-700">Recarregar</button></div>;
- const keys=[...(data.first?['drain']:[]),'fuel','inspection','hums',...(data.closed?['postflight']:[])];
- const labels:Record<string,string>={drain:'Dreno de combustível',fuel:'Abastecimento',inspection:data.first?'Pré-voo':'Entre voos',hums:'HUMS',postflight:'Inspeção após o voo'};
+ const keys=[...(data.first?['drain']:[]),'fuel','inspection','hums',...(data.closed&&data.nextFlightId===null?['postflight']:[])];
+ const labels:Record<string,string>={drain:'Dreno de combustível',fuel:'Abastecimento',inspection:data.first?'Pré-voo':'Entre voos',hums:'HUMS',postflight:'Inspeção após o último voo do dia'};
  return <section className="space-y-3">
   <p className="text-xs text-[#60758c]">{data.first?'Primeira operação do dia · dreno e pré-voo':'Operação seguinte · sem dreno de combustível'} · {data.day.split('-').reverse().join('/')}</p>
   <div className="grid gap-3 sm:grid-cols-2">{keys.map(key=>{
@@ -42,7 +42,7 @@ export function FlightOperations({supabase,flight,readOnly=false,requireSignatur
    return <div key={key} className={`rounded-xl border p-3 ${tone}`}><h4 className="text-sm font-extrabold">{labels[key]}</h4><p className="mt-1 text-xs font-semibold">{approved?(approved.result==='ok'?'Conferido · OK':'Conferido · não conforme'):execution?'Executado · aguardando conferência':'Pendente'}</p>
     {execution?<p className="mt-2 text-xs">Executor: mat. {execution.actor} · {new Date(execution.at).toLocaleString('pt-BR')}</p>:null}
     {approved?<p className="mt-2 text-xs">Assinatura: mat. {approved.actor} · {new Date(approved.at).toLocaleString('pt-BR')}</p>:null}
-    {key==='inspection'&&!data.first?<p className="mt-2 text-xs text-[#60758c]">Inspeção vinculada à operação anterior desta aeronave.</p>:null}
+    {key==='inspection'&&!data.first?<p className="mt-2 text-xs text-[#60758c]">Esta assinatura marca o OK neste voo e fica vinculada ao anterior como inspeção após o voo para o EDB.</p>:null}
     {data.canSign?<div className="mt-3 flex gap-2"><button disabled={disabled} onClick={()=>sign(key,'ok')} className="min-h-11 flex-1 rounded-lg bg-green-700 px-3 text-xs font-bold text-white disabled:opacity-40">{execution?'Conferir e assinar OK':'Assinar OK'}</button><button disabled={disabled} onClick={()=>sign(key,'no')} className="min-h-11 rounded-lg border border-red-300 px-3 text-xs font-bold text-red-700 disabled:opacity-40">Não conforme</button></div>:null}
     {data.canExecute&&['drain','hums'].includes(key)&&!approved?<button disabled={disabled||Boolean(execution)} onClick={()=>void send('execute',{key})} className="mt-3 min-h-11 w-full rounded-lg bg-orange-100 px-3 text-xs font-bold text-orange-900 disabled:opacity-40">Registrar execução · sem assinatura</button>:null}
    </div>;

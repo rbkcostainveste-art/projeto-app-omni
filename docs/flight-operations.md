@@ -18,7 +18,7 @@ O acesso direto à tabela é negado aos clientes. Os RPCs `get_flight_operation`
 
 O dia operacional usa `America/Sao_Paulo`. A primeira operação efetivamente iniciada da aeronave tem dreno e pré-voo. Antes de qualquer início, o contexto exibido é provisório e é recalculado ao gravar. Voos somente planejados ou cancelados sem acionamento não consomem a primeira operação.
 
-Nas seguintes, `inspection.kind = between` e `targetFlightId` aponta para a operação anterior, embora a tarefa apareça no próximo cartão. A assinatura exige que a anterior esteja encerrada. `postflight` permite registrar a inspeção pelo último voo, sem exigir uma próxima programação. Uma mudança no contexto não reaproveita automaticamente a aprovação de outra tarefa ou outro alvo.
+Nas seguintes, `inspection.kind = between` e `targetFlightId` aponta para a operação anterior, embora a tarefa e seu OK apareçam no próximo cartão. Essa única assinatura representa a inspeção após o voo anterior para a futura integração EDB e exige que ele esteja encerrado. Não se solicita uma segunda assinatura no cartão anterior. `nextFlightId` considera a próxima operação da aeronave no mesmo dia, inclusive programada, excluindo canceladas e excluídas. `postflight` só aparece e aceita assinatura após o encerramento quando não há próximo voo: é a inspeção após o último voo do dia. Assinaturas anteriores permanecem preservadas no histórico. Uma mudança no contexto não reaproveita automaticamente a aprovação de outra tarefa ou outro alvo.
 
 Operações atravessando meia-noite preservam o primeiro dia e aparecem no filtro de hoje enquanto estiverem em andamento. Os eventos guardam timestamps completos, não apenas HH:mm.
 
