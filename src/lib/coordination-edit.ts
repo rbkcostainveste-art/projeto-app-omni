@@ -63,8 +63,8 @@ export function planFlightEdit(original: CoordinatedFlight, updated: Coordinated
   for (const item of future) {
     const departure = wanted.get(item.date);
     if (departure) {
-      // Crew is assigned per occurrence, never carried into a rescheduled repetition.
-      operations.push({ kind: "update", flight: { ...item, departure, commander: "", copilot: "", flightAttendant: "", recurrenceLabel: label, recurrenceId, updatedBy: user } });
+      // Keep this occurrence's own assignment; never copy crew from the edited flight.
+      operations.push({ kind: "update", flight: { ...item, departure, recurrenceLabel: label, recurrenceId, updatedBy: user } });
       wanted.delete(item.date);
     } else {
       operations.push({ kind: "update", flight: { ...item, deletedAt: at, recurrenceLabel: "", recurrenceId: "", updatedBy: user } });

@@ -14,7 +14,7 @@ const flight = {
   revision: 4, wave: 2, acknowledged: { '02140': 4 }, createdBy: '0600', updatedBy: '0600',
   recurrenceId: 'series', recurrenceLabel: 'Repetição ativa · Sex 09:00, Sáb 09:00',
 };
-const future = { ...flight, id: 'future', date: '2026-09-11', fuel: 'pending', preflight: 'pending' };
+const future = { ...flight, id: 'future', date: '2026-09-11', fuel: 'pending', preflight: 'pending', commander: '', copilot: '', flightAttendant: '' };
 
 test('loads every field and the current weekday times', () => {
   const draft = flightToDraft(flight);
@@ -82,6 +82,14 @@ test('legacy unselected occurrences are never deleted or duplicated', () => {
   const unchanged = planFlightEdit(legacy, legacy, flightToDraft(legacy), [], [legacy, unselected], '0600');
   assert.equal(unchanged.length, 1);
   assert.equal(unchanged[0].flight.recurrenceId, '');
+});
+test('rescheduling preserves crew explicitly assigned to that individual future flight', () => {
+  const assigned = { ...future, commander: '1100', copilot: '1200', flightAttendant: '1300' };
+  const draft = { ...flightToDraft(flight), weekdayTimes: { 5: '10:30', 6: '11:00' } };
+  const operations = planFlightEdit(flight, flight, draft, [assigned], [flight, assigned], '0600');
+  const saved = operations.find((op) => op.flight.id === assigned.id).flight;
+  assert.deepEqual([saved.commander, saved.copilot, saved.flightAttendant], ['1100', '1200', '1300']);
+  assert.ok(operations.filter((op) => op.kind === 'create').every((op) => !op.flight.commander && !op.flight.copilot && !op.flight.flightAttendant));
 });
 test('only eligible future occurrences of the same series can be changed', () => {
   const ineligible = [
