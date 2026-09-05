@@ -49,7 +49,7 @@ export function CoordinationDashboard({supabase,flights,aircraft,onOpenTrail,onO
  {clientsOpen&&supabase?<ClientManagement supabase={supabase} user="coordination" onClose={()=>setClientsOpen(false)} onError={onError}/>:null}</section>;
 }
 
-export function FlightCoordination({supabase,flights,aircraft,people,user,onCreate,onConfirm,onDelete,onOpenTrail}:{supabase?:SupabaseClient|null;flights:CoordinatedFlight[];aircraft:Aircraft[];people:Person[];user:string;onCreate:(flight:CoordinatedFlight)=>Promise<boolean>;onConfirm:(id:string)=>void;onDelete:(id:string)=>void;onOpenTrail:(flight:CoordinatedFlight)=>void}){
+export function FlightCoordination({supabase,flights,aircraft,people,user,onCreate,onUpdate,onConfirm,onDelete,onOpenTrail}:{supabase?:SupabaseClient|null;flights:CoordinatedFlight[];aircraft:Aircraft[];people:Person[];user:string;onCreate:(flight:CoordinatedFlight)=>Promise<boolean>;onUpdate?:(flight:CoordinatedFlight)=>Promise<boolean>;onConfirm:(id:string)=>void;onDelete:(id:string)=>void;onOpenTrail:(flight:CoordinatedFlight)=>void}){
  const available=aircraft.filter((item)=>item.available??true);
  const blank=():Draft=>({id:uid(),prefix:available[0]?.prefix??"",date:today(),departure:"08:00",destination:"",duration:"01:30",fuelAmount:"0",fuelUnit:"L",commander:"",copilot:"",flightAttendant:"",repeat:false,weekdays:[],weekdayTimes:{}});
  const [drafts,setDrafts]=useState<Draft[]>([blank()]);
