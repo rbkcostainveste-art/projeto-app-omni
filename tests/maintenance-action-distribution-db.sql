@@ -34,6 +34,18 @@ begin
  if not exists(select 1 from public.list_crew_maintenance_actions() a where a->>'prefix'=prefix) then raise exception 'Pending action disappeared after midnight';end if;
  execute 'reset role';
  perform set_config('request.jwt.claim.sub',inspector::text,true);
+ execute 'set local role authenticated';
+ perform public.edit_maintenance_action(w,'Check corrigido - referência FC 123',(select revision::integer from operational_wall_posts where id=w));
+ if not exists(select 1 from operational_wall_posts where id=w and data#>>'{actions,0,title}'='Check corrigido - referência FC 123' and data#>>'{actions,0,edits,0,before}'='TEST pending' and data#>>'{actions,0,editedAt}' is not null) then raise exception 'Edit not saved or audited';end if;
+ begin perform public.edit_maintenance_action(w,'Stale',0);raise exception 'Stale edit accepted';exception when others then if sqlerrm='Stale edit accepted' then raise;end if;end;
+ execute 'reset role';
+ perform set_config('request.jwt.claim.sub',mech::text,true);execute 'set local role authenticated';
+ begin perform public.edit_maintenance_action(w,'Forbidden',1);raise exception 'Mechanic edit accepted';exception when others then if sqlerrm='Mechanic edit accepted' then raise;end if;end;
+ execute 'reset role';
+ perform set_config('request.jwt.claim.sub',pilot::text,true);execute 'set local role authenticated';
+ if not exists(select 1 from public.list_crew_maintenance_actions() a where a->>'prefix'=prefix and a->>'title'='Check corrigido - referência FC 123' and a->>'editedAt' is not null) then raise exception 'Pilot missing edited text and indicator';end if;
+ execute 'reset role';
+ perform set_config('request.jwt.claim.sub',inspector::text,true);
  update operational_wall_posts set data=jsonb_set(data,'{category}','"Procedimentos"') where id=w;
  execute 'set local role authenticated';
  if not exists(select 1 from operational_wall_posts where id=w) then raise exception 'Inspector lost procedure';end if;
@@ -51,4 +63,3 @@ begin
 end $$;
 select 'PASS: creation, atomic link, inspector, assigned mechanic, coordination, assigned aircraft pilot, unassigned denial, pending across days; procedures visible only to maintenance' result;
 rollback;
-
