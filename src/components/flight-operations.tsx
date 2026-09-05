@@ -50,7 +50,17 @@ export function FlightOperations({supabase,flight,readOnly=false,requireSignatur
   {open?<OperationDialog title={`${flight.prefix} · ${flight.model}`} onClose={()=>{if(!busy)setOpen(false);}}>
    <p className="text-sm text-[#60758c]">Cada toque registra o evento e o horário neste voo.</p>
    <div className="mt-4 grid grid-cols-2 gap-3">{[...(isS92(flight.model)?['apu']:[]),'engine1','engine2'].map(equipment=>{const on=activeEquipment(data.events,equipment);const type=`${equipment}_${on?'off':'on'}`;const total=operationTotals(data.events,equipment);return <button key={equipment} disabled={disabled||!data.canPilot||!eventAvailable(data.events,type,flight.model)||data.closed} onClick={()=>void send('event',{type,at:new Date().toISOString()})} className={`min-h-24 rounded-xl border p-4 text-left disabled:opacity-40 ${on?'border-green-400 bg-green-50':'border-blue-200 bg-blue-50'}`}><strong className="block text-sm">{eventLabels[type]}</strong><span className="mt-2 block text-xs">{total.activations} acionamento(s) · {total.minutes} min concluídos{total.running?' · ligado':''}</span></button>;})}
-    {['takeoff','landing','rotor_brake','finish'].map(type=><button key={type} disabled={disabled||!data.canPilot||!eventAvailable(data.events,type,flight.model)||data.closed} onClick={()=>void send('event',{type,at:new Date().toISOString()})} className="min-h-16 rounded-xl border border-[#cbd9e7] bg-white p-4 text-sm font-bold disabled:opacity-40">{eventLabels[type]}</button>)}
+    {['takeoff','landing','rotor_brake','finish'].map(type=>{
+     const recorded=data.events.filter(event=>event.type===type).at(-1);
+     const available=eventAvailable(data.events,type,flight.model)&&!data.closed;
+     const completedLabels:Record<string,string>={takeoff:'Decolagem registrada',landing:'Pouso registrado',rotor_brake:'Freio rotor registrado',finish:'Operação encerrada'};
+     const repeatLabels:Record<string,string>={takeoff:'Decolar novamente',landing:'Registrar novo pouso',rotor_brake:'Registrar nova aplicação'};
+     return <button key={type} style={recorded?{opacity:1}:undefined} disabled={disabled||!data.canPilot||!available} onClick={()=>void send('event',{type,at:new Date().toISOString()})} className={`min-h-24 rounded-xl border p-4 text-left text-sm font-bold ${recorded?'border-green-500 bg-green-100 text-green-900 disabled:opacity-100':'border-[#cbd9e7] bg-white disabled:opacity-40'}`}>
+      <strong className="block">{recorded?`✓ ${completedLabels[type]}`:eventLabels[type]}</strong>
+      {recorded?<span className="mt-2 block text-xs font-semibold">{new Date(recorded.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span>:null}
+      {recorded&&available&&data.canPilot?<span className="mt-2 block text-xs underline">{repeatLabels[type]}</span>:null}
+     </button>;
+    })}
    </div>
    <p className="mt-3 text-xs text-[#60758c]">{data.events.filter(e=>e.type==='takeoff').length} decolagem(ns) · {data.events.filter(e=>e.type==='landing').length} pouso(s) · {data.events.filter(e=>e.type==='rotor_brake').length} aplicação(ões) do freio rotor</p>
    {controls}
