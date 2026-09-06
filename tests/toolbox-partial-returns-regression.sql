@@ -13,8 +13,8 @@ begin
  perform set_config('request.jwt.claim.sub',owner_d.auth_user_id::text,true);perform public.toolbox_command('accept_box',jsonb_build_object('operationId',o));
  perform set_config('request.jwt.claim.sub',borrower.auth_user_id::text,true);
  e:=(public.toolbox_command('take_tool',jsonb_build_object('boxId',b,'aircraftPrefix',prefix_value,'toolIds','["t1","t2"]'::jsonb))->>'id')::uuid;
- blocked:=false;begin perform public.toolbox_command('mark_tool_returned',jsonb_build_object('eventId',e,'toolIds','["t1"]'::jsonb));exception when others then blocked:=true;end;if not blocked then raise exception 'Unapproved loan returned';end if;
- perform set_config('request.jwt.claim.sub',owner_d.auth_user_id::text,true);perform public.toolbox_command('approve_tool_withdrawal',jsonb_build_object('eventId',e));
+ if not exists(select 1 from public.toolbox_events where id=e and status='open' and employee_number=borrower.employee_number and approved_by is null) then raise exception 'Withdrawal requires approval or invents approval';end if;
+ perform set_config('request.jwt.claim.sub',owner_d.auth_user_id::text,true);
  blocked:=false;begin perform public.toolbox_command('mark_tool_returned',jsonb_build_object('eventId',e,'toolIds','["t1"]'::jsonb));exception when others then blocked:=true;end;if not blocked then raise exception 'Owner returned another persons tools';end if;
  perform set_config('request.jwt.claim.sub',borrower.auth_user_id::text,true);
  r:=(public.toolbox_command('mark_tool_returned',jsonb_build_object('eventId',e,'toolIds','["t1"]'::jsonb))->>'id')::uuid;

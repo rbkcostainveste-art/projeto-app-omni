@@ -22,7 +22,7 @@ begin
  perform set_config('request.jwt.claim.sub',owner_d.auth_user_id::text,true);
  perform public.toolbox_command('accept_box',jsonb_build_object('operationId',o));
  e:=(public.toolbox_command('take_tool',jsonb_build_object('boxId',b,'aircraftPrefix',next_prefix,'toolIds','["t1"]'::jsonb))->>'id')::uuid;
- if not exists(select 1 from public.toolbox_events where id=e and status='open' and approved_by=owner_d.employee_number and aircraft_prefix=next_prefix and tool_refs->0->>'drawer'='Gaveta 1') then raise exception 'Self-use missing approval, aircraft or drawer snapshot';end if;
+ if not exists(select 1 from public.toolbox_events where id=e and status='open' and approved_by is null and aircraft_prefix=next_prefix and tool_refs->0->>'drawer'='Gaveta 1') then raise exception 'Self-use missing direct registration, aircraft or drawer snapshot';end if;
  if not exists(select 1 from public.toolbox_audit where target_id=e and action='self_tool_use' and actor=owner_d.employee_number) then raise exception 'Missing self-use signature';end if;
  perform public.toolbox_command('change_box_aircraft',jsonb_build_object('operationId',o,'previousPrefix',first_prefix,'aircraftPrefix',next_prefix));
  if not exists(select 1 from public.toolbox_operations where id=o and aircraft_prefix=next_prefix and aircraft_usage->0->>'to'=first_prefix and aircraft_usage->1->>'from'=first_prefix and aircraft_usage->1->>'to'=next_prefix and aircraft_usage->1->>'actor'=owner_d.employee_number) then raise exception 'Usage chain not preserved';end if;
@@ -32,13 +32,13 @@ begin
  blocked:=false;begin perform public.toolbox_command('change_box_aircraft',jsonb_build_object('operationId',o,'previousPrefix',next_prefix,'aircraftPrefix',first_prefix));exception when others then blocked:=true;end;if not blocked then raise exception 'Unrelated person changed box aircraft';end if;
  blocked:=false;begin perform public.toolbox_command('take_tool',jsonb_build_object('boxId',b,'aircraftPrefix',first_prefix,'toolIds','["t1"]'::jsonb));exception when others then blocked:=true;end;if not blocked then raise exception 'Busy tool borrowed twice';end if;
  e:=(public.toolbox_command('take_tool',jsonb_build_object('boxId',b,'aircraftPrefix',first_prefix,'toolIds','["t2"]'::jsonb))->>'id')::uuid;
- if (select status from public.toolbox_events where id=e)<>'awaiting_approval' then raise exception 'Colleague bypassed owner confirmation';end if;
+ if (select status from public.toolbox_events where id=e)<>'open' then raise exception 'Colleague withdrawal not immediately registered';end if;
  perform set_config('request.jwt.claim.sub',owner_d.auth_user_id::text,true);
  perform public.toolbox_command('change_box_aircraft',jsonb_build_object('operationId',o,'previousPrefix',next_prefix,'aircraftPrefix',first_prefix));
  if (select aircraft_prefix from public.toolbox_events where operation_id=o and tool_refs->0->>'id'='t1')<>next_prefix then raise exception 'Changing box overwrote past tool use';end if;
- perform public.toolbox_command('approve_tool_withdrawal',jsonb_build_object('eventId',e));
+ 
  perform set_config('request.jwt.claim.sub',keeper.auth_user_id::text,true);
  blocked:=false;begin perform public.toolbox_command('request_box_return',jsonb_build_object('operationId',o));exception when others then blocked:=true;end;if not blocked then raise exception 'Box returned with tools outstanding';end if;
 end $test$;
 rollback;
-select 'PASS: maintenance-only recipients including auxiliary; self-use signature; immutable aircraft usage; owner-only changes; stale edits; no double loans; colleague confirmation; outstanding tools block return' as result;
+select 'PASS: maintenance-only recipients including auxiliary; self-use signature; immutable aircraft usage; owner-only changes; stale edits; no double loans; direct colleague withdrawal; outstanding tools block return' as result;

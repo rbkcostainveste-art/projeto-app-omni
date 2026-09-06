@@ -20,13 +20,13 @@ ev:=(public.toolbox_command('take_tool',jsonb_build_object('boxId',box,'toolIds'
 if (select tool_refs->0->>'drawer' from public.toolbox_events where id=ev)<>'Gaveta 1' then raise exception 'Missing snapshot';end if;
 failed:=false;begin perform public.toolbox_command('take_tool',jsonb_build_object('boxId',box,'toolIds','["socket10"]'::jsonb));exception when others then failed:=true;end;if not failed then raise exception 'Duplicate loan';end if;
 perform set_config('request.jwt.claim.sub',owner_d.auth_user_id::text,true);
-perform public.toolbox_command('approve_tool_withdrawal',jsonb_build_object('eventId',ev));
+
 perform set_config('request.jwt.claim.sub',borrower.auth_user_id::text,true);
 perform public.toolbox_command('correct_tool_selection',jsonb_build_object('eventId',ev,'toolIds','["socket12"]'::jsonb,'reason','Selecionei tamanho errado'));
-if (select status from public.toolbox_events where id=ev)<>'awaiting_approval' then raise exception 'Correction skipped confirmation';end if;
+if (select status from public.toolbox_events where id=ev)<>'open' then raise exception 'Correction unexpectedly needs owner confirmation';end if;
 if not exists(select 1 from public.toolbox_audit where target_id=ev and action='correct_tool_selection' and payload->'before'->0->>'id'='socket10') then raise exception 'Missing old selection audit';end if;
 perform set_config('request.jwt.claim.sub',owner_d.auth_user_id::text,true);
-perform public.toolbox_command('approve_tool_withdrawal',jsonb_build_object('eventId',ev));
+
 perform set_config('request.jwt.claim.sub',borrower.auth_user_id::text,true);perform public.toolbox_command('mark_tool_returned',jsonb_build_object('eventId',ev));
 perform set_config('request.jwt.claim.sub',owner_d.auth_user_id::text,true);perform public.toolbox_command('confirm_tool_return',jsonb_build_object('eventId',ev,'ok',true));
 perform set_config('request.jwt.claim.sub',keeper.auth_user_id::text,true);perform public.toolbox_command('request_box_return',jsonb_build_object('operationId',op));
