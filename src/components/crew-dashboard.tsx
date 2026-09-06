@@ -1,4 +1,5 @@
 "use client";
+import {useScreenNotifications} from "./screen-notifications";
 import { ModalLayer } from "./modal-layer";
 import {positionValue} from "@/lib/maintenance-edit-read";
 import {useMaintenanceEditReads} from "@/components/use-maintenance-edit-reads";
@@ -10,7 +11,7 @@ import { groupCrewFlights } from "@/lib/crew-flights";
 import { Ban, CalendarClock, Clock3, Fuel, Gauge, MapPin, Plane, Wind, Wrench, X } from "lucide-react";
 
 export type CrewFlight = {
-  id:string; prefix:string; model:string; base:string; date:string; departure:string; destination?:string;spot?:string;maintenancePostId?:string;
+  id:string; revision?:number; history?:{at:string;value:string}[]; prefix:string; model:string; base:string; date:string; departure:string; destination?:string;spot?:string;maintenancePostId?:string;
   duration:number; fuelAmount:number; fuelUnit:string; planningStatus?:"planned"|"confirmed";
   commander?:string; copilot?:string; flightAttendant?:string; cancelled?:boolean; cancellationReason?:string; deletedAt?:string; actualEngineStart?:string|null; actualShutdown?:string|null;
 };
@@ -52,6 +53,7 @@ export function CrewDashboard({people=[],supabase,user,base,fleets,dryingFleetOp
     return !item.maintenancePostId&&item.date===today()&&(!base||normalized(item.base)===normalized(base))&&(!belongsToAuthorizedFleet||belongsToSelectedFleet);
   }).sort((a,b)=>a.departure.localeCompare(b.departure)),[flights,base,fleets,effectiveSelectedFleets]);
   const {visible,confirmed,planned,cancelled}=groupCrewFlights(daily,user);
+  useScreenNotifications("crew",visible.map(item=>({id:`${item.id}:${item.revision??0}`,title:item.history?.at(-1)?.value??`Voo ${item.prefix}`,description:`${item.date} · ${item.departure}`,at:item.history?.at(-1)?.at??`${item.date}T${item.departure}:00-03:00`})),id=>{const item=visible.find(item=>`${item.id}:${item.revision??0}`===id);if(item)setSelected(item);});
   const selectedFlight=visible.find((flight)=>flight.id===selected?.id);
   return <section className="space-y-5">
     <header className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-2xl font-extrabold text-[#17324d]">Programação</h2><button onClick={()=>setDryingOpen(true)} className={`relative flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-bold text-white ${pendingDryingCount?"bg-amber-500":"bg-[#173f70]"}`}><Wind size={18}/>Secagens de compressores<b className={`grid h-6 min-w-6 place-items-center rounded-full px-1.5 text-xs ${pendingDryingCount?"bg-white text-amber-700":"bg-white/20 text-white"}`}>{pendingDryingCount}</b></button></header>
