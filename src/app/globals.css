@@ -106,3 +106,9 @@ html:has(.app-modal-layer[open]) { overflow:hidden; }
 .tool-use-card { width:100%; min-width:0; overflow-wrap:anywhere; }
 @media(min-width:700px) { .tool-card-strip { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(min-width:1280px) { .tool-card-strip { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+
+nav[aria-label="Navegação principal"] { margin:8px; margin-bottom:max(8px,env(safe-area-inset-bottom)); border-radius:20px; padding:5px; background:#fff; box-shadow:0 4px 18px #17324d14; }
+nav[aria-label="Navegação principal"] button { border-radius:15px; min-width:0; padding-left:3px; padding-right:3px; }
+nav[aria-label="Navegação principal"] button[aria-current="page"] { background:#e8f2ff; color:#1268d8; }
+nav[aria-label="Navegação principal"] button[aria-current="page"] > span.absolute.top-0 { display:none; }
+@media(min-width:1100px) { .split-workspace > nav[aria-label="Navegação principal"] { width:calc(var(--workspace-sidebar) - 16px); } }
