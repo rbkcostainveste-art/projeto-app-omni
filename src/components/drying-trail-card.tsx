@@ -1,0 +1,9 @@
+"use client";
+import {useState} from 'react';
+import type {SupabaseClient} from '@supabase/supabase-js';
+import {Wind} from 'lucide-react';
+export function DryingTrailCard({flight,supabase,canComplete,requireSignature}:{flight:{id:string;prefix:string;model:string;base:string;compressorDryingTaskId?:string;maintenancePurpose?:string;shutdown:string};supabase:SupabaseClient|null;canComplete:boolean;requireSignature:(action:()=>void|Promise<void>,label?:string)=>Promise<boolean>}){
+ const [busy,setBusy]=useState(false);const [error,setError]=useState('');const done=flight.shutdown==='ok';
+ async function complete(){if(!supabase||busy||!flight.compressorDryingTaskId)return;setBusy(true);setError('');try{await requireSignature(async()=>{const{error}=await supabase.rpc('complete_compressor_drying',{p_task_id:flight.compressorDryingTaskId});if(error)throw error;},`Confirmar secagem do ${flight.prefix}`);}catch(error){setError((error as Error).message);}finally{setBusy(false);}}
+ return <article className={`rounded-2xl border-l-4 p-4 shadow-sm ${done?'border-green-500 bg-green-50':'border-violet-500 bg-violet-50'}`}><div className="flex items-center justify-between"><strong className="text-lg">{flight.prefix}</strong><Wind size={20}/></div><p className="text-xs">{flight.model} · {flight.base}</p><h3 className="mt-3 font-bold">Secagem de compressores</h3><p className="mt-2 whitespace-pre-wrap text-sm">Motivo: {flight.maintenancePurpose}</p><p className="mt-3 text-xs font-bold">{done?'Secagem concluída':'Aguardando secagem'}</p>{canComplete&&!done?<button disabled={busy} onClick={()=>void complete()} className="mt-3 rounded-lg bg-violet-700 px-3 py-2 text-sm font-bold text-white disabled:opacity-40">{busy?'Confirmando…':'Confirmar secagem concluída'}</button>:null}{error?<p role="alert" className="mt-2 text-sm text-red-700">{error}</p>:null}</article>;
+}

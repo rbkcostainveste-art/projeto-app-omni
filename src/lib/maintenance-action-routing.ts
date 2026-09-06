@@ -1,0 +1,8 @@
+export const flightMaintenanceCategories=['Giro em baixa','Giro em alta','Voo de vibração','Voo de manutenção'];
+export const washCategories=['Lavagem da CT disk','Lavagem com produto'];
+export function createsMaintenanceFlight(category:string){return flightMaintenanceCategories.includes(category);}
+export function isS92Fleet(model:string){return model.toUpperCase().replace(/[^A-Z0-9]/g,'')==='S92';}
+export function availableMaintenanceCategories(model:string){return [...flightMaintenanceCategories,'Power Check',...washCategories.filter(category=>category!=='Lavagem da CT disk'||!isS92Fleet(model)),'Procedimentos'];}
+export function maintenanceAudienceHint(category:string){return category==='Procedimentos'?'Uso interno da manutenção. Não aparece para coordenação nem pilotos.':createsMaintenanceFlight(category)?'Gera um voo/giro nos Trilhos para manutenção, piloto e coordenação.':category==='Power Check'?'Atividade para manutenção e piloto durante um voo normal. Não gera voo próprio nem aparece para a coordenação.':'Solicita a lavagem na Passagem de Pista. A confirmação da lavagem gera a secagem para piloto, coordenação e Trilhos.';}
+export type RunwayWashRequest={postId:string;actionId:string;prefix:string;base:string;key:'ctDiskWash'|'productWash'};
+export function visibleWashKeys(item:{prefix:string;base:string;model:string;checks:Record<string,unknown>},requests:RunwayWashRequest[]){return (['ctDiskWash','productWash'] as const).filter(key=>(key!=='ctDiskWash'||!isS92Fleet(item.model))&&(item.checks[key]==='yes'||item.checks[key]==='no'||requests.some(r=>r.prefix===item.prefix&&r.base===item.base&&r.key===key)));}
