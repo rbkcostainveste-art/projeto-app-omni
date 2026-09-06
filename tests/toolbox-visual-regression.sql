@@ -16,7 +16,7 @@ perform set_config('request.jwt.claim.sub',owner_d.auth_user_id::text,true);
 failed:=false;begin perform public.save_toolbox_visual(box,draft,1);exception when others then failed:=true;end;if not failed then raise exception 'Mechanic edited catalog';end if;
 perform public.toolbox_command('accept_box',jsonb_build_object('operationId',op));
 perform set_config('request.jwt.claim.sub',borrower.auth_user_id::text,true);
-ev:=(public.toolbox_command('take_tool',jsonb_build_object('boxId',box,'toolIds','["socket10"]'::jsonb,'aircraftPrefix','PR-CHT'))->>'id')::uuid;
+ev:=(public.toolbox_command('take_tool',jsonb_build_object('boxId',box,'toolIds','["socket10"]'::jsonb,'aircraftPrefix',(select prefix from public.aircraft order by prefix limit 1)))->>'id')::uuid;
 if (select tool_refs->0->>'drawer' from public.toolbox_events where id=ev)<>'Gaveta 1' then raise exception 'Missing snapshot';end if;
 failed:=false;begin perform public.toolbox_command('take_tool',jsonb_build_object('boxId',box,'toolIds','["socket10"]'::jsonb));exception when others then failed:=true;end;if not failed then raise exception 'Duplicate loan';end if;
 perform set_config('request.jwt.claim.sub',owner_d.auth_user_id::text,true);

@@ -15,7 +15,7 @@ begin
  blocked:=false;begin perform public.toolbox_command('accept_box',jsonb_build_object('operationId',o));exception when others then blocked:=true;end;if not blocked then raise exception 'Wrong recipient accepted';end if;
  perform set_config('request.jwt.claim.sub',owner_d.auth_user_id::text,true);perform public.toolbox_command('accept_box',jsonb_build_object('operationId',o));
  perform set_config('request.jwt.claim.sub',borrower.auth_user_id::text,true);
- e:=(public.toolbox_command('take_tool',jsonb_build_object('boxId',b,'description','Alicate','aircraftPrefix','PR-CHT'))->>'id')::uuid;
+ e:=(public.toolbox_command('take_tool',jsonb_build_object('boxId',b,'description','Alicate','aircraftPrefix',(select prefix from public.aircraft order by prefix limit 1)))->>'id')::uuid;
  perform set_config('request.jwt.claim.sub',inspector.auth_user_id::text,true);
  blocked:=false;begin perform public.toolbox_command('approve_tool_withdrawal',jsonb_build_object('eventId',e));exception when others then blocked:=true;end;if not blocked then raise exception 'Unrelated inspector approved loan';end if;
  perform set_config('request.jwt.claim.sub',owner_d.auth_user_id::text,true);perform public.toolbox_command('approve_tool_withdrawal',jsonb_build_object('eventId',e));
