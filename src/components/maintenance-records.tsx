@@ -1,6 +1,6 @@
 "use client";
 import { ModalLayer } from "./modal-layer";
-import {DesktopControls} from "./desktop-workspace";
+import {DesktopControls,DesktopActions} from "./desktop-workspace";
 import {AssignmentPicker,ActionFields,type Person} from "@/components/action-fields";
 import {availableMaintenanceCategories,maintenanceAudienceHint} from "@/lib/maintenance-action-routing";
 import {MediaPicker,MediaGallery} from "@/components/record-media";
@@ -57,7 +57,7 @@ export function MaintenanceRecords({ mode, supabase, user, userDirectory, profil
   }
   const currentAssignment = people.find((person) => person.employeeNumber === user);
   return <section>
-    {mode !== "service" || leadership ? <div className="mb-4 flex justify-end"><button onClick={() => mode === "service" ? setBatchCreating(true) : setCreating(mode === "faults" ? "fault" : "discrepancy")} className="flex min-h-11 items-center gap-2 rounded-xl bg-[#1268d8] px-4 text-sm font-bold text-white"><Plus size={18} />{mode === "service" ? "Novo serviço" : mode === "faults" ? "Nova pane" : "Nova discrepância"}</button></div> : null}
+    <DesktopActions>{mode !== "service" || leadership ? <button onClick={() => mode === "service" ? setBatchCreating(true) : setCreating(mode === "faults" ? "fault" : "discrepancy")} className="flex min-h-11 items-center gap-2 rounded-xl bg-[#1268d8] px-4 text-sm font-bold text-white"><Plus size={18} />{mode === "service" ? "Novo serviço" : mode === "faults" ? "Nova pane" : "Nova discrepância"}</button> : null}</DesktopActions>
     <DesktopControls>
     <RecordFilters mode={mode} filters={filters} setFilters={setFilters} aircraft={aircraft} bases={bases} models={models} modelOptions={modelOptions} prefixOptions={prefixOptions} />
 </DesktopControls>

@@ -89,3 +89,6 @@ input::placeholder, textarea::placeholder { color: #8294a8; opacity: 1; }
 .app-modal-layer::backdrop { background:transparent; }
 .app-modal-layer > .fixed { transform:none; }
 html:has(.app-modal-layer[open]) { overflow:hidden; }
+
+.workspace-actions > button { flex:1; min-width:0; justify-content:center; padding-left:8px; padding-right:8px; font-size:12px; }
+.workspace-actions > button > svg { flex-shrink:0; }
