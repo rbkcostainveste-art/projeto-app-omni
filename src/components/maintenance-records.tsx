@@ -57,7 +57,7 @@ export function MaintenanceRecords({ mode, supabase, user, userDirectory, profil
   }
   const currentAssignment = people.find((person) => person.employeeNumber === user);
   return <section>
-    <DesktopActions>{mode !== "service" || leadership ? <button onClick={() => mode === "service" ? setBatchCreating(true) : setCreating(mode === "faults" ? "fault" : "discrepancy")} className="flex min-h-11 items-center gap-2 rounded-xl bg-[#1268d8] px-4 text-sm font-bold text-white"><Plus size={18} />{mode === "service" ? "Novo serviço" : mode === "faults" ? "Nova pane" : "Nova discrepância"}</button> : null}</DesktopActions>
+    <DesktopActions>{mode !== "service" || leadership ? <button onClick={() => mode === "service" ? setBatchCreating(true) : setCreating(mode === "faults" ? "fault" : "discrepancy")} style={mode === "service" ? {columnGap:4,whiteSpace:"nowrap"} : undefined} className="flex min-h-11 items-center gap-2 rounded-xl bg-[#1268d8] px-4 text-sm font-bold text-white"><Plus size={mode === "service" ? 16 : 18} />{mode === "service" ? "Programar serviço" : mode === "faults" ? "Nova pane" : "Nova discrepância"}</button> : null}</DesktopActions>
     <DesktopControls>
     <RecordFilters mode={mode} filters={filters} setFilters={setFilters} aircraft={aircraft} bases={bases} models={models} modelOptions={modelOptions} prefixOptions={prefixOptions} />
 </DesktopControls>
