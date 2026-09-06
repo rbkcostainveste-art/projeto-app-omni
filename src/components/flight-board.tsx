@@ -1,4 +1,5 @@
 "use client";
+import {completeSharedState,isCompleteSharedState} from "@/lib/shared-state-sync";
 import {FlightTrash} from "./flight-trash";
 import {positionValue} from "@/lib/maintenance-edit-read";
 
@@ -251,11 +252,28 @@ export function FlightBoard() {
       if(active&&authorRoles)setUserDirectory(current=>Object.fromEntries(Object.entries(current).map(([id,person])=>[id,{...person,role:(authorRoles as {employee_number:string;job_role:string}[]).find(p=>p.employee_number===id)?.job_role}])));
       const { data, error } = await supabase!.from("shared_app_state").select("flights,catalogs,revision").eq("id", "main").maybeSingle();
       if(error) { if(active) setSyncError(error.message); return; }
+      if(data&&!isCompleteSharedState(data)){if(active)setSyncError("Dados de sincronização incompletos. Reabra a tela para tentar novamente.");return;}
       if(data) { const serialized = JSON.stringify({ flights: data.flights, catalogs: data.catalogs }); lastRemoteState.current = serialized; lastRemoteCatalogs.current = JSON.stringify(data.catalogs); if(active) { setFlights(data.flights as Flight[]); setCatalogs(data.catalogs as Catalogs); } }
       else if(user === "0001") { const initial = localSnapshot.current; const serialized = JSON.stringify(initial); const { error: initError } = await supabase!.rpc("save_shared_state", { p_flights: initial.flights, p_catalogs: initial.catalogs }); if(initError) { if(active) setSyncError(initError.message); return; } lastRemoteState.current = serialized; }
       else { if(active) setSyncError("Aguardando o administrador iniciar a sincronização."); return; }
       if(active) { setSyncError(""); setSyncReady(true); }
-      channel = supabase!.channel("flight-ia-shared-state").on("postgres_changes", { event: "UPDATE", schema: "public", table: "shared_app_state", filter: "id=eq.main", select: ["id", "flights", "catalogs"] }, (payload) => { const row = payload.new as { flights: Flight[]; catalogs: Catalogs }; const serialized = JSON.stringify({ flights: row.flights, catalogs: row.catalogs }); if(serialized === lastRemoteState.current) return; lastRemoteState.current = serialized; lastRemoteCatalogs.current = JSON.stringify(row.catalogs); setFlights(row.flights); setCatalogs(row.catalogs); }).subscribe((status) => { if(status === "SUBSCRIBED") setSyncError(""); else if(status === "CHANNEL_ERROR" || status === "TIMED_OUT") setSyncError("Reconectando a sincronização em tempo real…"); });
+      let refreshVersion=0;
+      channel = supabase!.channel("flight-ia-shared-state").on("postgres_changes", { event: "UPDATE", schema: "public", table: "shared_app_state", filter: "id=eq.main", select: ["id", "flights", "catalogs"] }, async (payload) => {
+        const version=++refreshVersion;
+        try {
+          const row=await completeSharedState<{flights:Flight[];catalogs:Catalogs}>(payload.new,async()=>{
+            const {data,error}=await supabase!.from("shared_app_state").select("flights,catalogs").eq("id","main").maybeSingle();
+            if(error)throw error;
+            return data as {flights:Flight[];catalogs:Catalogs};
+          });
+          if(!active||version!==refreshVersion||pendingMutations.current>0)return;
+          const serialized=JSON.stringify({flights:row.flights,catalogs:row.catalogs});
+          if(serialized===lastRemoteState.current)return;
+          lastRemoteState.current=serialized;
+          lastRemoteCatalogs.current=JSON.stringify(row.catalogs);
+          setFlights(row.flights);setCatalogs(row.catalogs);
+        }catch(error){if(active&&version===refreshVersion)setSyncError(`Sincronização temporariamente indisponível: ${(error as Error).message}`);}
+      }).subscribe((status) => { if(status === "SUBSCRIBED") setSyncError(""); else if(status === "CHANNEL_ERROR" || status === "TIMED_OUT") setSyncError("Reconectando a sincronização em tempo real…"); });
     }
     void connect();
     return () => { active = false; setSyncReady(false); if(channel) void supabase.removeChannel(channel); };
@@ -286,6 +304,7 @@ export function FlightBoard() {
       if(!active) return;
       if(error) { setSyncError(error.message); return; }
       if(!data) return;
+      if(!isCompleteSharedState(data)){setSyncError("Atualização incompleta. Os dados atuais foram mantidos.");return;}
       const serialized = JSON.stringify({ flights: data.flights, catalogs: data.catalogs });
       if(serialized === lastRemoteState.current) return;
       lastRemoteState.current = serialized;
