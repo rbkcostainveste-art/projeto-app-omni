@@ -1,6 +1,7 @@
 begin; do $test$
-declare inspector public.device_identities; owner_d public.device_identities; borrower public.device_identities; box uuid; op uuid; ev uuid; ev2 uuid; draft jsonb; failed boolean; dest text;
+declare keeper public.device_identities; inspector public.device_identities; owner_d public.device_identities; borrower public.device_identities; box uuid; op uuid; ev uuid; ev2 uuid; draft jsonb; failed boolean; dest text;
 begin
+select * into keeper from public.device_identities where coalesce(job_role,access_profile)='toolroom' limit 1;
 select * into inspector from public.device_identities where coalesce(job_role,access_profile)='maintenance_inspector' limit 1;
 select * into owner_d from public.device_identities where coalesce(job_role,access_profile)='mechanic' limit 1;
 select * into borrower from public.device_identities where coalesce(job_role,access_profile)='mechanic' and employee_number<>owner_d.employee_number limit 1;
@@ -9,6 +10,7 @@ box:=public.create_toolbox_catalog('QA visual '||gen_random_uuid(),'Jacarepaguá
 draft:='[{"id":"drawer1","name":"Gaveta 1","photo":"","reviewed":true,"tools":[{"id":"socket10","name":"Soquete","measure":"10 mm","x":10,"y":10,"reviewed":true},{"id":"socket12","name":"Soquete","measure":"12 mm","x":30,"y":10,"reviewed":true}]}]';
 perform public.save_toolbox_visual(box,draft,0);
 failed:=false;begin perform public.save_toolbox_visual(box,draft,0);exception when others then failed:=true;end;if not failed then raise exception 'Stale write allowed';end if;
+perform set_config('request.jwt.claim.sub',keeper.auth_user_id::text,true);
 op:=(public.toolbox_command('assign_box',jsonb_build_object('boxId',box,'assignedTo',owner_d.employee_number))->>'id')::uuid;
 perform set_config('request.jwt.claim.sub',owner_d.auth_user_id::text,true);
 failed:=false;begin perform public.save_toolbox_visual(box,draft,1);exception when others then failed:=true;end;if not failed then raise exception 'Mechanic edited catalog';end if;
@@ -27,7 +29,7 @@ perform set_config('request.jwt.claim.sub',owner_d.auth_user_id::text,true);
 perform public.toolbox_command('approve_tool_withdrawal',jsonb_build_object('eventId',ev));
 perform set_config('request.jwt.claim.sub',borrower.auth_user_id::text,true);perform public.toolbox_command('mark_tool_returned',jsonb_build_object('eventId',ev));
 perform set_config('request.jwt.claim.sub',owner_d.auth_user_id::text,true);perform public.toolbox_command('confirm_tool_return',jsonb_build_object('eventId',ev,'ok',true));
-perform set_config('request.jwt.claim.sub',inspector.auth_user_id::text,true);perform public.toolbox_command('request_box_return',jsonb_build_object('operationId',op));
+perform set_config('request.jwt.claim.sub',keeper.auth_user_id::text,true);perform public.toolbox_command('request_box_return',jsonb_build_object('operationId',op));
 perform set_config('request.jwt.claim.sub',owner_d.auth_user_id::text,true);perform public.toolbox_command('sign_box_return',jsonb_build_object('operationId',op));
 perform set_config('request.jwt.claim.sub',inspector.auth_user_id::text,true);
 select name into dest from public.operation_bases where name<>'Jacarepaguá' and active limit 1;
