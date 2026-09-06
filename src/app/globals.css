@@ -97,3 +97,11 @@ html:has(.app-modal-layer[open]) { overflow:hidden; }
  .split-workspace .flight-trail-grid { grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); }
  .desktop-control-block .desktop-flight-controls { flex-wrap:wrap; }
 }
+
+.tool-card-strip { display:flex; align-items:flex-start; gap:16px; overflow-x:auto; padding:4px 4px 16px; scrollbar-gutter:stable; }
+.tool-use-card { flex:0 0 min(380px,calc(100vw - 48px)); min-width:0; overflow-wrap:anywhere; }
+
+.tool-card-strip { scrollbar-width:thin; scrollbar-color:#8ca7c4 #e1eaf4; }
+.tool-card-strip::-webkit-scrollbar { height:10px; }
+.tool-card-strip::-webkit-scrollbar-track { background:#e1eaf4; border-radius:8px; }
+.tool-card-strip::-webkit-scrollbar-thumb { background:#8ca7c4; border-radius:8px; }
