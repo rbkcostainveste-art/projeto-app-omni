@@ -89,6 +89,3 @@ input::placeholder, textarea::placeholder { color: #8294a8; opacity: 1; }
 .app-modal-layer::backdrop { background:transparent; }
 .app-modal-layer > .fixed { transform:none; }
 html:has(.app-modal-layer[open]) { overflow:hidden; }
-@media (min-width: 1100px) {
- .desktop-control-block > button[aria-label="Abrir Ferramentaria"] { position:static; width:100%; justify-content:center; }
-}
