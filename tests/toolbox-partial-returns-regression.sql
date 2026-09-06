@@ -1,0 +1,36 @@
+begin;
+do $test$
+declare keeper public.device_identities; owner_d public.device_identities; borrower public.device_identities; b uuid;o uuid;e uuid;r uuid;blocked boolean;prefix_value text;
+begin
+ select * into keeper from public.device_identities where coalesce(job_role,access_profile)='toolroom' limit 1;
+ select * into owner_d from public.device_identities where coalesce(job_role,access_profile)='mechanic' limit 1;
+ select * into borrower from public.device_identities where coalesce(job_role,access_profile)='mechanic' and employee_number<>owner_d.employee_number limit 1;
+ select prefix into prefix_value from public.aircraft order by prefix limit 1;
+ perform set_config('request.jwt.claim.sub',keeper.auth_user_id::text,true);
+ b:=public.create_toolbox_catalog('QA partial '||gen_random_uuid(),'Jacarepaguá');
+ perform public.save_toolbox_visual(b,'[{"id":"g1","name":"Gaveta 1","reviewed":true,"tools":[{"id":"t1","name":"Soquete","measure":"10 mm","reviewed":true},{"id":"t2","name":"Alicate de bico","measure":"6 pol","reviewed":true}]}]',0);
+ o:=(public.toolbox_command('assign_box',jsonb_build_object('boxId',b,'assignedTo',owner_d.employee_number))->>'id')::uuid;
+ perform set_config('request.jwt.claim.sub',owner_d.auth_user_id::text,true);perform public.toolbox_command('accept_box',jsonb_build_object('operationId',o));
+ perform set_config('request.jwt.claim.sub',borrower.auth_user_id::text,true);
+ e:=(public.toolbox_command('take_tool',jsonb_build_object('boxId',b,'aircraftPrefix',prefix_value,'toolIds','["t1","t2"]'::jsonb))->>'id')::uuid;
+ blocked:=false;begin perform public.toolbox_command('mark_tool_returned',jsonb_build_object('eventId',e,'toolIds','["t1"]'::jsonb));exception when others then blocked:=true;end;if not blocked then raise exception 'Unapproved loan returned';end if;
+ perform set_config('request.jwt.claim.sub',owner_d.auth_user_id::text,true);perform public.toolbox_command('approve_tool_withdrawal',jsonb_build_object('eventId',e));
+ blocked:=false;begin perform public.toolbox_command('mark_tool_returned',jsonb_build_object('eventId',e,'toolIds','["t1"]'::jsonb));exception when others then blocked:=true;end;if not blocked then raise exception 'Owner returned another persons tools';end if;
+ perform set_config('request.jwt.claim.sub',borrower.auth_user_id::text,true);
+ r:=(public.toolbox_command('mark_tool_returned',jsonb_build_object('eventId',e,'toolIds','["t1"]'::jsonb))->>'id')::uuid;
+ if not exists(select 1 from public.toolbox_events where id=e and status='open' and jsonb_array_length(tool_refs)=1 and tool_refs->0->>'id'='t2') then raise exception 'Remaining tool lost';end if;
+ if not exists(select 1 from public.toolbox_events where id=r and source_event_id=e and status='returned' and returned_at is not null and employee_number=borrower.employee_number and aircraft_prefix=prefix_value and tool_refs->0->>'id'='t1') then raise exception 'Return snapshot/signature missing';end if;
+ if not exists(select 1 from public.toolbox_audit where target_id=e and action='partial_tool_return' and jsonb_array_length(payload->'before')=2) then raise exception 'Original loan history lost';end if;
+ blocked:=false;begin perform public.toolbox_command('mark_tool_returned',jsonb_build_object('eventId',e,'toolIds','["t1"]'::jsonb));exception when others then blocked:=true;end;if not blocked then raise exception 'Repeated return accepted';end if;
+ blocked:=false;begin perform public.toolbox_command('take_tool',jsonb_build_object('boxId',b,'aircraftPrefix',prefix_value,'toolIds','["t1"]'::jsonb));exception when others then blocked:=true;end;if not blocked then raise exception 'Unconfirmed return available';end if;
+ perform set_config('request.jwt.claim.sub',owner_d.auth_user_id::text,true);perform public.toolbox_command('confirm_tool_return',jsonb_build_object('eventId',r,'ok',true));
+ perform set_config('request.jwt.claim.sub',keeper.auth_user_id::text,true);
+ blocked:=false;begin perform public.toolbox_command('request_box_return',jsonb_build_object('operationId',o));exception when others then blocked:=true;end;if not blocked then raise exception 'Box received while other tool pending';end if;
+ perform set_config('request.jwt.claim.sub',borrower.auth_user_id::text,true);perform public.toolbox_command('mark_tool_returned',jsonb_build_object('eventId',e,'toolIds','["t2"]'::jsonb));
+ perform set_config('request.jwt.claim.sub',owner_d.auth_user_id::text,true);perform public.toolbox_command('confirm_tool_return',jsonb_build_object('eventId',e,'ok',true));
+ perform set_config('request.jwt.claim.sub',keeper.auth_user_id::text,true);perform public.toolbox_command('request_box_return',jsonb_build_object('operationId',o));
+ perform set_config('request.jwt.claim.sub',owner_d.auth_user_id::text,true);perform public.toolbox_command('sign_box_return',jsonb_build_object('operationId',o));
+ if (select status from public.toolboxes where id=b)<>'available' then raise exception 'Full return not completed';end if;
+end $test$;
+rollback;
+select 'PASS: partial return, retained tools, ownership, pending confirmation, repeated return blocked, preserved history and full box return' as result;
