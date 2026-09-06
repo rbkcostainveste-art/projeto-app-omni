@@ -62,3 +62,28 @@ input::placeholder, textarea::placeholder { color: #8294a8; opacity: 1; }
     display: none;
   }
 }
+
+/* Desktop reading workspace: controls remain accessible while records scroll. */
+#desktop-workspace-controls { display: none; }
+@media (min-width: 1100px) {
+ .split-workspace { --workspace-sidebar: clamp(320px,30vw,440px); --workspace-header-height: 120px; height:100dvh; overflow:hidden; }
+ .split-workspace > header { position:fixed; top:0; left:0; width:var(--workspace-sidebar); z-index:40; }
+ .split-workspace > header > div:first-child { flex-wrap:wrap; padding:16px; gap:12px; }
+ .split-workspace > header select { max-width:100%; }
+ .split-workspace > main { position:fixed; top:0; bottom:0; right:0; left:var(--workspace-sidebar); max-width:none; margin:0; padding:20px 24px; overflow-y:auto; scrollbar-gutter:stable; }
+ .split-workspace > nav[aria-label="Navegação principal"] { right:auto; width:var(--workspace-sidebar); }
+ .split-workspace #desktop-workspace-controls { display:block; position:fixed; top:var(--workspace-header-height); bottom:80px; left:0; width:var(--workspace-sidebar); padding:16px; overflow-y:auto; scrollbar-gutter:stable; }
+ .desktop-control-block { margin-bottom:16px; min-width:0; }
+ .desktop-control-block > div:first-child { flex-wrap:wrap; }
+ .desktop-control-block input,.desktop-control-block select { max-width:100%; }
+ .desktop-control-block [class*="grid-cols-"] { grid-template-columns:minmax(0,1fr); }
+ .desktop-control-block nav[aria-label="Módulos de manutenção"] { grid-template-columns:minmax(0,1fr); margin:0; }
+ .split-workspace .wall-columns { display:block; }
+ .split-workspace .wall-columns > section { min-height:calc(100dvh - 40px); }
+ .split-workspace .wall-columns > section > div:last-child { max-height:none; overflow:visible; }
+ .desktop-control-block section { margin-bottom:12px; }
+}
+.action-fields input[type="checkbox"] { min-height:0; }
+@media (min-width: 1100px) {
+ .desktop-control-block > button[aria-label="Abrir Ferramentaria"] { position:static; width:100%; justify-content:center; }
+}
