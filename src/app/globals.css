@@ -65,6 +65,30 @@ input::placeholder, textarea::placeholder { color: #8294a8; opacity: 1; }
 
 /* Desktop reading workspace: controls remain accessible while records scroll. */
 #desktop-workspace-controls { display: none; }
+.notice-board { display:flex; flex-direction:column; height:clamp(340px,calc(100dvh - 200px),560px); container-type:size; padding:12px; }
+.notice-board .notice-heading { flex-shrink:0; margin-bottom:8px; }
+.notice-board .notice-list { flex:1; min-height:0; padding-bottom:0; align-items:stretch; }
+.notice-board .notice-card { display:flex; flex-direction:column; min-height:0; width:100%; padding:10px; transform:none; }
+.notice-board .notice-badges { margin-bottom:6px; flex-shrink:0; }
+.notice-board .notice-preview { flex-shrink:0; }
+.notice-board .notice-preview h4 { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:16px; }
+.notice-board .notice-preview p { margin-top:4px; line-height:20px; -webkit-line-clamp:2; }
+.notice-board .notice-carousel { display:flex; flex-direction:column; flex:1; min-height:0; margin:8px 0 0; }
+.notice-board .notice-media { flex:1; min-height:0; overflow:hidden; }
+.notice-board .notice-media > button,.notice-board .notice-media > a { display:block; height:100%; width:100%; }
+.notice-board .notice-media img,.notice-board .notice-media video { width:100%; height:100%; max-height:100%; object-fit:contain; }
+.notice-board .notice-media-controls { flex-shrink:0; padding:0; }
+.notice-board .notice-meta { flex-shrink:0; flex-wrap:nowrap; gap:4px; margin-top:6px; }
+.notice-board .notice-meta > span:first-child { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.notice-board .notice-meta > span:last-child { flex-shrink:0; }
+.notice-board .notice-count { flex-shrink:0; margin-top:6px; font-size:10px; }
+@container (max-height:400px) { .notice-board .notice-preview p { -webkit-line-clamp:1; } }
+@container (max-height:330px) { .notice-board .notice-preview p { display:none; } }
+@media(min-width:1100px) {
+ .split-workspace #desktop-workspace-controls:has(.notice-board) { display:flex; flex-direction:column; scrollbar-gutter:auto; }
+ #desktop-workspace-controls > .desktop-control-block:has(.notice-board) { flex:1; min-height:0; margin-bottom:0; }
+ #desktop-workspace-controls .notice-board { position:static; height:100%; margin-bottom:0; }
+}
 @media (min-width: 1100px) {
  .split-workspace { --workspace-sidebar: clamp(320px,30vw,440px); --workspace-header-height: 120px; height:100dvh; overflow:hidden; }
  .split-workspace > header { position:fixed; top:0; left:0; width:var(--workspace-sidebar); z-index:40; }
