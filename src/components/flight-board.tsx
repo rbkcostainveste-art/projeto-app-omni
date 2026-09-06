@@ -526,7 +526,7 @@ export function FlightBoard() {
   async function saveProfilePhoto(photo: string) { if(!supabase) return; const previous = profilePhoto; setProfilePhoto(photo); setUserDirectory((current) => ({ ...current, [user]: { name: currentUser?.name ?? current[user]?.name ?? user, avatar: photo } })); const { error } = await supabase.rpc("update_user_avatar", { p_employee_number: user, p_avatar_data_url: photo }); if(error) { setProfilePhoto(previous); setSyncError(`Foto não alterada: ${error.message}`); return; } setSyncError(""); }
   async function logout() { if(supabase) { const { data } = await supabase.auth.getSession(); if(data.session) await supabase.rpc("disconnect_my_device", { p_auth_user_id: data.session.user.id }); await supabase.auth.signOut(); } localStorage.removeItem("passagem-de-pista-user"); setProfileOpen(false); setDevicesOpen(false); setNotificationOpen(false); setUser(""); }
 
-  const splitWorkspace=!adminOpen && (workspace==="flights" || workspace==="maintenance" || workspace==="activities" || workspace==="wall" && canAccessMaintenance);
+  const splitWorkspace=!adminOpen && (workspace==="tools" || workspace==="flights" || workspace==="maintenance" || workspace==="activities" || workspace==="wall" && canAccessMaintenance);
   if(!hydrated) return null;
   if(!user) return <LoginScreen login={login} password={password} error={loginError} setLogin={setLogin} setPassword={setPassword} onSubmit={enter} />;
   return (

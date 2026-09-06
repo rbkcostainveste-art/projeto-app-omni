@@ -98,10 +98,11 @@ html:has(.app-modal-layer[open]) { overflow:hidden; }
  .desktop-control-block .desktop-flight-controls { flex-wrap:wrap; }
 }
 
-.tool-card-strip { display:flex; align-items:flex-start; gap:16px; overflow-x:auto; padding:4px 4px 16px; scrollbar-gutter:stable; }
-.tool-use-card { flex:0 0 min(380px,calc(100vw - 48px)); min-width:0; overflow-wrap:anywhere; }
 
-.tool-card-strip { scrollbar-width:thin; scrollbar-color:#8ca7c4 #e1eaf4; }
-.tool-card-strip::-webkit-scrollbar { height:10px; }
-.tool-card-strip::-webkit-scrollbar-track { background:#e1eaf4; border-radius:8px; }
-.tool-card-strip::-webkit-scrollbar-thumb { background:#8ca7c4; border-radius:8px; }
+
+/* Cards da ferramentaria acompanham a rolagem vertical da área principal. */
+
+.tool-card-strip { display:grid; grid-template-columns:1fr; align-items:start; gap:16px; padding:4px; }
+.tool-use-card { width:100%; min-width:0; overflow-wrap:anywhere; }
+@media(min-width:700px) { .tool-card-strip { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(min-width:1280px) { .tool-card-strip { grid-template-columns:repeat(3,minmax(0,1fr)); } }
