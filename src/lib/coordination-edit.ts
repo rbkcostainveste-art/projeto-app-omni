@@ -53,6 +53,32 @@ export function planFlightAction(original: CoordinatedFlight, flights: Coordinat
 // Keep existing occurrence IDs; only newly selected dates need new flights.
 export function planFlightEdit(original: CoordinatedFlight, updated: CoordinatedFlight, draft: Draft,
   future: CoordinatedFlight[], allFlights: CoordinatedFlight[], user: string, scope: FlightScope = "this"): EditOperation[] {
+  const operations = planFlightEditOperations(original, updated, draft, future, allFlights, user, scope);
+  const previous = new Map([original, ...allFlights].map((flight) => [flight.id, flight]));
+  const moved = operations.filter(({ kind, flight }) => {
+    const before = previous.get(flight.id);
+    return kind === "update" && !flight.deletedAt && before
+      && (before.prefix !== flight.prefix || before.date !== flight.date);
+  });
+  const movedIds = new Set(moved.map(({ flight }) => flight.id));
+  const state = new Map(allFlights.filter((flight) => !movedIds.has(flight.id)).map((flight) => [flight.id, flight]));
+  for (const operation of operations) {
+    if (!movedIds.has(operation.flight.id)) state.set(operation.flight.id, operation.flight);
+  }
+  for (const operation of moved.sort((a, b) => a.flight.date.localeCompare(b.flight.date)
+    || a.flight.departure.localeCompare(b.flight.departure))) {
+    const flight = operation.flight;
+    const wave = Math.max(0, ...[...state.values()].filter((item) => !item.deletedAt
+      && Boolean(item.planningStatus) && item.prefix === flight.prefix && item.date === flight.date)
+      .map((item) => item.wave ?? 1)) + 1;
+    operation.flight = { ...flight, wave };
+    state.set(flight.id, operation.flight);
+  }
+  return operations;
+}
+
+function planFlightEditOperations(original: CoordinatedFlight, updated: CoordinatedFlight, draft: Draft,
+  future: CoordinatedFlight[], allFlights: CoordinatedFlight[], user: string, scope: FlightScope = "this"): EditOperation[] {
   const operations: EditOperation[] = [];
   const existingKey = recurrenceKey(original);
   if (scope === "this" && existingKey) {

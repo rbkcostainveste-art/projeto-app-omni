@@ -16,6 +16,37 @@ const flight = {
 };
 const future = { ...flight, id: 'future', date: '2026-09-11', fuel: 'pending', preflight: 'pending', commander: '', copilot: '', flightAttendant: '' };
 
+test('copied flight moves to first wave when edited to an unused aircraft', () => {
+  const original = { ...flight, recurrenceId: '', recurrenceLabel: '' };
+  const updated = { ...original, prefix: 'PR-OHG' };
+  const result = planFlightEdit(original, updated, flightToDraft(updated), [], [original], '0600');
+  assert.equal(result[0].flight.wave, 1);
+  assert.equal(result[0].flight.id, original.id);
+  assert.equal(original.wave, 2);
+});
+
+test('aircraft changes use destination aircraft waves on the selected day', () => {
+  const updated = { ...flight, prefix: 'PR-OHG' };
+  const other = { ...flight, id: 'ohg', prefix: 'PR-OHG', wave: 1 };
+  const ignored = { ...other, id: 'deleted', wave: 9, deletedAt: 'now' };
+  const result = planFlightEdit(flight, updated, flightToDraft(updated), [], [flight, other, ignored, { ...other, id: 'tomorrow', date: '2026-09-06', wave: 8 }], '0600');
+  assert.equal(result[0].flight.wave, 2);
+});
+
+test('date changes recalculate waves while unrelated edits retain their wave', () => {
+  const updated = { ...flight, date: '2026-09-07' };
+  assert.equal(planFlightEdit(flight, updated, flightToDraft(updated), [], [flight], '0600')[0].flight.wave, 1);
+  assert.equal(planFlightEdit(flight, { ...flight, destination: 'P-52' }, flightToDraft(flight), [], [flight], '0600')[0].flight.wave, 2);
+});
+
+test('future aircraft changes recalculate each occurrence against its own day', () => {
+  const updated = { ...flight, prefix: 'PR-OHG' };
+  const occupied = { ...future, id: 'other', prefix: 'PR-OHG', wave: 1 };
+  const result = planFlightEdit(flight, updated, flightToDraft(updated), [future], [flight, future, occupied], '0600', 'future');
+  assert.equal(result.find(op => op.flight.id === flight.id).flight.wave, 1);
+  assert.equal(result.find(op => op.flight.id === future.id).flight.wave, 2);
+});
+
 test('bulk recurrence changes preserve an operation started before takeoff', () => {
   const starting = { ...future, operationStartedAt: '2026-09-11T12:00:00Z' };
   assert.equal(editableOccurrences(flight, [flight, starting]).length, 0);
