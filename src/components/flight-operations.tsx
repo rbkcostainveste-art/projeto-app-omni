@@ -1,5 +1,6 @@
 "use client";
 
+import {FlightPosition} from "./flight-position";
 import {useCallback,useEffect,useRef,useState} from 'react';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {X} from 'lucide-react';
@@ -32,7 +33,7 @@ export function FlightOperations({supabase,flight,readOnly=false,requireSignatur
  if(!data)return <div className="rounded-xl border p-3 text-sm">{error||'Carregando registros operacionais…'}<button onClick={()=>void load()} className="ml-3 text-blue-700">Recarregar</button></div>;
  const keys=flight.maintenancePostId?['fuel','inspection']:[...(data.first?['drain']:[]),'fuel','inspection','hums',...(data.closed&&data.nextFlightId===null?['postflight']:[])];
  const labels:Record<string,string>={drain:'Dreno de combustível',fuel:'Abastecimento',inspection:data.first?'Pré-voo':'Entre voos',hums:'HUMS',postflight:'Inspeção após o último voo do dia'};
- return <section className="space-y-3">
+ return <section className="space-y-3"><FlightPosition supabase={supabase} flightId={flight.id} readOnly={readOnly} requireSignature={requireSignature}/>
   <p className="text-xs text-[#60758c]">{flight.maintenancePostId?'Voo/giro de manutenção · pré-voo e abastecimento':data.first?'Primeira operação do dia · dreno e pré-voo':'Operação seguinte · sem dreno de combustível'} · {data.day.split('-').reverse().join('/')}</p>
   <div className="grid gap-3 sm:grid-cols-2">{keys.map(key=>{
    const expectedKind=key==='inspection'?(data.first?'preflight':'between'):key;
