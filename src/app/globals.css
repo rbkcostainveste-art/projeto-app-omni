@@ -129,3 +129,74 @@ nav[aria-label="Navegação principal"] button { border-radius:15px; min-width:0
 nav[aria-label="Navegação principal"] button[aria-current="page"] { background:#e8f2ff; color:#1268d8; }
 nav[aria-label="Navegação principal"] button[aria-current="page"] > span.absolute.top-0 { display:none; }
 @media(min-width:1100px) { .split-workspace > nav[aria-label="Navegação principal"] { width:calc(var(--workspace-sidebar) - 16px); } }
+
+/* Reading-first presentation. Operational state remains in labels and a narrow top edge. */
+:root { --canvas:#f2f5f8; --line:#d7e0e8; --muted:#475d72; }
+.flight-app { color:#19334b; }
+.flight-app > header { box-shadow:0 2px 8px #17324d12; }
+.flight-app :where(h2,h3,h4,strong) { overflow-wrap:anywhere; }
+.flight-app :where(.text-xs,[class*="text-[10px]"],[class*="text-[11px]"]) { font-size:12px; line-height:1.5; }
+.flight-app :where([class*="text-[#718197]"],[class*="text-[#8a9aad]"],[class*="text-[#60758c]"]) { color:#526477; }
+.flight-app .status-card { border-left-width:0; border-top-width:3px; border-radius:14px; background:#fff; box-shadow:0 1px 4px #17324d0a; transform:none; }
+.status-label { display:inline-flex; align-items:center; padding:3px 8px; border-radius:6px; background:#eef3f7; color:#344c62; font-size:12px; font-weight:650; }
+.flight-app .technical-card { padding:18px; }
+.flight-app .technical-card h4 { font-size:17px; line-height:1.45; }
+.flight-app .technical-card p { opacity:1; color:#475d72; }
+.flight-app .tool-use-card { box-shadow:0 1px 4px #17324d0a; border-radius:14px; }
+.flight-app .workspace-actions > button { min-height:44px; font-size:13px; }
+.flight-app .notice-board { padding:16px; box-shadow:0 1px 4px #17324d0a; }
+.flight-app .notice-board .notice-card { padding:16px; }
+.flight-app .notice-preview h4 { font-size:18px; line-height:1.4; }
+.flight-app .notice-preview p { font-size:15px; line-height:1.6; }
+.flight-app .notice-meta { font-size:12px; }
+.flight-app .notice-meta button { min-height:40px; font-size:12px!important; }
+.flight-app .notice-count { font-size:12px; }
+.flight-app .notice-carousel { background:#f8fafc; border-color:#e0e6ec; }
+.flight-app .notice-media img,.flight-app .notice-media video { display:block; width:100%; height:auto; object-fit:contain; }
+.flight-app .notice-media-controls button { min-height:44px; min-width:44px; }
+.flight-app .operational-timeline { box-shadow:none; border:0; background:transparent; padding:0; }
+.flight-app .operational-timeline > div:first-child { padding:12px 4px; }
+.flight-app .timeline-card { padding:18px; }
+.flight-app .timeline-card h4 { font-size:18px; line-height:1.4; }
+.flight-app .timeline-card .notice-carousel { margin-top:12px; }
+.flight-app nav[aria-label="Navegação principal"] { box-shadow:0 -2px 12px #17324d0d; }
+.flight-app nav[aria-label="Navegação principal"] button { min-height:48px; }
+@media(min-width:1100px) {
+ .flight-app.split-workspace { --workspace-sidebar:clamp(310px,25vw,360px); }
+ .flight-app.split-workspace > main { padding:24px 32px; }
+ .flight-app.split-workspace .wall-columns > section { min-height:0; max-width:880px; margin-inline:auto; }
+ .flight-app.split-workspace .technical-card { max-width:1000px; }
+ .flight-app.split-workspace #desktop-workspace-controls { padding:12px; }
+ .flight-app.split-workspace > header > div:first-child { padding:14px; gap:10px; }
+ .flight-app .desktop-control-block > section { box-shadow:none; border-color:#dce4eb; }
+ .flight-app .notice-media img,.flight-app .notice-media video { max-height:72dvh; }
+}
+@media(max-width:767px) {
+ .flight-app > main { padding:16px 12px 100px; }
+ .flight-app > header > div:first-child { min-height:72px; padding:10px 12px; gap:8px; }
+ .flight-app > header h1 { font-size:16px; }
+ .flight-app .text-sm { font-size:15px; line-height:1.55; }
+ .flight-app .technical-card,.flight-app .tool-use-card { padding:16px; }
+ .flight-app .technical-card button,.flight-app .workspace-actions button { min-height:44px; }
+ .flight-app .notice-board { margin-inline:-12px; border-radius:0; border-inline:0; padding:16px 0 8px; }
+ .flight-app .notice-heading { padding-inline:16px; }
+ .flight-app .notice-list { gap:0; padding-bottom:0; }
+ .flight-app .notice-board .notice-card { border-radius:0; padding:14px 16px; box-shadow:none; }
+ .flight-app .notice-board .notice-carousel,.flight-app .timeline-card .notice-carousel { margin-inline:-16px; width:calc(100% + 32px); border-inline:0; border-radius:0; }
+ .flight-app .notice-media img,.flight-app .notice-media video { max-height:none; }
+ .flight-app .notice-preview p { font-size:16px; line-height:1.55; }
+ .flight-app .operational-timeline { margin-inline:-12px; }
+ .flight-app .operational-timeline > div:first-child { padding:14px 16px; }
+ .flight-app .operational-timeline > div:last-child { max-height:none; overflow:visible; padding-right:0; }
+ .flight-app .timeline-card { padding:16px; border-radius:0; }
+ .flight-app input:not([type="checkbox"]):not([type="radio"]),.flight-app select,.flight-app textarea,
+ .app-modal-layer input:not([type="checkbox"]):not([type="radio"]),.app-modal-layer select,.app-modal-layer textarea { font-size:16px; }
+ .app-modal-layer :where(.text-xs,[class*="text-[10px]"],[class*="text-[11px]"]) { font-size:12px; line-height:1.5; }
+ .app-modal-layer .text-sm { font-size:15px; }
+ .app-modal-layer button[aria-label] { min-height:40px; }
+}
+@media(min-width:1100px) {
+ .flight-app:not(.split-workspace) .wall-columns { align-items:start; grid-template-columns:minmax(320px,0.9fr) minmax(400px,1.2fr); gap:28px; }
+ .flight-app:not(.split-workspace) .operational-timeline > div:last-child { max-height:none; overflow:visible; }
+ .flight-app:not(.split-workspace) > nav[aria-label="Navegação principal"] { left:50%; right:auto; width:560px; max-width:calc(100% - 24px); margin-left:0; transform:translateX(-50%); }
+}
