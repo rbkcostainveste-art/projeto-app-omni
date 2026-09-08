@@ -25,7 +25,7 @@ for(const width of [390,1366]){
  assert.equal(await dates.inputValue(),'2026-09-07');
  await dates.selectOption('2026-09-10');
  await page.getByRole('button',{name:'Serviços',exact:true}).click();
- await page.getByText('Serviço antigo pendente',{exact:true}).waitFor();
+ assert.equal(await page.getByText('Serviço antigo pendente',{exact:true}).count(),0);
  await page.getByText('Discrepância antiga pendente',{exact:true}).waitFor();
  await page.getByRole('button',{name:'Panes',exact:true}).click();
  await page.getByText('Verificar indicação do radar meteorológico',{exact:true}).waitFor();

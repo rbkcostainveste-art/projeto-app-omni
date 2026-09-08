@@ -1,6 +1,6 @@
 begin;
 do $test$
-declare a public.device_identities;b public.device_identities;other public.device_identities; r1 uuid:=gen_random_uuid();r2 uuid:=gen_random_uuid();c1 uuid;c2 uuid;res jsonb;blocked boolean;
+declare a public.device_identities;b public.device_identities;other public.device_identities; r1 uuid:=gen_random_uuid();r2 uuid:=gen_random_uuid();c1 uuid;c2 uuid;c3 uuid;req uuid:=gen_random_uuid();res jsonb;blocked boolean;
 begin
  select d.* into a from public.device_identities d join public.authorized_users u using(employee_number) where u.active and d.access_profile='leader_inspector' limit 1;
  select d.* into b from public.device_identities d join public.authorized_users u using(employee_number) where u.active and d.access_profile='mechanic' and d.assigned_base=a.assigned_base limit 1;
@@ -21,9 +21,19 @@ begin
  blocked:=false;begin perform public.maintenance_chat('open',r2);exception when others then blocked:=true;end;if not blocked then raise exception 'Linked pane leaked membership';end if;
  res:=public.maintenance_chat('summary',r2);
  if res->'conversation'<>'null'::jsonb then raise exception 'Other conversation exposed';end if;
+ perform set_config('request.jwt.claim.sub',other.auth_user_id::text,true);
+ res:=public.maintenance_chat('summary',r1);
+ if (res->>'exists')::boolean or jsonb_array_length(res->'conversations')<>0 then raise exception 'Nonparticipant learned private conversation exists';end if;
+ blocked:=false;begin perform public.internal_chat('messages',jsonb_build_object('id',c1));exception when others then blocked:=true;end;if not blocked then raise exception 'Messages exposed';end if;
+ c3:=(public.maintenance_chat('create',r1,jsonb_build_object('members',jsonb_build_array(a.employee_number),'requestId',req))->>'id')::uuid;
+ if c3=c1 then raise exception 'Parallel conversations merged';end if;
+ if (public.maintenance_chat('create',r1,jsonb_build_object('members',jsonb_build_array(a.employee_number),'requestId',req))->>'id')::uuid<>c3 then raise exception 'Retry duplicated conversation';end if;
+ res:=public.maintenance_chat('summary',r1);
+ if jsonb_array_length(res->'conversations')<>1 then raise exception 'Other conversation visible';end if;
  perform set_config('request.jwt.claim.sub',a.auth_user_id::text,true);
+ if jsonb_array_length(public.maintenance_chat('summary',r1)->'conversations')<>2 then raise exception 'Own parallel conversations missing';end if;
  update public.maintenance_records set status='closed' where id=r1;
- if (public.maintenance_chat('summary',r1)#>>'{conversation,id}')::uuid<>c1 then raise exception 'Closed history lost';end if;
+ if jsonb_array_length(public.maintenance_chat('summary',r1)->'conversations')<>2 then raise exception 'Closed history lost';end if;
 end $test$;
 rollback;
-select 'PASS: unique chats, separate linked histories and participants, summaries, private access and closed history' result;
+select 'PASS: private parallel chats, separate linked histories and participants, summaries, private access and closed history' result;
