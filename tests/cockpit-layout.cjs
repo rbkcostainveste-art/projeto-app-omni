@@ -1,0 +1,17 @@
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+const assert=require('node:assert/strict');
+(async()=>{const browser=await chromium.launch({channel:'msedge',headless:true});try{for(const width of [390,820,1366]){
+ const page=await browser.newPage({viewport:{width,height:900},timezoneId:'America/Sao_Paulo'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.clock.install({time:new Date('2026-09-08T10:00:00Z')});await page.goto('http://localhost:3010/cockpit-test');
+ await page.getByRole('heading',{name:'Cockpit',exact:true}).waitFor();await page.getByRole('button',{name:'Preparar este voo'}).click();
+ await page.getByRole('button',{name:'Editar preparação do voo'}).click();await page.getByLabel('Contrato / cliente',{exact:true}).fill('Contrato teste');
+ await page.getByRole('button',{name:'Salvar',exact:true}).click();await page.getByRole('status').filter({hasText:'Registro salvo'}).waitFor();await page.getByRole('button',{name:'Fechar cadastro Cockpit'}).click();
+ await page.getByRole('button',{name:'Documentos / eDB',exact:true}).click();await page.getByRole('button',{name:'Novo rascunho do diário'}).click();
+ await page.getByRole('button',{name:'Salvar',exact:true}).click();await page.getByRole('status').filter({hasText:'Registro salvo'}).waitFor();await page.getByRole('button',{name:'Fechar cadastro Cockpit'}).click();
+ await page.getByRole('button',{name:'Ocorrências',exact:true}).click();await page.getByLabel('Voo do Cockpit').selectOption('');await page.getByRole('button',{name:'Registrar ocorrência / manutenção'}).click();
+ await page.getByLabel('Título',{exact:true}).fill('Observação sem aeronave');await page.getByRole('button',{name:'Salvar',exact:true}).click();await page.getByRole('status').filter({hasText:'Registro salvo'}).waitFor();await page.getByRole('button',{name:'Fechar cadastro Cockpit'}).click();
+ await page.getByText('Cockpit · cadastros, documentos e integrações',{exact:true}).click();await page.getByLabel('Colaborador / matrícula').selectOption('pilot');await page.getByRole('button',{name:'Cadastrar habilitação / certificado'}).click();await page.getByLabel('Nome / item').fill('Habilitação teste');await page.getByRole('button',{name:'Salvar',exact:true}).click();await page.getByRole('status').filter({hasText:'Registro salvo'}).waitFor();await page.getByRole('button',{name:'Fechar cadastro Cockpit'}).click();
+ await page.getByLabel('Colaborador / matrícula').selectOption('monthly');await page.getByText('Escala: Mensalista',{exact:true}).first().waitFor();assert.equal(await page.getByRole('button',{name:'Cadastrar habilitação / certificado'}).count(),0);
+ await page.getByRole('button',{name:'Jornada',exact:true}).click();await page.getByRole('button',{name:'Abrir jornada desta data'}).click();await page.getByLabel('Apresentação efetiva',{exact:true}).fill('2026-09-08T07:15');await page.getByLabel('Liberação',{exact:true}).fill('2026-09-08T17:00');await page.getByRole('button',{name:'Salvar',exact:true}).click();await page.getByRole('status').filter({hasText:'Registro salvo'}).waitFor();
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));assert.deepEqual(errors,[]);await page.screenshot({path:`cockpit-${width}.png`,fullPage:true});console.log('PASS cockpit creation, optional eDB, occurrence without aircraft, role fields, duty, layout',width);await page.close();
+ }}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

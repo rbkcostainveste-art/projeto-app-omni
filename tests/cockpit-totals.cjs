@@ -1,0 +1,12 @@
+const fs=require('node:fs');const vm=require('node:vm');const ts=require('typescript');const assert=require('node:assert/strict');
+const output=ts.transpileModule(fs.readFileSync('src/lib/cockpit.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+const sandbox={exports:{},require,Date,Intl,URL};vm.runInNewContext(output,sandbox);const {dutyTotals,safeLink}=sandbox.exports;
+const row=(date,minutes)=>({kind:'duty',data:{date,flightMinutes:minutes}});
+const rows=[row('2026-01-01','60'),row('2026-08-09','90'),row('2026-08-10','120'),row('2026-09-08','30'),row('2026-09-09','900')];
+let result=dutyTotals(rows,'2026-09-08',{});
+assert.equal(result.find(r=>r.label==='Dia').minutes,30);assert.equal(result.find(r=>r.label==='Mês').minutes,30);assert.equal(result.find(r=>r.label==='Ano').minutes,300);assert.equal(result.find(r=>r.label==='Últimos 30 dias').minutes,150);assert.equal(result.find(r=>r.label==='Últimos 90 dias').minutes,240);assert.ok(result.every(r=>r.remaining===null));
+const person={flightMonthly:'5400',historyFrom:'2026-09-01',reviewer:'QA',reviewDate:'2026-09-08',ruleReference:'Manual QA'};
+assert.equal(dutyTotals(rows,'2026-09-08',person).find(r=>r.label==='Mês').remaining,5370);
+assert.equal(dutyTotals([...rows,row('2026-09-07','')],'2026-09-08',person).find(r=>r.label==='Mês').remaining,null);
+assert.equal(safeLink('javascript:alert(1)'),null);assert.equal(safeLink('https://example.com/edb'),'https://example.com/edb');
+console.log('PASS rolling periods, missing history, missing totals, provisional balance and safe links');
