@@ -14,7 +14,7 @@ Remove the temporary app route before building or publishing.
 
 Verified scenarios: direct audio/video send, cancel, three-way WebRTC video,
 incoming/accept, actual received audio packets, mute, camera toggle, screen sharing
-in an audio-only call, media track cleanup, and denied permission. Calls stay in
+in a video call, no camera controls in audio calls, recording notice and camera switch, media track cleanup, and denied permission. Calls stay in
 the same browser page. The caller also exercises the answering side of negotiation.
 
 ## Operational boundaries
@@ -25,8 +25,9 @@ the same browser page. The caller also exercises the answering side of negotiati
   and may require a separately provisioned relay.
 - Incoming call UI runs while the web app is visible. Existing message push carries
   the start notice; this is not a native background calling service.
-- Call metadata and start/end messages remain in the conversation. Calls are not
-  recorded. SDP/ICE negotiation is deleted on end or after five minutes.
+- Call metadata and start/end messages remain in the conversation. Video calls can be recorded locally in five-minute segments (45 MB stopping threshold),
+  with a peer notice, download and optional idempotent upload to the original chat.
+  Screen capture requires browser getDisplayMedia support; unsupported phones show an explanation. SDP/ICE negotiation is deleted on end or after five minutes.
 - Heartbeats are written every ten seconds; stale participants expire after 45
   seconds. Unanswered calls time out after 60 seconds. Minute cron is the fallback.
 - Message capture stops at two minutes or the existing media size limit. The send
