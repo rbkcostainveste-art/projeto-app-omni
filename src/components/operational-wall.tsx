@@ -12,7 +12,7 @@ import {latestUnreadMaintenanceUpdate} from "@/lib/maintenance-edit-read";
 import {useMaintenanceEditReads} from "@/components/use-maintenance-edit-reads";
 import {CommentSummary} from "@/components/comment-summary";
 import {wallContentAt,newerThan} from "@/lib/comment-attention";
-import {maintenanceCategory} from "@/lib/maintenance-display";
+import {maintenanceCategories,maintenanceCategory} from "@/lib/maintenance-display";
 /* eslint-disable @next/next/no-img-element */
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
@@ -62,6 +62,7 @@ export function OperationalWall({ supabase, user, userDirectory, pageMode = "wal
   const [base, setBase] = useState(() => canFilterBase ? (typeof window === "undefined" ? assignedBase : localStorage.getItem("flight-ia-wall-base") ?? assignedBase) : assignedBase);
   const [activityFrom, setActivityFrom] = useState(() => localDay());
   const [activityUntil, setActivityUntil] = useState(() => localDay());
+  const [activityCustomDate, setActivityCustomDate] = useState(false);
   const [activityPrefix, setActivityPrefix] = useState("");
   const [activityCategory, setActivityCategory] = useState("");
   const [activityStatus, setActivityStatus] = useState("");
@@ -125,18 +126,27 @@ export function OperationalWall({ supabase, user, userDirectory, pageMode = "wal
         && (!activityStatus || (activityStatus === "closed" ? post.resolved || ["satisfactory", "resolved"].includes(action.status) : activityStatus === "open" ? !post.resolved && !["satisfactory", "resolved"].includes(action.status) : action.status === activityStatus));
     });
     const fieldClass = "mt-1 block min-h-10 w-full min-w-0 rounded-xl border border-[#cedbe7] bg-white px-3 text-sm";
+    const activityDays = Array.from({length:7}, (_, offset) => {
+      const date = new Date(); date.setDate(date.getDate() - offset);
+      return {value:localDay(date), label:offset === 0 ? "Hoje" : offset === 1 ? "Ontem" : date.toLocaleDateString("pt-BR", {weekday:"long",day:"2-digit",month:"2-digit"})};
+    });
+    const selectedDay = activityDays.find(day => day.value === activityFrom && activityFrom === activityUntil);
+    const activityTypes = [...new Set([...maintenanceCategories, ...allActivityItems.map(({post})=>maintenanceCategory(post.category))])];
     const activityFilters = <details className="group mb-4 rounded-2xl border border-[#d7e3ee] bg-white shadow-sm">
-      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 rounded-2xl p-4 text-sm font-extrabold focus-visible:outline-2 focus-visible:outline-blue-600 [&::-webkit-details-marker]:hidden"><span>Filtros <span className="font-normal text-[#718197]">· {activityFrom === localDay() && activityUntil === localDay() ? "Hoje" : !activityFrom && !activityUntil ? "Todas as datas" : "Período selecionado"}</span></span><ChevronDown size={18} className="shrink-0 transition-transform group-open:rotate-180"/></summary>
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 rounded-2xl p-4 text-sm font-extrabold focus-visible:outline-2 focus-visible:outline-blue-600 [&::-webkit-details-marker]:hidden"><span>Filtros <span className="font-normal text-[#718197]">· {activityCustomDate ? "Período personalizado" : selectedDay?.label || "Data personalizada"}</span></span><ChevronDown size={18} className="shrink-0 transition-transform group-open:rotate-180"/></summary>
       <div className="grid gap-3 border-t border-[#e5edf5] p-4">
         {canFilterBase && !usesAssignedBase ? <label className="text-xs font-bold text-[#52677f]">Base<select value={base} onChange={e=>setBase(e.target.value)} className={fieldClass}><option value="">Todas as bases</option>{bases.map(item=><option key={item}>{item}</option>)}</select></label> : <p className="text-xs text-[#52677f]">Base: {activeBase || "Todas"}</p>}
-        <div className="grid grid-cols-2 gap-2">
+        <label className="text-xs font-bold text-[#52677f]">Data<select className={fieldClass} value={activityCustomDate ? "custom" : selectedDay?.value || "custom"} onChange={e=>{const custom=e.target.value === "custom";setActivityCustomDate(custom);if(!custom){setActivityFrom(e.target.value);setActivityUntil(e.target.value);}}}>
+          {activityDays.map(day=><option key={day.value} value={day.value}>{day.label}</option>)}
+          <option value="custom">Data ou período personalizado</option>
+        </select></label>
+        {activityCustomDate ? <div className="grid grid-cols-2 gap-2">
           <label className="min-w-0 text-xs font-bold text-[#52677f]">De<input type="date" value={activityFrom} max={activityUntil || undefined} onChange={e=>setActivityFrom(e.target.value)} className={fieldClass}/></label>
           <label className="min-w-0 text-xs font-bold text-[#52677f]">Até<input type="date" value={activityUntil} min={activityFrom || undefined} onChange={e=>setActivityUntil(e.target.value)} className={fieldClass}/></label>
-        </div>
-        <div className="flex gap-2"><button className="rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700" onClick={()=>{setActivityFrom(localDay());setActivityUntil(localDay());}}>Hoje</button><button className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold" onClick={()=>{setActivityFrom("");setActivityUntil("");}}>Todas as datas</button></div>
+        </div> : null}
         <p className="text-[11px] text-[#718197]">Período pela data de criação da atividade.</p>
         <label className="text-xs font-bold text-[#52677f]">Aeronave<input placeholder="Digite parte do prefixo" value={activityPrefix} onChange={e=>setActivityPrefix(e.target.value)} className={fieldClass}/></label>
-        <label className="text-xs font-bold text-[#52677f]">Tipo de atividade<select value={activityCategory} onChange={e=>setActivityCategory(e.target.value)} className={fieldClass}><option value="">Todos os tipos</option>{[...new Set(allActivityItems.map(({post})=>maintenanceCategory(post.category)))].sort().map(item=><option key={item}>{item}</option>)}</select></label>
+        <label className="text-xs font-bold text-[#52677f]">Tipo de atividade<select value={activityCategory} onChange={e=>setActivityCategory(e.target.value)} className={fieldClass}><option value="">Todos os tipos</option>{activityTypes.map(item=><option key={item}>{item}</option>)}</select></label>
         <label className="text-xs font-bold text-[#52677f]">Situação<select value={activityStatus} onChange={e=>setActivityStatus(e.target.value)} className={fieldClass}><option value="">Todas</option><option value="open">Em aberto</option><option value="closed">Concluídas</option><option value="nonconforming">Não conformes</option></select></label>
         <p className="text-xs text-[#718197]">{activityItems.length} atividade(s) encontrada(s)</p>
       </div>
