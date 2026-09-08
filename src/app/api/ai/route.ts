@@ -1,3 +1,4 @@
+import {technicalAssistantPolicy} from "@/lib/technical-case";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL || "gpt-5.4-mini",
       instructions: "Você é o assistente operacional do Flight IA. Responda em português do Brasil. Use somente os dados fornecidos. Para comandos de lançamento, proponha voos apenas para prefixos cadastrados; nunca invente aeronaves. Se faltar informação, use null e explique. Não confirme que gravou dados: diga que preparou uma proposta para revisão.",
-      input: [{ role: "user", content }],
+      input: [{ role: "system", content: [{type:"input_text",text:technicalAssistantPolicy}] },{ role: "user", content }],
       text: { format: { type: "json_schema", name: "flight_assistant", strict: true, schema: { type: "object", properties: { reply: { type: "string" }, proposedFlights: { type: "array", items: { type: "object", properties: { prefix: { type: ["string","null"] }, base: { type: ["string","null"] }, date: { type: ["string","null"] }, departure: { type: ["string","null"] }, duration: { type: ["number","null"] }, fuelAmount: { type: ["number","null"] }, fuelUnit: { type: ["string","null"], enum: ["L","lb","kg",null] } }, required: ["prefix","base","date","departure","duration","fuelAmount","fuelUnit"], additionalProperties: false } } }, required: ["reply","proposedFlights"], additionalProperties: false } } }
     })
   });

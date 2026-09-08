@@ -1,12 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-export type RecordMedia = {id:string;name:string;type:"image"|"audio"|"video";url:string;bucket?:string;author?:string;at?:string};
+export type RecordMedia = {id:string;name:string;type:"image"|"audio"|"video"|"document";url:string;bucket?:string;author?:string;at?:string};
 const formats:Record<string,string>={jpg:"image/jpeg",jpeg:"image/jpeg",png:"image/png",webp:"image/webp",gif:"image/gif",heic:"image/heic",heif:"image/heif",mp4:"video/mp4",mov:"video/quicktime",webm:"video/webm",m4a:"audio/mp4",mp3:"audio/mpeg",aac:"audio/aac",ogg:"audio/ogg",opus:"audio/ogg",wav:"audio/wav"};
 export function mediaFormat(file:Pick<File,"name"|"type"|"size">){
  const ext=file.name.split(".").pop()?.toLowerCase()||"";
- const mime=formats[ext];
+ const mime=ext==="pdf"?"application/pdf":formats[ext];
  if(!mime)throw new Error(`${file.name}: formato não suportado. Use imagem, áudio ou vídeo.`);
  const contentType=file.type.startsWith("audio/")&&["webm","ogg","opus"].includes(ext)?file.type:mime;
- const type=contentType.split("/")[0] as RecordMedia["type"];
+ const type=contentType==="application/pdf"?"document":contentType.split("/")[0] as RecordMedia["type"];
  const max=type==="video"?50:10;
  if(file.size===0)throw new Error(`${file.name}: arquivo vazio.`);
  if(file.size>max*1024*1024)throw new Error(`${file.name}: limite de ${max} MB por arquivo.`);
