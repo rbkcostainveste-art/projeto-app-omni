@@ -1,0 +1,6 @@
+"use client";
+import {useEffect,useState} from 'react';
+import type {SupabaseClient} from '@supabase/supabase-js';
+import {ChatCalls,StartChatCall} from '@/components/chat-calls';
+import {ChatCapture} from '@/components/chat-capture';
+export default function Page(){const [client,setClient]=useState<SupabaseClient|null>(null),[user,setUser]=useState(''),[sent,setSent]=useState(''),[recording,setRecording]=useState(false),[error,setError]=useState('');useEffect(()=>{const who=new URLSearchParams(location.search).get('user')||'A';setUser(who);setClient({rpc:async(_name:string,args:unknown)=>{const response=await fetch('/__call_test',{method:'POST',body:JSON.stringify({who,args})});return response.json();}} as unknown as SupabaseClient);},[]);return <main className="relative mx-auto mt-20 max-w-sm rounded-xl border bg-white p-4"><h1>Teste {user}</h1><StartChatCall conversation="test-conversation"/><div className="relative mt-44"><ChatCapture disabled={false} onSend={async f=>setSent(f.type+':'+f.size)} onRecording={setRecording} onError={setError}/></div><p data-testid="sent">{sent}</p><p>{recording?'Gravando':'Livre'}</p><p role="alert">{error}</p>{client?<ChatCalls client={client} user={user}/>:null}</main>}
