@@ -5,12 +5,14 @@ import type {SupabaseClient} from "@supabase/supabase-js";
 import {Mic,MicOff,Video,VideoOff,Phone,PhoneOff,MonitorUp,SwitchCamera,X} from "lucide-react";
 import {CallRecording,RecordedCall} from "./call-recording";
 import {ModalLayer} from "./modal-layer";
+import {CallMediaError,captureCallMedia} from "@/lib/call-media";
 
 type Call = {id:string;conversation_id:string;started_by:string;mode:'audio'|'video';created_at:string;ended_at:string|null;caller_name?:string;title?:string};
 type Member = {employee:string;name:string;session:string;state:string};
 type Signal = {id:number;sender:string;payload:{type:'offer'|'answer'|'ice';sdp?:string;candidate?:RTCIceCandidateInit}};
 type Snapshot = {call:Call;ended:boolean;members:Member[];signals:Signal[]};
 type Active = {snapshot:Snapshot;stream:MediaStream;session:string};
+type RetryCall = {mode:'audio'|'video';conversation?:string;callId?:string;device:'microphone'|'camera'|'browser'};
 export async function callRpc<T>(client:SupabaseClient,action:string,payload:Record<string,unknown>={}):Promise<T>{
  const {data,error}=await client.rpc('chat_call',{p_action:action,p_payload:payload});
  if(error)throw Error(error.message);return data as T;
@@ -22,6 +24,7 @@ export function StartChatCall({conversation,disabled}:{conversation:string;disab
 // Mounted independently of the chat modal so a colleague can answer anywhere in the app.
 export function ChatCalls({client,user}:{client:SupabaseClient;user:string}){
  const [recorded,setRecorded]=useState<{file:File;conversation:string}|null>(null);
+ const [retry,setRetry]=useState<RetryCall|null>(null);
  const [incoming,setIncoming]=useState<Call[]>([]),[active,setActive]=useState<Active|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);
  const activeRef=useRef<Active|null>(null),joining=useRef(false),alive=useRef(true),sound=useRef<AudioContext|null>(null);
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;activeRef.current?.stream.getTracks().forEach(t=>t.stop());};},[]);
@@ -30,21 +33,36 @@ export function ChatCalls({client,user}:{client:SupabaseClient;user:string}){
  useEffect(()=>{let running=false;let live=true;const refresh=async()=>{if(running||activeRef.current||document.visibilityState!=='visible')return;running=true;try{const data=await callRpc<Call[]>(client,'incoming');if(live)setIncoming(data);}catch{/* Inbox continues to work when the network is offline. */}finally{running=false;}};const timer=setInterval(()=>void refresh(),4000);void refresh();window.addEventListener('flight-ia-chat-refresh',refresh);document.addEventListener('visibilitychange',refresh);return()=>{live=false;clearInterval(timer);window.removeEventListener('flight-ia-chat-refresh',refresh);document.removeEventListener('visibilitychange',refresh);};},[client,user]);
  const enter=useCallback(async(mode:'audio'|'video',conversation?:string,callId?:string)=>{
   if(joining.current||activeRef.current){setError('Encerre a chamada atual antes de iniciar outra.');return;}
-  joining.current=true;setBusy(true);setError('');let media:MediaStream|undefined;let session='';let joined:Snapshot|undefined;
+  joining.current=true;setBusy(true);setError('');setRetry(null);let media:MediaStream|undefined;let session='';let joined:Snapshot|undefined;
   try{
-   if(!navigator.mediaDevices?.getUserMedia||typeof RTCPeerConnection==='undefined')throw Error('Este navegador não suporta chamadas. Abra em um navegador atualizado.');
-   media=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true},video:mode==='video'?{width:{ideal:640},height:{ideal:480},frameRate:{ideal:20}}:false});
+   media=await captureCallMedia(mode);
    if(!alive.current){media.getTracks().forEach(t=>t.stop());return;}
    session=crypto.randomUUID();joined=await callRpc<Snapshot>(client,callId?'join':'start',{id:callId||crypto.randomUUID(),conversation,mode,session});
    if(joined.ended)throw Error('Esta chamada já foi encerrada.');
    if(!alive.current){media.getTracks().forEach(t=>t.stop());void callRpc(client,'leave',{id:joined.call.id,session}).catch(()=>{});return;}
    const next={snapshot:joined,stream:media,session};activeRef.current=next;setActive(next);setIncoming([]);window.dispatchEvent(new Event('flight-ia-call-active'));window.dispatchEvent(new Event('flight-ia-chat-refresh'));
-  }catch(e){media?.getTracks().forEach(t=>t.stop());if(alive.current)setError((e as Error).name==='NotAllowedError'?'Permita o microfone e a câmera para iniciar a chamada.':(e as Error).message);}
+  }catch(e){media?.getTracks().forEach(t=>t.stop());if(alive.current){setError((e as Error).message);if(e instanceof CallMediaError)setRetry({mode,conversation,callId,device:e.device});}}
   finally{joining.current=false;if(alive.current)setBusy(false);}
  },[client]);
  useEffect(()=>{const handler=(e:Event)=>{const data=(e as CustomEvent<{conversation:string;mode:'audio'|'video'}>).detail;void enter(data.mode,data.conversation);};window.addEventListener('flight-ia-start-call',handler);return()=>window.removeEventListener('flight-ia-start-call',handler);},[enter]);
  const close=()=>{activeRef.current=null;setActive(null);setIncoming([]);window.dispatchEvent(new Event('flight-ia-chat-refresh'));};
- return <>{recorded?<ModalLayer><div className="m-auto w-[min(94vw,500px)]"><RecordedCall file={recorded.file} conversation={recorded.conversation} client={client} onDone={()=>setRecorded(null)}/></div></ModalLayer>:null}{active?<CallRoom key={active.snapshot.call.id} active={active} client={client} onClose={close} onRecorded={file=>setRecorded({file,conversation:active.snapshot.call.conversation_id})}/>:incoming.length||busy||error?<ModalLayer><section className="m-auto w-[min(92vw,420px)] rounded-2xl bg-white p-6 text-slate-800 shadow-xl"><h2 className="text-lg font-bold">{busy?'Preparando chamada…':incoming[0]?`${incoming[0].caller_name||'Colega'} está ligando`:'Chamada'}</h2>{incoming[0]?<><p className="my-2 text-sm">{incoming[0].mode==='video'?'Videochamada':'Chamada de voz'} · {incoming[0].title||'Conversa'}</p><div className="mt-4 flex gap-3"><button disabled={busy} className="rounded-full bg-emerald-700 px-5 py-3 text-white" onClick={()=>void enter(incoming[0].mode,undefined,incoming[0].id)}>Atender</button><button disabled={busy} className="rounded-full bg-red-700 px-5 py-3 text-white" onClick={async()=>{const item=incoming[0];try{await callRpc(client,'decline',{id:item.id});setIncoming(items=>items.filter(c=>c.id!==item.id));}catch(e){setError((e as Error).message);}}}>Recusar</button></div></>:null}{error?<p role="alert" className="my-3 text-sm text-red-700">{error}</p>:null}{!busy?<button className="mt-3 text-sm" onClick={()=>{setError('');setIncoming([]);}}>Fechar</button>:null}</section></ModalLayer>:null}</>;
+ return <>{recorded?<ModalLayer><div className="m-auto w-[min(94vw,500px)]"><RecordedCall file={recorded.file} conversation={recorded.conversation} client={client} onDone={()=>setRecorded(null)}/></div></ModalLayer>:null}{active?<CallRoom key={active.snapshot.call.id} active={active} client={client} onClose={close} onRecorded={file=>setRecorded({file,conversation:active.snapshot.call.conversation_id})}/>:incoming.length||busy||error?<ModalLayer><section className="m-auto w-[min(92vw,420px)] max-h-[85dvh] overflow-y-auto rounded-2xl bg-white p-6 text-slate-800 shadow-xl"><h2 className="text-lg font-bold">{busy?'Preparando chamada…':retry?'Acesso à chamada':incoming[0]?`${incoming[0].caller_name||'Colega'} está ligando`:'Chamada'}</h2>{incoming[0]&&!retry?<><p className="my-2 text-sm">{incoming[0].mode==='video'?'Videochamada':'Chamada de voz'} · {incoming[0].title||'Conversa'}</p><div className="mt-4 flex gap-3"><button disabled={busy} className="rounded-full bg-emerald-700 px-5 py-3 text-white" onClick={()=>void enter(incoming[0].mode,undefined,incoming[0].id)}>Atender</button><button disabled={busy} className="rounded-full bg-red-700 px-5 py-3 text-white" onClick={async()=>{const item=incoming[0];try{await callRpc(client,'decline',{id:item.id});setIncoming(items=>items.filter(c=>c.id!==item.id));}catch(e){setError((e as Error).message);}}}>Recusar</button></div></>:null}{error?<p role="alert" className="my-3 text-sm text-red-700">{error}</p>:null}{retry&&!busy?<CallPermissionHelp mode={retry.mode} onRetry={()=>void enter(retry.mode,retry.conversation,retry.callId)} onAudio={retry.mode==='video'?()=>void enter('audio',retry.conversation,retry.callId):undefined}/>:null}{!busy?<button className="mt-3 min-h-11 px-3 text-sm" onClick={()=>{setError('');setRetry(null);setIncoming([]);}}>Fechar</button>:null}</section></ModalLayer>:null}</>;
+}
+
+function CallPermissionHelp({mode,onRetry,onAudio}:{mode:'audio'|'video';onRetry:()=>void;onAudio?:()=>void}){
+ return <div className="space-y-3 text-sm">
+  <p>Se o pedido de permissão não aparecer, o acesso pode estar bloqueado nas configurações.</p>
+  <details className="rounded-xl bg-slate-50 p-3"><summary className="cursor-pointer font-semibold">Como liberar no celular</summary>
+   <ol className="mt-2 list-decimal space-y-2 pl-5">
+    <li>No Chrome, abra o menu ⋮, Configurações, Configurações do site e Microfone{mode==='video'?' / Câmera':''}. Permita o acesso deste site.</li>
+    <li>No Android, confira também Configurações do celular, Aplicativos, seu navegador, Permissões. Libere Microfone{mode==='video'?' e Câmera':''} e confira os controles de privacidade do aparelho.</li>
+    <li>No iPhone/iPad, confira as permissões de Microfone{mode==='video'?' e Câmera':''} nas configurações do site no Safari.</li>
+   </ol>
+   <p className="mt-2">Se abriu por um link dentro de outro aplicativo, abra este mesmo endereço diretamente no Chrome ou Safari.</p>
+  </details>
+  <p>Depois de liberar, volte e toque em Tentar novamente. O aplicativo não consegue alterar essas permissões por você.</p>
+  <div className="flex flex-wrap gap-2"><button className="min-h-11 rounded-xl bg-emerald-700 px-4 py-2 font-semibold text-white" onClick={onRetry}>Tentar novamente</button>{onAudio?<button className="min-h-11 rounded-xl border border-slate-300 px-4 py-2" onClick={onAudio}>Entrar só com áudio</button>:null}</div>
+ </div>;
 }
 
 function StreamView({stream,name,muted=false,audioOnly=false}:{stream:MediaStream;name:string;muted?:boolean;audioOnly?:boolean}){

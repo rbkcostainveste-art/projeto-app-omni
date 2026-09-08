@@ -87,7 +87,7 @@ const assert=require('node:assert/strict');
 
  for(const page of [a,b]){assert.equal(await page.getByRole('button',{name:'Ligar câmera',exact:true}).count(),0);assert.equal(await page.getByRole('button',{name:'Compartilhar tela'}).count(),0);assert.equal(await page.locator('video').count(),0);await page.getByRole('button',{name:'Encerrar chamada',exact:true}).click();await page.getByRole('button',{name:'Fechar chamada'}).click();}
  console.log('PASS audio packets and audio-only controls');
- await a.bringToFront();await a.evaluate(()=>{navigator.mediaDevices.getUserMedia=async()=>{throw new DOMException('Denied','NotAllowedError');};});await a.getByRole('button',{name:'Ligar por voz'}).click();await a.getByText('Permita o microfone e a câmera para iniciar a chamada.').waitFor();assert.ok(current.ended_at);assert.equal(context.pages().length,3);console.log('PASS denied permission does not create call; caller exercised answering peer branch');
+ await a.bringToFront();await a.evaluate(()=>{navigator.mediaDevices.getUserMedia=async()=>{throw new DOMException('Denied','NotAllowedError');};});await a.getByRole('button',{name:'Ligar por voz'}).click();await a.getByText('O navegador não liberou o microfone. Confira as permissões do site e do celular abaixo.').waitFor();assert.ok(current.ended_at);assert.equal(context.pages().length,3);console.log('PASS denied permission does not create call; caller exercised answering peer branch');
 
  }finally{await browser.close();}
 
