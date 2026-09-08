@@ -3,6 +3,8 @@
 O eDB externo é o registro oficial. O Cockpit prepara dados operacionais opcionais e não confirma sincronização, assinatura, liberação ou encerramento oficial.
 
 ## Uso
+- Coordenação: “Documentação do voo · opcional” na criação recolhe briefing, links e anexos PDF/JPG/PNG/WebP (até 50 MB). Arquivos no bucket privado `cockpit-documents`; compartilhamento segue a designação atual do voo. Repetições recebem cópias vinculadas por voo. Falha documental permite tentar novamente sem duplicar voos já confirmados ou concluir a programação e anexar depois.
+- Trilhos: botão documental somente na visão da tripulação. Não é adicionado à visão da manutenção. O botão abre diretamente a seção Documentos/eDB do voo escolhido.
 - Navegação: Cockpit. Na programação, o botão Cockpit do voo abre os dados daquele voo.
 - Cadastros: documentos por matrícula, regras/escala, contratos, locais AIS e referência do fornecedor eDB. Funções de tripulante abrem campos específicos; coordenação, despacho e ferramentaria exibem Mensalista.
 - Preparação: número, contrato, rota, ICAO, alternado, combustível e unidade, passageiros e carga. Voo e tripulação continuam no cadastro original.

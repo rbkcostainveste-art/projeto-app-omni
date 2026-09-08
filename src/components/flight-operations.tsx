@@ -1,15 +1,16 @@
 "use client";
 
+import {openCockpit} from "./cockpit";
 import {FlightPosition} from "./flight-position";
 import {useCallback,useEffect,useRef,useState} from 'react';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {X} from 'lucide-react';
 import {activeEquipment,eventAvailable,eventLabels,isS92,operationTotals,pendingEndEvents,type OperationData} from '@/lib/flight-operations';
 
-type Props={supabase:SupabaseClient|null;flight:{id:string;prefix:string;model:string;maintenancePostId?:string;cancelled?:boolean};readOnly?:boolean;requireSignature:(action:()=>void|Promise<void>,label?:string)=>Promise<boolean>};
+type Props={showDocumentation?:boolean;supabase:SupabaseClient|null;flight:{id:string;prefix:string;model:string;maintenancePostId?:string;cancelled?:boolean};readOnly?:boolean;requireSignature:(action:()=>void|Promise<void>,label?:string)=>Promise<boolean>};
 const localInput=(value:string)=>{const date=new Date(value);return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}T${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;};
 
-export function FlightOperations({supabase,flight,readOnly=false,requireSignature}:Props){
+export function FlightOperations({supabase,flight,showDocumentation=false,readOnly=false,requireSignature}:Props){
  const [data,setData]=useState<OperationData|null>(null);const [error,setError]=useState('');const [busy,setBusy]=useState(false);const [open,setOpen]=useState(false);
  const [correction,setCorrection]=useState<{id:string;at:string}|null>(null);
  const [closing,setClosing]=useState(false);
@@ -33,7 +34,7 @@ export function FlightOperations({supabase,flight,readOnly=false,requireSignatur
  if(!data)return <div className="rounded-xl border p-3 text-sm">{error||'Carregando registros operacionais…'}<button onClick={()=>void load()} className="ml-3 text-blue-700">Recarregar</button></div>;
  const keys=flight.maintenancePostId?['fuel','inspection']:[...(data.first?['drain']:[]),'fuel','inspection','hums',...(data.closed&&data.nextFlightId===null?['postflight']:[])];
  const labels:Record<string,string>={drain:'Dreno de combustível',fuel:'Abastecimento',inspection:data.first?'Pré-voo':'Entre voos',hums:'HUMS',postflight:'Inspeção após o último voo do dia'};
- return <section className="space-y-3"><FlightPosition supabase={supabase} flightId={flight.id} readOnly={readOnly} requireSignature={requireSignature}/>
+ return <section className="space-y-3">{showDocumentation?<button type="button" onClick={()=>openCockpit(flight.id,undefined,"edb")} className="min-h-11 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-800">Documentação do voo</button>:null}<FlightPosition supabase={supabase} flightId={flight.id} readOnly={readOnly} requireSignature={requireSignature}/>
   <p className="text-xs text-[#60758c]">{flight.maintenancePostId?'Voo/giro de manutenção · pré-voo e abastecimento':data.first?'Primeira operação do dia · dreno e pré-voo':'Operação seguinte · sem dreno de combustível'} · {data.day.split('-').reverse().join('/')}</p>
   <div className="grid gap-3 sm:grid-cols-2">{keys.map(key=>{
    const expectedKind=key==='inspection'?(data.first?'preflight':'between'):key;
