@@ -1,0 +1,40 @@
+begin;
+do $test$
+declare a public.device_identities;b public.device_identities; outsider public.device_identities;c1 uuid:=gen_random_uuid();c2 uuid:=gen_random_uuid();linked uuid:=gen_random_uuid();request uuid:=gen_random_uuid();postid text:='qa-chat-'||gen_random_uuid();mid bigint;blocked boolean;res jsonb;
+begin
+ select d.* into a from public.device_identities d join public.authorized_users u using(employee_number) where u.active and d.access_profile='leader_inspector' and exists(select 1 from public.device_identities x where x.access_profile='mechanic' and x.assigned_base=d.assigned_base) limit 1;
+ select d.* into b from public.device_identities d join public.authorized_users u using(employee_number) where u.active and u.job_role='mechanic' and d.access_profile='mechanic' and d.assigned_base=a.assigned_base limit 1;
+ select d.* into outsider from public.device_identities d join public.authorized_users u using(employee_number) where u.active and u.job_role='mechanic' and d.access_profile='mechanic' and d.assigned_base=a.assigned_base and d.employee_number<>b.employee_number limit 1;
+ if outsider.auth_user_id is null then raise exception 'Missing test identities';end if;
+ perform set_config('request.jwt.claim.sub',a.auth_user_id::text,true);
+ perform public.internal_chat('create',jsonb_build_object('id',c1,'title','QA group','members',jsonb_build_array(b.employee_number)));
+ perform public.internal_chat('create',jsonb_build_object('id',c2,'title','QA different subject','members',jsonb_build_array(b.employee_number)));
+ mid:=(public.internal_chat('send',jsonb_build_object('id',c1,'requestId',request,'body','Confira vazamento'))->>'id')::bigint;
+ perform public.internal_chat('send',jsonb_build_object('id',c1,'requestId',request,'body','Confira vazamento'));
+ if (select count(*) from public.internal_messages where request_id=request)<>1 then raise exception 'Retry duplicated';end if;
+ if not exists(select 1 from public.internal_messages where id=mid and sender=a.employee_number) then raise exception 'Signature missing';end if;
+ perform set_config('request.jwt.claim.sub',outsider.auth_user_id::text,true);
+ blocked:=false;begin perform public.internal_chat('messages',jsonb_build_object('id',c1));exception when others then blocked:=true;end;if not blocked then raise exception 'Outsider can read';end if;
+ blocked:=false;begin perform public.internal_chat('send',jsonb_build_object('id',c1,'requestId',gen_random_uuid(),'body','wrong'));exception when others then blocked:=true;end;if not blocked then raise exception 'Outsider can send';end if;
+ if private.chat_member(c1::text) then raise exception 'Storage access leaks';end if;
+ perform set_config('request.jwt.claim.sub',a.auth_user_id::text,true);
+ perform public.internal_chat('invite',jsonb_build_object('id',c1,'members',jsonb_build_array(outsider.employee_number)));
+ if exists(select 1 from public.internal_conversation_members where conversation_id=c2 and employee_number=outsider.employee_number) then raise exception 'Invite leaked into another conversation';end if;
+ perform set_config('request.jwt.claim.sub',b.auth_user_id::text,true);
+ perform public.internal_chat('read',jsonb_build_object('id',c1,'messageId',mid));
+ if not exists(select 1 from public.internal_conversation_members where conversation_id=c1 and employee_number=b.employee_number and last_read_id=mid) then raise exception 'Read not recorded';end if;
+ perform set_config('request.jwt.claim.sub',a.auth_user_id::text,true);
+ insert into public.operational_wall_posts(id,base,audience_area,data) values(postid,a.assigned_base,'maintenance',jsonb_build_object('id',postid,'title','QA procedure','category','Procedimentos','createdBy',a.employee_number,'body','QA','actions',jsonb_build_array(jsonb_build_object('id',gen_random_uuid(),'assignedTo',b.employee_number,'title','QA','status','pending','executions','[]'::jsonb,'views','[]'::jsonb,'acknowledgements','[]'::jsonb))));
+ perform public.internal_chat('create',jsonb_build_object('id',linked,'postId',postid));
+ res:=public.internal_chat('create',jsonb_build_object('id',gen_random_uuid(),'postId',postid));if (res->>'id')::uuid<>linked then raise exception 'Duplicate activity conversation';end if;
+ -- Non-assigned mechanic can still execute, within their own role/base.
+ perform set_config('request.jwt.claim.sub',outsider.auth_user_id::text,true);
+ perform public.record_maintenance_task_result(postid,'QA executed without designation','satisfactory',gen_random_uuid(),'[]');
+ if not exists(select 1 from public.operational_wall_posts where id=postid and data#>>'{actions,0,executions,0,employeeNumber}'=outsider.employee_number) then raise exception 'Unassigned result not signed';end if;
+ perform set_config('request.jwt.claim.sub',a.auth_user_id::text,true);
+ perform public.internal_chat('invite',jsonb_build_object('id',linked,'members',jsonb_build_array(outsider.employee_number)));
+ if not exists(select 1 from public.operational_wall_posts where id=postid and position(outsider.employee_number in data#>>'{actions,0,assignedTo}')>0) then raise exception 'Invite did not add designation alert';end if;
+ if has_function_privilege('anon','public.internal_chat(text,jsonb)','EXECUTE') or has_table_privilege('authenticated','public.internal_messages','UPDATE') or has_table_privilege('authenticated','public.internal_messages','SELECT') then raise exception 'Direct access exposed';end if;
+end $test$;
+rollback;
+select 'PASS: private groups, separate conversations, signed idempotent sends, scoped invitations, read receipts, activity linking, designation alerts and unassigned execution' result;
