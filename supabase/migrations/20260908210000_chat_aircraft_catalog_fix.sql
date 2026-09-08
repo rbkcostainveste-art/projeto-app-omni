@@ -1,0 +1,5 @@
+create or replace function private.chat_aircraft_context() returns trigger language plpgsql security definer set search_path='' as $$begin
+ if new.record_id is not null then select prefix into new.aircraft_prefix from public.maintenance_records where id=new.record_id;
+ elsif new.post_id is not null then select string_agg(distinct action->>'prefix',', ' order by action->>'prefix') into new.aircraft_prefix from public.operational_wall_posts post cross join lateral jsonb_array_elements(post.data->'actions') action where post.id=new.post_id and nullif(action->>'prefix','') is not null;
+ else new.aircraft_prefix:=nullif(upper(trim(new.aircraft_prefix)),'');if new.aircraft_prefix is not null and not exists(select 1 from public.shared_app_state state cross join lateral jsonb_array_elements(coalesce(state.catalogs->'aircraft','[]')) plane where state.id='main' and upper(trim(plane->>'prefix'))=new.aircraft_prefix) then raise exception 'Aeronave não encontrada no cadastro atual. Escolha uma da lista ou Sem aeronave.';end if;
+ end if;return new;end $$;
