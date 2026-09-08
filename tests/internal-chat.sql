@@ -34,6 +34,17 @@ begin
  perform set_config('request.jwt.claim.sub',a.auth_user_id::text,true);
  perform public.internal_chat('invite',jsonb_build_object('id',linked,'members',jsonb_build_array(outsider.employee_number)));
  if not exists(select 1 from public.operational_wall_posts where id=postid and position(outsider.employee_number in data#>>'{actions,0,assignedTo}')>0) then raise exception 'Invite did not add designation alert';end if;
+-- Simulate another base and non-maintenance role, inside this rolled-back test.
+ update public.authorized_users set assigned_base='QA Outra Base',job_role='commander' where employee_number=outsider.employee_number;
+ perform public.internal_chat('create',jsonb_build_object('id',gen_random_uuid(),'members',jsonb_build_array(outsider.employee_number)));
+ delete from public.internal_conversation_members where conversation_id=linked and employee_number=outsider.employee_number;
+ update public.operational_wall_posts set data=jsonb_set(data,'{actions,0,assignedTo}',to_jsonb(b.employee_number)) where id=postid;
+ perform public.internal_chat('invite',jsonb_build_object('id',linked,'members',jsonb_build_array(outsider.employee_number)));
+ if exists(select 1 from public.operational_wall_posts where id=postid and position(outsider.employee_number in data#>>'{actions,0,assignedTo}')>0) then raise exception 'Chat invite granted operational assignment outside role/base';end if;
+ perform set_config('request.jwt.claim.sub',outsider.auth_user_id::text,true);
+ perform public.internal_chat('messages',jsonb_build_object('id',linked));
+ perform public.internal_chat('send',jsonb_build_object('id',linked,'requestId',gen_random_uuid(),'body','Participando de outra base e cargo'));
+ perform public.internal_chat('invite',jsonb_build_object('id',linked,'members',jsonb_build_array(b.employee_number)));
  if has_function_privilege('anon','public.internal_chat(text,jsonb)','EXECUTE') or has_table_privilege('authenticated','public.internal_messages','UPDATE') or has_table_privilege('authenticated','public.internal_messages','SELECT') then raise exception 'Direct access exposed';end if;
 end $test$;
 rollback;
