@@ -1,0 +1,6 @@
+'use client';
+import {FlightCard} from '@/components/flight-board';
+import type {ComponentProps} from 'react';
+const noop=()=>{};
+const flight={id:'00000000-0000-4000-8000-000000000001',prefix:'PR-CHT',model:'S92',base:'Jacarepaguá',date:'2026-09-08',departure:'15:30',duration:1,destination:'Plataforma',fuelAmount:1200,fuelUnit:'L',fuel:'ok',preflight:'ok',hums:'ok',engineStart:'pending',shutdown:'pending',revision:1,acknowledged:{demo:1},history:[],actionBy:{},createdBy:'demo',updatedBy:'demo'} as ComponentProps<typeof FlightCard>['flight'];
+export default function Page(){return <div className="flight-app"><header className="bg-blue-700 p-4 text-white">Trilhos · Piloto</header><main className="p-5"><section className="flight-trail-grid grid gap-3">{[0,1,2].map(i=><FlightCard key={i} flight={{...flight,id:`00000000-0000-4000-8000-00000000000${i+1}`,prefix:i?'PR-CGO':'PR-CHT'}} user="demo" users={[]} index={i} isAdmin={false} canEdit={false} canConfirmChecks={false} canRegisterOccurrence={false} showAlertControl={false} testingAlert={false} onAlert={noop} onTestAlert={noop} onPhase={noop} onFuel={noop} onField={noop} onOccurrence={noop} onMaintenance={noop} onDelete={noop} onAcknowledge={noop} operationalPanel={<p className="p-5">Eventos não habilitados neste teste visual.</p>}/>)}</section></main></div>}
