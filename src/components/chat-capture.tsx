@@ -5,7 +5,7 @@ import {Mic,Video,Send,X,SwitchCamera} from "lucide-react";
 import {composeMedia} from "@/lib/call-recording";
 import {mediaFormat} from "@/lib/record-media";
 
-export function ChatCapture({disabled,onSend,onRecording,onError}:{disabled:boolean;onSend:(file:File)=>Promise<void>;onRecording:(recording:boolean)=>void;onError:(message:string)=>void}){
+export function ChatCapture({disabled,onSend,onRecording,onError,allowVideo=true}:{allowVideo?:boolean;disabled:boolean;onSend:(file:File)=>Promise<void>;onRecording:(recording:boolean)=>void;onError:(message:string)=>void}){
  const composite=useRef<ReturnType<typeof composeMedia>|null>(null),facing=useRef<"user"|"environment">("user");
  const [switching,setSwitching]=useState(false);
  const recorder=useRef<MediaRecorder|null>(null),stream=useRef<MediaStream|null>(null),preview=useRef<HTMLVideoElement|null>(null),alive=useRef(true),discard=useRef(false),sendAfterStop=useRef(false),generation=useRef(0);
@@ -43,7 +43,7 @@ export function ChatCapture({disabled,onSend,onRecording,onError}:{disabled:bool
   finally{setSwitching(false);}
  }
  return <div className="flex min-w-0 items-center gap-1">
-  {!starting&&!mode&&!draft?<><button type="button" title="Gravar áudio" aria-label="Gravar áudio" disabled={disabled} onClick={()=>void start('audio')} className="p-2 text-emerald-800 disabled:opacity-40"><Mic size={20}/></button><button type="button" title="Gravar vídeo" aria-label="Gravar vídeo" disabled={disabled} onClick={()=>void start('video')} className="p-2 text-emerald-800 disabled:opacity-40"><Video size={20}/></button></>:null}
+  {!starting&&!mode&&!draft?<><button type="button" title="Gravar áudio" aria-label="Gravar áudio" disabled={disabled} onClick={()=>void start('audio')} className="p-2 text-emerald-800 disabled:opacity-40"><Mic size={20}/></button>{allowVideo?<button type="button" title="Gravar vídeo" aria-label="Gravar vídeo" disabled={disabled} onClick={()=>void start('video')} className="p-2 text-emerald-800 disabled:opacity-40"><Video size={20}/></button>:null}</>:null}
   {starting?<p role="status" className="text-xs">Aguardando microfone/câmera…</p>:null}
   {mode||draft?<><button aria-label="Cancelar gravação" onClick={()=>{discard.current=true;if(recorder.current?.state==='recording')recorder.current.stop();setDraft(null);onRecording(false);}} className="p-2 text-red-700"><X size={20}/></button><span role="status" className="text-xs text-red-700">{mode?'Gravando':'Pronto'} · {seconds}s</span>{mode==='video'?<button disabled={switching} aria-label="Trocar câmera" onClick={()=>void flip()} className="p-2 text-emerald-800"><SwitchCamera size={22}/></button>:null}{mode==='video'?<video ref={preview} autoPlay muted playsInline className="absolute bottom-full right-3 mb-2 h-32 w-40 rounded-xl bg-black object-contain"/>:null}<button aria-label="Enviar gravação" disabled={disabled} onClick={()=>{if(draft){const file=draft;setDraft(null);onRecording(false);void onSend(file);}else if(recorder.current?.state==='recording'){sendAfterStop.current=true;recorder.current.stop();}}} className="grid h-11 w-11 place-items-center rounded-full bg-emerald-700 text-white disabled:opacity-40"><Send size={20}/></button></>:null}
  </div>;
