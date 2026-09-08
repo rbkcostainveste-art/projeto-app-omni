@@ -283,3 +283,29 @@ nav[aria-label="Navegação principal"] button[aria-current="page"] > span.absol
 @media(pointer:coarse) {
  .flight-app > nav[aria-label="Navegação principal"] button { min-height:48px; }
 }
+
+/* Mobile content uses the screen width while preserving comfortable text padding. */
+@media(max-width:767px) {
+ .flight-app > main { padding:6px 4px 100px; }
+ .flight-app .flight-trail-grid { gap:10px; }
+ .flight-app .flight-trail-grid > button,
+ .flight-app .technical-card,
+ .flight-app .tool-use-card,
+ .flight-app [id^="passage-card-"] { border-radius:10px; }
+ .flight-app .notice-board { margin-inline:-4px; padding:8px 0 2px; }
+ .flight-app .notice-heading { margin-bottom:4px; gap:8px; }
+ .flight-app .notice-heading h3 { margin-top:0; }
+ .flight-app .notice-board .notice-card { padding:8px 16px 0; min-height:0; }
+ .flight-app .notice-title-row { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px 8px; }
+ .flight-app .notice-title-row h4 { flex:1 1 100px; min-width:0; }
+ .flight-app .notice-board .notice-badges { display:flex; justify-content:flex-end; flex-wrap:wrap; margin:0 0 0 auto; gap:4px; max-width:100%; }
+ .flight-app .notice-board .notice-badges > * { font-size:12px; padding:2px 6px; }
+ .flight-app .notice-board .notice-meta { margin-top:2px; }
+ .flight-app .notice-count { margin-top:0; padding:0 12px 4px; }
+ .flight-app .wall-columns { gap:6px; }
+ .flight-app .operational-timeline { margin-inline:-4px; }
+ .flight-app .operational-timeline > div:first-child { padding:6px 16px; margin-bottom:4px; }
+ .flight-app .operational-timeline > div:first-child > div { display:flex; align-items:center; flex-wrap:wrap; gap:2px 8px; }
+ .flight-app .operational-timeline > div:first-child h3 { margin-top:0; }
+ .flight-app .operational-timeline > div:first-child button { margin-top:0; min-height:44px; }
+}
