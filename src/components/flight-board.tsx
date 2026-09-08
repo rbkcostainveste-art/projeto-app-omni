@@ -488,7 +488,8 @@ export function FlightBoard() {
   function acknowledge(id: string, employeeNumber = user) { const flight = localSnapshot.current.flights.find((item) => item.id === id); if(!flight) return; const entry = { employeeNumber, revision: flight.revision, at: new Date().toISOString() }; const scienceLog = [...(flight.scienceLog ?? []).filter((item) => item.employeeNumber !== employeeNumber || item.revision !== flight.revision), entry]; const patch = { acknowledged: { [employeeNumber]: flight.revision }, scienceLog }; setFlights((items) => items.map((item) => item.id === id ? { ...item, ...patch } : item)); void persistItem("flights", id, patch, "update", [], null, false); }
   async function ensurePushSubscription() {
     if(!supabase || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) throw new Error("Este aparelho não oferece notificações Web Push.");
-    const registration = await navigator.serviceWorker.register("/sw.js");
+    await navigator.serviceWorker.register("/sw.js");
+    const registration = await navigator.serviceWorker.ready;
     const permission = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
     if(permission !== "granted") throw new Error("Permissão de notificações não concedida.");
     let subscription = await registration.pushManager.getSubscription();
