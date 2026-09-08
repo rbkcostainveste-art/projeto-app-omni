@@ -1,0 +1,34 @@
+begin;
+do $$
+declare a record;b record;test_id uuid:=gen_random_uuid();result jsonb;prefix text;denied boolean;rid uuid;
+begin
+ select d.* into a from public.device_identities d join public.authorized_users u using(employee_number) where u.active and (d.is_admin or d.access_profile in('legacy','mechanic','leader_inspector')) limit 1;
+ select d.* into b from public.device_identities d join public.authorized_users u using(employee_number) where u.active and d.employee_number<>a.employee_number limit 1;
+ if a.auth_user_id is null or b.auth_user_id is null then raise exception 'Two test identities required';end if;
+ perform set_config('request.jwt.claim.sub',a.auth_user_id::text,true);
+ result:=public.personal_note('save',jsonb_build_object('employee',a.employee_number,'id',test_id,'title','QA private note','body','Inspect component','remindAt',now()+interval '1 day','notify',false));
+ if result->>'title'<>'QA private note' then raise exception 'save failed';end if;
+ result:=public.personal_note('save',jsonb_build_object('employee',a.employee_number,'id',test_id,'title','Retry','body','x','revision',0));
+ if result->>'title'<>'QA private note' then raise exception 'create retry not idempotent';end if;
+ perform set_config('request.jwt.claim.sub',b.auth_user_id::text,true);denied:=false;
+ begin perform public.personal_note('get',jsonb_build_object('employee',b.employee_number,'id',test_id));exception when others then denied:=true;end;
+ if not denied then raise exception 'Other user can read note';end if;
+ denied:=false;begin perform public.personal_note('delete',jsonb_build_object('employee',b.employee_number,'id',test_id));exception when others then denied:=true;end;if not denied then raise exception 'Other user can delete';end if;
+ if exists(select 1 from jsonb_array_elements(public.personal_note('list',jsonb_build_object('employee',b.employee_number))) n where n->>'id'=test_id::text) then raise exception 'List leaked note';end if;
+ denied:=false;begin perform public.personal_note('list',jsonb_build_object('employee',a.employee_number));exception when others then denied:=true;end;if not denied then raise exception 'Spoofed employee allowed';end if;
+ perform set_config('request.jwt.claim.sub',a.auth_user_id::text,true);
+ update public.personal_notes set remind_at=now()-interval '1 minute',reminder_available_at=now()-interval '1 minute' where personal_notes.id=test_id;
+ if exists(select 1 from public.claim_note_reminders() c where c.id=test_id) then raise exception 'Agenda without notification was claimed';end if;
+ update public.personal_notes set notify=true where personal_notes.id=test_id;
+ if not exists(select 1 from public.claim_note_reminders() c where c.id=test_id) then raise exception 'Due reminder not claimed';end if;
+ if exists(select 1 from public.claim_note_reminders() c where c.id=test_id) then raise exception 'Reminder lease failed';end if;
+ select ac.prefix into prefix from public.aircraft ac join public.operation_bases ba on ba.id=ac.operation_base_id where ac.active limit 1;
+ result:=public.personal_note('convert',jsonb_build_object('employee',a.employee_number,'id',test_id,'type','fault','priority','not_logged','prefix',prefix,'title','QA converted note','body','QA test, rolled back','attachments','[]'::jsonb));rid:=(result->>'id')::uuid;
+ if rid<>test_id or not exists(select 1 from public.maintenance_records where maintenance_records.id=rid) then raise exception 'Conversion failed';end if;
+ if not exists(select 1 from public.operational_wall_posts where data->>'maintenanceRecordId'=rid::text) then raise exception 'Existing maintenance publishing flow not triggered';end if;
+ result:=public.personal_note('convert',jsonb_build_object('employee',a.employee_number,'id',test_id));if result->>'id'<>rid::text then raise exception 'Duplicate conversion';end if;
+ perform public.personal_note('delete',jsonb_build_object('employee',a.employee_number,'id',test_id));if not exists(select 1 from public.maintenance_records where maintenance_records.id=rid) then raise exception 'Deleting note deleted technical record';end if;
+ if has_table_privilege('authenticated','public.personal_notes','SELECT') or has_function_privilege('anon','public.personal_note(text,jsonb)','EXECUTE') then raise exception 'Direct access exposed';end if;
+ raise notice 'PASS ownership, employee spoofing, retries, reminder opt-in/lease, conversion, existing wall publication, preserved technical record';
+end $$;
+rollback;
