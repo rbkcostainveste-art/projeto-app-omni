@@ -1,0 +1,34 @@
+begin;
+do $test$
+declare adm uuid; pilot uuid; employee text; other_employee text; d date:=(now() at time zone 'America/Sao_Paulo')::date; first jsonb; second jsonb; r jsonb; original jsonb; blocked boolean;
+begin
+ select auth_user_id into adm from public.device_identities where is_admin limit 1;
+ select di.auth_user_id,di.employee_number into pilot,employee from public.device_identities di join public.authorized_users u using(employee_number) where u.active and coalesce(u.job_role,u.access_profile) in ('commander','copilot','pilot') limit 1;
+ if pilot is null then raise exception 'Pilot fixture missing';end if;
+ select employee_number into other_employee from public.authorized_users where employee_number<>employee limit 1;
+ first:=jsonb_build_object('id','qa-presentation-maint','prefix','QA-TEST','date',d,'departure','08:00','commander',employee,'maintenancePostId','qa-source','base','Jacarepaguá');
+ second:=jsonb_build_object('id','qa-presentation-flight','prefix','QA-TEST','date',d,'departure','09:00','commander',employee,'base','Jacarepaguá');
+ perform set_config('request.jwt.claim.sub',adm::text,true);
+ perform public.crew_presentation('configure','{"flightMinutes":30,"maintenanceMinutes":45}');
+ update public.shared_app_state set flights=jsonb_build_array(first,second,first||jsonb_build_object('id','qa-cancelled','departure','07:00','cancelled',true),first||jsonb_build_object('id','qa-other','departure','06:00','commander',other_employee),first||jsonb_build_object('id','qa-unscheduled','departure','')) where id='main';
+ perform set_config('request.jwt.claim.sub',pilot::text,true);
+ r:=public.crew_presentation('summary',jsonb_build_object('date',d));
+ if r#>>'{flight,id}'<>'qa-presentation-maint' or (r->>'expectedAt')::timestamptz<>((d::text||' 07:15')::timestamp at time zone 'America/Sao_Paulo') then raise exception 'First maintenance presentation incorrect: %',r;end if;
+ original:=public.crew_presentation('checkin',jsonb_build_object('date',d))->'checkin';
+ if original is null then raise exception 'Check-in missing';end if;
+ if public.crew_presentation('checkin',jsonb_build_object('date',d))->'checkin'<>original then raise exception 'Retry changed record';end if;
+ blocked:=false;begin perform public.crew_presentation('configure','{"flightMinutes":0,"maintenanceMinutes":0}');exception when others then blocked:=true;end;if not blocked then raise exception 'Unauthorized settings';end if;
+ blocked:=false;begin perform public.crew_presentation('summary',jsonb_build_object('date',d,'user',other_employee));exception when others then blocked:=true;end;if not blocked then raise exception 'Other employee exposed';end if;
+ perform set_config('request.jwt.claim.sub',adm::text,true);
+ update public.shared_app_state set flights=jsonb_build_array(second) where id='main';
+ perform set_config('request.jwt.claim.sub',pilot::text,true);
+ r:=public.crew_presentation('summary',jsonb_build_object('date',d));
+ if (r->>'expectedAt')::timestamptz<>((d::text||' 08:30')::timestamp at time zone 'America/Sao_Paulo') or not (r->>'changed')::boolean or r->'checkin'<>original then raise exception 'Schedule revision damaged check-in';end if;
+ perform set_config('request.jwt.claim.sub',adm::text,true);
+ update public.shared_app_state set flights=jsonb_build_array(first||jsonb_build_object('date',d+1,'departure','00:20')) where id='main';
+ perform set_config('request.jwt.claim.sub',pilot::text,true);
+ r:=public.crew_presentation('summary',jsonb_build_object('date',d+1));
+ if (r->>'expectedAt')::timestamptz<>((d::text||' 23:35')::timestamp at time zone 'America/Sao_Paulo') then raise exception 'Midnight calculation failed';end if;
+end $test$;
+rollback;
+select 'PASS first activity, cancellation, assignment, check-in retry, schedule revision, permissions and midnight' result;

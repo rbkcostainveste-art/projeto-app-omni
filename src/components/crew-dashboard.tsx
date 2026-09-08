@@ -1,4 +1,5 @@
 "use client";
+import {CrewPresentation} from "./crew-presentation";
 import {useScreenNotifications} from "./screen-notifications";
 import { ModalLayer } from "./modal-layer";
 import {positionValue} from "@/lib/maintenance-edit-read";
@@ -25,7 +26,7 @@ const duration=(hours:number)=>{const minutes=Math.round(hours*60);return `${Str
 const normalized=(value:string)=>value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/gi,"").toLowerCase();
 const fleetMatches=(model:string,fleet:string)=>normalized(model).includes(normalized(fleet))||normalized(fleet).includes(normalized(model));
 
-export function CrewDashboard({people=[],supabase,user,base,fleets,dryingFleetOptions=[],flights,requireSignature,onOpenTrail,onError}:{people?:{employeeNumber:string;name:string}[];supabase:SupabaseClient|null;user:string;base:string;fleets:string[];dryingFleetOptions?:string[];flights:CrewFlight[];requireSignature:(action:()=>void|Promise<void>,label?:string)=>Promise<boolean>;onOpenTrail:(flight:CrewFlight)=>void;onError:(message:string)=>void}){
+export function CrewDashboard({readOnly=false,people=[],supabase,user,base,fleets,dryingFleetOptions=[],flights,requireSignature,onOpenTrail,onError}:{readOnly?:boolean;people?:{employeeNumber:string;name:string}[];supabase:SupabaseClient|null;user:string;base:string;fleets:string[];dryingFleetOptions?:string[];flights:CrewFlight[];requireSignature:(action:()=>void|Promise<void>,label?:string)=>Promise<boolean>;onOpenTrail:(flight:CrewFlight)=>void;onError:(message:string)=>void}){
   const {unreadEdit,markEditRead}=useMaintenanceEditReads(supabase,user,onError);
   const [actions,setActions]=useState<Action[]>([]);
   const [selected,setSelected]=useState<CrewFlight|null>(null);
@@ -55,7 +56,7 @@ export function CrewDashboard({people=[],supabase,user,base,fleets,dryingFleetOp
   const {visible,confirmed,planned,cancelled}=groupCrewFlights(daily,user);
   useScreenNotifications("crew",visible.map(item=>({id:`${item.id}:${item.revision??0}`,title:item.history?.at(-1)?.value??`Voo ${item.prefix}`,description:`${item.date} · ${item.departure}`,at:item.history?.at(-1)?.at??`${item.date}T${item.departure}:00-03:00`})),id=>{const item=visible.find(item=>`${item.id}:${item.revision??0}`===id);if(item)setSelected(item);});
   const selectedFlight=visible.find((flight)=>flight.id===selected?.id);
-  return <section className="space-y-5">
+  return <section className="space-y-5"><CrewPresentation client={supabase} user={user} flights={flights} readOnly={readOnly} requireSignature={requireSignature} onOpenTrail={onOpenTrail}/>
     <header className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-2xl font-extrabold text-[#17324d]">Programação</h2><button onClick={()=>setDryingOpen(true)} className={`relative flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-bold text-white ${pendingDryingCount?"bg-amber-500":"bg-[#173f70]"}`}><Wind size={18}/>Secagens de compressores<b className={`grid h-6 min-w-6 place-items-center rounded-full px-1.5 text-xs ${pendingDryingCount?"bg-white text-amber-700":"bg-white/20 text-white"}`}>{pendingDryingCount}</b></button></header>
     {fleets.length>1?<details className="rounded-xl border border-[#d8e4ef] bg-white p-3"><summary className="cursor-pointer text-sm font-extrabold text-[#315b86]">Minhas frotas · {effectiveSelectedFleets.join(", ")}</summary><div className="mt-3 flex flex-wrap gap-2">{fleets.map((fleet)=><label key={fleet} className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold ${effectiveSelectedFleets.includes(fleet)?"border-blue-300 bg-blue-50 text-blue-800":"border-[#d8e4ef] text-[#60758c]"}`}><input type="checkbox" checked={effectiveSelectedFleets.includes(fleet)} onChange={()=>toggleFleet(fleet)}/>{fleet}</label>)}</div><p className="mt-2 text-[10px] text-[#718197]">A seleção fica salva neste aparelho até você alterá-la.</p></details>:null}
     <Summary actions={actions.length} confirmed={confirmed.length} planned={planned.length} cancelled={cancelled.length}/>
