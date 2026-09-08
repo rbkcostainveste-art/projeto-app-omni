@@ -257,13 +257,13 @@ nav[aria-label="Navegação principal"] button[aria-current="page"] > span.absol
 .flight-app > nav[aria-label="Navegação principal"] svg { width:20px; height:20px; }
 .flight-app > nav[aria-label="Navegação principal"] button span { font-size:12px; }
 @media(min-width:1100px) {
- .flight-app.split-workspace { --workspace-sidebar:clamp(280px,25vw,360px); --workspace-header-height:64px; }
+ .flight-app.split-workspace { --workspace-sidebar:clamp(320px,30vw,440px); --workspace-header-height:64px; }
  .flight-app.split-workspace > header { width:100%; }
  .flight-app.split-workspace > header > div:first-child { max-width:none; flex-wrap:nowrap; padding:8px 24px; gap:16px; }
- .flight-app.split-workspace > main { top:var(--workspace-header-height); padding:20px 24px 96px; }
+ .flight-app.split-workspace > main { top:var(--workspace-header-height); padding:20px 16px 96px; }
  .flight-app.split-workspace #desktop-workspace-controls { top:var(--workspace-header-height); bottom:80px; padding:20px 12px; }
  .flight-app.split-workspace > nav[aria-label="Navegação principal"],.flight-app:not(.split-workspace) > nav[aria-label="Navegação principal"] { left:50%; right:auto; width:540px; max-width:calc(100% - 24px); margin-left:0; transform:translateX(-50%); }
- .flight-app:not(.split-workspace) .wall-columns { grid-template-columns:minmax(280px,1fr) minmax(0,3fr); gap:24px; }
+ .flight-app:not(.split-workspace) .wall-columns { grid-template-columns:minmax(320px,3fr) minmax(0,7fr); gap:20px; }
  .flight-app .technical-card { padding:14px 18px; }
  .flight-app .technical-card h4 { margin-top:6px; font-size:17px; }
  .flight-app .technical-card > button > div:last-child { gap:8px 16px; }
@@ -308,4 +308,8 @@ nav[aria-label="Navegação principal"] button[aria-current="page"] > span.absol
  .flight-app .operational-timeline > div:first-child > div { display:flex; align-items:center; flex-wrap:wrap; gap:2px 8px; }
  .flight-app .operational-timeline > div:first-child h3 { margin-top:0; }
  .flight-app .operational-timeline > div:first-child button { margin-top:0; min-height:44px; }
+}
+
+@media(min-width:1100px) {
+ .flight-app:not(.split-workspace) > main:has(.wall-columns) { max-width:1440px; padding-inline:24px; }
 }
