@@ -245,3 +245,41 @@ nav[aria-label="Navegação principal"] button[aria-current="page"] > span.absol
 @media (hover:none) {
  .flight-app button:hover,.flight-app article:hover { transform:none; }
 }
+
+/* Shared horizontal application shell, with compact identity and centered navigation. */
+.flight-app > header > div:first-child { min-height:64px; padding-top:8px; padding-bottom:8px; }
+.flight-app .header-identity { display:grid; grid-template-columns:minmax(0,auto) minmax(0,auto); column-gap:12px; align-items:center; }
+.flight-app .header-brand { grid-column:1 / -1; font-size:10px; line-height:1.3; }
+.flight-app .header-identity h1 { font-size:17px; line-height:1.4; }
+.flight-app .header-base { border-left:1px solid #ffffff55; padding-left:12px; font-size:12px; line-height:1.4; max-width:220px; }
+.flight-app > nav[aria-label="Navegação principal"] { padding:3px; border-radius:17px; }
+.flight-app > nav[aria-label="Navegação principal"] button { min-height:46px; padding-top:4px; padding-bottom:4px; gap:2px; }
+.flight-app > nav[aria-label="Navegação principal"] svg { width:20px; height:20px; }
+.flight-app > nav[aria-label="Navegação principal"] button span { font-size:12px; }
+@media(min-width:1100px) {
+ .flight-app.split-workspace { --workspace-sidebar:clamp(280px,25vw,360px); --workspace-header-height:64px; }
+ .flight-app.split-workspace > header { width:100%; }
+ .flight-app.split-workspace > header > div:first-child { max-width:none; flex-wrap:nowrap; padding:8px 24px; gap:16px; }
+ .flight-app.split-workspace > main { top:var(--workspace-header-height); padding:20px 24px 96px; }
+ .flight-app.split-workspace #desktop-workspace-controls { top:var(--workspace-header-height); bottom:80px; padding:20px 12px; }
+ .flight-app.split-workspace > nav[aria-label="Navegação principal"],.flight-app:not(.split-workspace) > nav[aria-label="Navegação principal"] { left:50%; right:auto; width:540px; max-width:calc(100% - 24px); margin-left:0; transform:translateX(-50%); }
+ .flight-app:not(.split-workspace) .wall-columns { grid-template-columns:minmax(280px,1fr) minmax(0,3fr); gap:24px; }
+ .flight-app .technical-card { padding:14px 18px; }
+ .flight-app .technical-card h4 { margin-top:6px; font-size:17px; }
+ .flight-app .technical-card > button > div:last-child { gap:8px 16px; }
+ .flight-app .technical-card .mt-3 { margin-top:8px; }
+ .flight-app .tool-use-card { padding:16px; }
+ .flight-app .timeline-card { padding:16px 18px; }
+ .flight-app .timeline-card > .mb-3 { margin-bottom:8px; }
+ .flight-app .workspace-actions { flex-wrap:wrap; }
+ .flight-app .workspace-actions > button { flex-basis:120px; }
+}
+@media(max-width:599px) {
+ .flight-app .header-identity { display:block; }
+ .flight-app .header-identity h1 { font-size:15px; }
+ .flight-app .header-base { padding-left:0; border-left:0; font-size:11px; max-width:135px; }
+ .flight-app > header > div:first-child { min-height:68px; }
+}
+@media(pointer:coarse) {
+ .flight-app > nav[aria-label="Navegação principal"] button { min-height:48px; }
+}
