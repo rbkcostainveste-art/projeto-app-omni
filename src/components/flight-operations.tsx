@@ -1,6 +1,7 @@
 "use client";
 
 import {openCockpit} from "./cockpit";
+import {FlightCounters} from './flight-counters';
 import {FlightPosition} from "./flight-position";
 import {useCallback,useEffect,useRef,useState} from 'react';
 import type {SupabaseClient} from '@supabase/supabase-js';
@@ -35,6 +36,7 @@ export function FlightOperations({supabase,flight,showDocumentation=false,readOn
  const keys=flight.maintenancePostId?['fuel','inspection']:[...(data.first?['drain']:[]),'fuel','inspection','hums',...(data.closed&&data.nextFlightId===null?['postflight']:[])];
  const labels:Record<string,string>={drain:'Dreno de combustível',fuel:'Abastecimento',inspection:data.first?'Pré-voo':'Entre voos',hums:'HUMS',postflight:'Inspeção após o último voo do dia'};
  return <section className="space-y-3">{showDocumentation?<div className="flex flex-wrap gap-2"><button type="button" disabled={readOnly} onClick={()=>openCockpit(flight.id,undefined,"new-occurrence")} className="min-h-11 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-800">Registrar ocorrência</button><button type="button" onClick={()=>openCockpit(flight.id,undefined,"edb")} className="min-h-11 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-800">Documentação do voo</button><details><summary className="min-h-11 cursor-pointer px-3 py-2 text-sm">Mais ações</summary><button type="button" className="min-h-11 px-3 text-sm text-blue-800" onClick={()=>openCockpit(flight.id,undefined,"preparation")}>Preparação do voo</button><button type="button" className="min-h-11 px-3 text-sm text-blue-800" onClick={()=>openCockpit(flight.id,undefined,"counter")}>Contadores</button></details></div>:null}<FlightPosition supabase={supabase} flightId={flight.id} readOnly={readOnly} requireSignature={requireSignature}/>
+  <FlightCounters client={supabase} flightId={flight.id} operation={data} readOnly={readOnly} requireSignature={requireSignature}/>
   <p className="text-xs text-[#60758c]">{flight.maintenancePostId?'Voo/giro de manutenção · pré-voo e abastecimento':data.first?'Primeira operação do dia · dreno e pré-voo':'Operação seguinte · sem dreno de combustível'} · {data.day.split('-').reverse().join('/')}</p>
   <div className="grid gap-3 sm:grid-cols-2">{keys.map(key=>{
    const expectedKind=key==='inspection'?(data.first?'preflight':'between'):key;

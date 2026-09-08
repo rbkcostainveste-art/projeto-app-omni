@@ -1,0 +1,43 @@
+begin;
+do $$
+declare pilot uuid; mechanic uuid; administrator uuid; employee text; mech_employee text; base text; fid text:=gen_random_uuid()::text; v jsonb; row jsonb; f jsonb; events jsonb:='[]'; kind text; t timestamptz:=now()-interval '3 hours'; n integer:=0; blocked boolean; counter_id text; rev integer;
+begin
+ select d.auth_user_id,d.employee_number into pilot,employee from public.device_identities d join public.authorized_users u using(employee_number) where u.active and u.job_role='commander' limit 1;
+ select d.auth_user_id,d.employee_number,u.assigned_base into mechanic,mech_employee,base from public.device_identities d join public.authorized_users u using(employee_number) where u.active and u.job_role='mechanic' and not d.is_admin limit 1;
+ select d.auth_user_id into administrator from public.device_identities d join public.authorized_users u using(employee_number) where d.is_admin and u.active limit 1;
+ if pilot is null or mechanic is null or administrator is null then raise exception 'Test identities unavailable';end if;
+ perform set_config('request.jwt.claim.sub',administrator::text,true);
+ f:=jsonb_build_object('id',fid,'prefix','COUNTER-QA','model','S92','base',base,'date',to_char(t at time zone 'America/Sao_Paulo','YYYY-MM-DD'),'departure','08:00','commander',employee,'planningStatus','confirmed');
+ update public.shared_app_state set flights=flights||jsonb_build_array(f) where id='main';
+ foreach kind in array array['apu_on','apu_off','engine1_on','engine2_on','takeoff','landing','rotor_brake','engine1_off','engine2_off','finish'] loop
+  events:=events||jsonb_build_array(jsonb_build_object('id',gen_random_uuid(),'type',kind,'at',t+n*interval '5 minutes','actor',employee,'recordedAt',t+n*interval '5 minutes'));n:=n+1;
+ end loop;
+ insert into public.flight_operation_records(flight_id,events,revision) values(fid,events,1);
+ perform set_config('request.jwt.claim.sub',pilot::text,true);
+ v:=public.get_flight_operation(fid);
+ if (select (x->>'value')::numeric from jsonb_array_elements(v->'counters') x where x->>'key'='engine1_minutes')<>25 then raise exception 'Engine minutes incorrect';end if;
+ if (select (x->>'value')::numeric from jsonb_array_elements(v->'counters') x where x->>'key'='airborne_minutes')<>5 then raise exception 'Airborne minutes incorrect';end if;
+ counter_id:='flight-counter:'||fid||':engine1_minutes';
+ row:=public.cockpit('save',jsonb_build_object('id',counter_id,'kind','counter','flightId',fid,'data',jsonb_build_object('eventMetric','engine1_minutes','sourceRevision',1,'previous',100,'current',9999)));
+ if row#>>'{data,sourceFingerprint}' is distinct from v->>'counterSource' then raise exception 'Counter source link missing';end if;
+ if row#>>'{data,current}'<>'125' or row#>>'{data,increment}'<>'25' then raise exception 'Server did not derive counter';end if;
+ perform set_config('request.jwt.claim.sub',mechanic::text,true);
+ if not exists(select 1 from jsonb_array_elements(public.cockpit('list','{"kind":"counter"}')) x where x->>'id'=counter_id) then raise exception 'Mechanic cannot read same counter';end if;
+ row:=public.cockpit('save',jsonb_build_object('id',counter_id,'revision',row->'revision','data',(row->'data')||jsonb_build_object('equipment','Serial conferido')));
+ blocked:=false;begin perform public.cockpit('save',jsonb_build_object('id',gen_random_uuid(),'kind','preparation','flightId',fid,'data','{}'::jsonb));exception when others then blocked:=true;end;
+ if not blocked then raise exception 'Mechanic gained unrelated cockpit access';end if;
+ perform set_config('request.jwt.claim.sub',pilot::text,true);
+ v:=public.record_flight_operation(fid,gen_random_uuid(),1,'correct',jsonb_build_object('id',events->2->>'id','at',t+interval '9 minutes'));
+ blocked:=false;begin perform public.cockpit('save',jsonb_build_object('id',counter_id,'revision',row->'revision','data',row->'data'));exception when others then blocked:=true;end;
+ if not blocked then raise exception 'Stale source accepted';end if;
+ row:=public.cockpit('save',jsonb_build_object('id',counter_id,'revision',row->'revision','data',(row->'data')||jsonb_build_object('sourceRevision',v->'revision')));
+ if row#>>'{data,current}'<>'126' then raise exception 'Corrected total not reflected';end if;
+ if public.cockpit('export',jsonb_build_object('flightId',fid))#>'{operation,counters}' is null then raise exception 'Export counter link missing';end if;
+ rev:=(v->>'revision')::int;
+ perform set_config('request.jwt.claim.sub',administrator::text,true);
+ v:=public.record_flight_operation(fid,gen_random_uuid(),rev,'reopen','{"reason":"QA reopen"}');
+ if (v->>'closed')::boolean or exists(select 1 from jsonb_array_elements(v->'events') x where x->>'type'='finish') then raise exception 'Reopen disconnected from events';end if;
+ if (select (x->>'value')::numeric from jsonb_array_elements(v->'counters') x where x->>'key'='engine1_minutes')<>26 then raise exception 'Reopen changed measured time';end if;
+end $$;
+select 'PASS: pilot and mechanic share counters, derived values, correction conflicts, export and reopening' as result;
+rollback;
