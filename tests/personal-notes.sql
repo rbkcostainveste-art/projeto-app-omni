@@ -22,7 +22,7 @@ begin
  update public.personal_notes set notify=true where personal_notes.id=test_id;
  if not exists(select 1 from public.claim_note_reminders() c where c.id=test_id) then raise exception 'Due reminder not claimed';end if;
  if exists(select 1 from public.claim_note_reminders() c where c.id=test_id) then raise exception 'Reminder lease failed';end if;
- select ac.prefix into prefix from public.aircraft ac join public.operation_bases ba on ba.id=ac.operation_base_id where ac.active limit 1;
+ select plane->>'prefix' into prefix from public.shared_app_state s cross join lateral jsonb_array_elements(s.catalogs->'aircraft') plane where s.id='main' limit 1;
  result:=public.personal_note('convert',jsonb_build_object('employee',a.employee_number,'id',test_id,'type','fault','priority','not_logged','prefix',prefix,'title','QA converted note','body','QA test, rolled back','attachments','[]'::jsonb));rid:=(result->>'id')::uuid;
  if rid<>test_id or not exists(select 1 from public.maintenance_records where maintenance_records.id=rid) then raise exception 'Conversion failed';end if;
  if not exists(select 1 from public.operational_wall_posts where data->>'maintenanceRecordId'=rid::text) then raise exception 'Existing maintenance publishing flow not triggered';end if;

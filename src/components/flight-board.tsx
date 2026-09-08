@@ -488,11 +488,14 @@ export function FlightBoard() {
   async function permanentlyDeleteFlight(id: string) { if(user !== "0001" || !localSnapshot.current.flights.some(flight=>flight.id===id&&flight.deletedAt)) return false; return persistItem("flights", id, {}, "delete"); }
   function acknowledge(id: string, employeeNumber = user) { const flight = localSnapshot.current.flights.find((item) => item.id === id); if(!flight) return; const entry = { employeeNumber, revision: flight.revision, at: new Date().toISOString() }; const scienceLog = [...(flight.scienceLog ?? []).filter((item) => item.employeeNumber !== employeeNumber || item.revision !== flight.revision), entry]; const patch = { acknowledged: { [employeeNumber]: flight.revision }, scienceLog }; setFlights((items) => items.map((item) => item.id === id ? { ...item, ...patch } : item)); void persistItem("flights", id, patch, "update", [], null, false); }
   async function ensurePushSubscription() {
-    if(!supabase || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) throw new Error("Este aparelho não oferece notificações Web Push.");
+    if(!supabase) throw new Error("Serviço de notificações indisponível.");
+    if(!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) throw new Error("Notificações indisponíveis neste navegador. No iPhone/iPad, adicione o aplicativo à Tela de Início pelo Safari e abra pelo ícone. No Android, abra em um navegador compatível, como Chrome.");
+    if(Notification.permission === "denied") throw new Error("Notificações bloqueadas. Abra as configurações deste site no navegador, permita notificações e tente novamente.");
+    // Request permission in the click gesture, before waiting for the service worker.
+    const permission = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
+    if(permission !== "granted") throw new Error("Notificações não autorizadas. Toque em ativar novamente e escolha Permitir; se estiver bloqueado, altere a permissão nas configurações do site.");
     await navigator.serviceWorker.register("/sw.js");
     const registration = await navigator.serviceWorker.ready;
-    const permission = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
-    if(permission !== "granted") throw new Error("Permissão de notificações não concedida.");
     let subscription = await registration.pushManager.getSubscription();
     if(!subscription) subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) });
     return subscription.toJSON();
