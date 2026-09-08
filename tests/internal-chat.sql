@@ -21,6 +21,7 @@ begin
  perform public.internal_chat('invite',jsonb_build_object('id',c1,'members',jsonb_build_array(outsider.employee_number)));
  if exists(select 1 from public.internal_conversation_members where conversation_id=c2 and employee_number=outsider.employee_number) then raise exception 'Invite leaked into another conversation';end if;
  perform set_config('request.jwt.claim.sub',b.auth_user_id::text,true);
+ res:=public.internal_chat('list'); if not exists(select 1 from jsonb_array_elements(res) inbox where inbox->>'id'=c1::text and (inbox->>'unread')::int>0 and inbox->>'last_message' is not null) then raise exception 'Recipient inbox missing conversation or unread preview';end if;
  perform public.internal_chat('read',jsonb_build_object('id',c1,'messageId',mid));
  if not exists(select 1 from public.internal_conversation_members where conversation_id=c1 and employee_number=b.employee_number and last_read_id=mid) then raise exception 'Read not recorded';end if;
  perform set_config('request.jwt.claim.sub',a.auth_user_id::text,true);
