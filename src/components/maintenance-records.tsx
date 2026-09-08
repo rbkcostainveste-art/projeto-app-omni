@@ -35,6 +35,27 @@ const payload = (item: MaintenanceRecord) => ({ ...item });
 
 export function MaintenanceRecords({ assignedBase = "", mode, supabase, user, userDirectory, profile, bases, models, aircraft, seed, openRecordId, requireSignature, onOpenTools, onRecordOpened, onSeedConsumed, onError }: { assignedBase?: string; mode: "faults" | "discrepancies" | "service"; supabase: SupabaseClient | null; user: string; userDirectory: UserDirectory; profile: Profile; bases: string[]; models: string[]; aircraft: Aircraft[]; seed?: { type: "fault" | "discrepancy"; prefix: string; sourceFlightId: string; } | null; openRecordId?: string | null; requireSignature: (action: () => void | Promise<void>, label?: string) => Promise<boolean>; onOpenTools?: () => void; onRecordOpened?: () => void; onSeedConsumed?: () => void; onError: (message: string) => void; }) {
   const [records, setRecords] = useState<MaintenanceRecord[]>([]); const [people, setPeople] = useState<Person[]>([]); const [open, setOpen] = useState<MaintenanceRecord | null>(null); const [creating, setCreating] = useState<MaintenanceRecord["recordType"] | null>(seed?.type ?? null); const [batchCreating, setBatchCreating] = useState(false); const [filters, setFilters] = useState({ base: "", model: "", prefix: "", status: "", priority: "", from:localFilterDay(), until:localFilterDay() });
+  const filterDay = useRef(localFilterDay());
+  const [today, setToday] = useState(localFilterDay);
+  useEffect(() => {
+    const refreshDay = () => {
+      const next = localFilterDay();
+      const previous = filterDay.current;
+      if (next === previous) return;
+      filterDay.current = next;
+      setToday(next);
+      setFilters(current => current.from === previous && current.until === previous
+        ? { ...current, from: next, until: next } : current);
+    };
+    const timer = window.setInterval(refreshDay, 60000);
+    window.addEventListener("focus", refreshDay);
+    document.addEventListener("visibilitychange", refreshDay);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refreshDay);
+      document.removeEventListener("visibilitychange", refreshDay);
+    };
+  }, []);
   const [chatCounts,setChatCounts]=useState<Record<string,{message_count:number;unread:number}>>({});
   useEffect(()=>{if(!supabase)return;let active=true;const load=async()=>{const{data,error}=await supabase.rpc('internal_chat',{p_action:'list'});if(!error&&active)setChatCounts(Object.fromEntries((data||[]).filter((c:{record_id?:string})=>c.record_id).map((c:{record_id:string;message_count:number;unread:number})=>[c.record_id,c])));};void load();const t=setInterval(()=>void load(),10000);return()=>{active=false;clearInterval(t);};},[supabase,user]);
   const [recordReads,setRecordReads]=useState<Record<string,string>>({});
@@ -43,12 +64,23 @@ export function MaintenanceRecords({ assignedBase = "", mode, supabase, user, us
   const leadership = ["admin", "app_manager", "legacy", "maintenance_director", "maintenance_manager", "maintenance_coordinator", "maintenance_leader", "maintenance_inspector"].includes(profile);
   const load = useCallback(async () => { if(!supabase) return; const { data, error } = await supabase.from("maintenance_records").select("*").order("updated_at", { ascending: false }); if(error) { onError(`Registros técnicos indisponíveis: ${error.message}`); return; } const next = ((data ?? []) as Row[]).map(toRecord); setRecords(next); setOpen((current) => current ? next.find((item) => item.id === current.id) ?? current : null); }, [supabase, onError]);
   useEffect(() => { const timer = setTimeout(() => void load(), 0); if(!supabase) return () => clearTimeout(timer); const channel = supabase.channel("maintenance-records-ui").on("postgres_changes", { event: "*", schema: "public", table: "maintenance_records" }, () => void load()).subscribe(); return () => { clearTimeout(timer); void supabase.removeChannel(channel); }; }, [supabase, load]);
+  useEffect(() => {
+    const refresh = () => { if (document.visibilityState === "visible") void load(); };
+    window.addEventListener("focus", refresh);
+    window.addEventListener("online", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("online", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [load]);
   useEffect(() => { if(!openRecordId) return; const target = records.find((item) => item.id === openRecordId); if(!target) return; const timer = window.setTimeout(() => { setOpen(target); onRecordOpened?.(); }, 0); return () => window.clearTimeout(timer); }, [openRecordId, records, onRecordOpened]);
   useEffect(() => { if(!supabase) return; void supabase.rpc("get_operational_assignments").then(({ data }) => setPeople(((data ?? []) as { employee_number: string; display_name: string; access_profile: Profile; assigned_base: string | null; fleets: string[]; mission: string | null; work_shift: string | null; }[]).map((p) => ({ employeeNumber: p.employee_number, displayName: p.display_name, profile: p.access_profile, assignedBase: p.assigned_base ?? "", fleets: p.fleets ?? [], mission: p.mission ?? "", workShift: p.work_shift ?? "" })))); }, [supabase]);
   const scoped = useMemo(() => records.filter((item) => mode === "faults" ? item.recordType === "fault" : mode === "discrepancies" ? item.recordType === "discrepancy" : item.recordType === "inspection" || item.recordType === "fault" && item.status === "open" || item.recordType === "discrepancy" && item.priority === "urgent"), [records, mode]);
   const modelOptions = useMemo(() => [...new Set(aircraft.filter((a) => !filters.base || a.base === filters.base).map((a) => a.model))].sort(), [aircraft, filters.base]);
   const prefixOptions = useMemo(() => aircraft.filter((a) => (!filters.base || a.base === filters.base) && (!filters.model || a.model === filters.model)).map((a) => a.prefix).sort(), [aircraft, filters.base, filters.model]);
-  const visible = useMemo(() => scoped.filter((item) => ((filters.from===localFilterDay() && filters.until===localFilterDay() && item.status==="open") || ((!filters.from || localFilterDay(new Date(item.createdAt))>=filters.from) && (!filters.until || localFilterDay(new Date(item.createdAt))<=filters.until))) && (!filters.base || item.base === filters.base) && (!filters.model || item.model === filters.model) && (!filters.prefix || item.prefix.includes(filters.prefix.toUpperCase())) && (!filters.status || item.status === filters.status) && (!filters.priority || item.priority === filters.priority)), [scoped, filters]);
+  const visible = useMemo(() => scoped.filter((item) => ((filters.from===today && filters.until===today && item.status==="open") || ((!filters.from || localFilterDay(new Date(item.createdAt))>=filters.from) && (!filters.until || localFilterDay(new Date(item.createdAt))<=filters.until))) && (!filters.base || item.base === filters.base) && (!filters.model || item.model === filters.model) && (!filters.prefix || item.prefix.includes(filters.prefix.toUpperCase())) && (!filters.status || item.status === filters.status) && (!filters.priority || item.priority === filters.priority)), [scoped, filters, today]);
   const notificationBase = assignedBase || people.find(person => person.employeeNumber === user)?.assignedBase;
   const notificationRecords = visible.filter(item => ["admin","app_manager","maintenance_director","maintenance_manager"].includes(profile) || Boolean(notificationBase) && item.base === notificationBase);
   useScreenNotifications("records", notificationRecords.map(item=>({id:`${item.id}:${item.updatedAt}`,title:item.title,description:`${item.prefix} · ${typeLabel[item.recordType]}`,at:item.updatedAt})), id=>{const item=notificationRecords.find(item=>`${item.id}:${item.updatedAt}`===id);if(item)setOpen(item);});
