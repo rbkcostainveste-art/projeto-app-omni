@@ -109,6 +109,7 @@ export function FlightBoard() {
   const [maintenanceModule, setMaintenanceModule] = useState<"passage" | "service" | "faults" | "discrepancies">("service");
   const [maintenanceSeed, setMaintenanceSeed] = useState<{ type: "fault" | "discrepancy"; prefix: string; sourceFlightId: string } | null>(null);
   const [maintenanceOpenRecordId, setMaintenanceOpenRecordId] = useState<string | null>(null);
+  useEffect(()=>{const handler=(event:Event)=>{const record=(event as CustomEvent<{id:string;type:string}>).detail;setMaintenanceOpenRecordId(record.id);setMaintenanceModule(record.type==='fault'?'faults':record.type==='discrepancy'?'discrepancies':'service');setWorkspace('maintenance');};window.addEventListener('flight-ia-open-record',handler);return()=>window.removeEventListener('flight-ia-open-record',handler);},[]);
   const [user, setUser] = useState("");
   const [accessProfile, setAccessProfile] = useState<AccessProfile>("legacy");
   const [assignedBase, setAssignedBase] = useState("");
