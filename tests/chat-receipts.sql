@@ -1,0 +1,23 @@
+begin;
+do $test$ declare a public.device_identities;b public.device_identities;cid uuid:=gen_random_uuid();mid bigint;stamp timestamptz;begin
+ select d.* into a from public.device_identities d join public.authorized_users u using(employee_number) where u.active limit 1;
+ select d.* into b from public.device_identities d join public.authorized_users u using(employee_number) where u.active and d.employee_number<>a.employee_number limit 1;
+ perform set_config('request.jwt.claim.sub',a.auth_user_id::text,true);
+ perform public.internal_chat('create',jsonb_build_object('id',cid,'members',jsonb_build_array(b.employee_number)));
+ mid:=(public.internal_chat('send',jsonb_build_object('id',cid,'requestId',gen_random_uuid(),'body','QA receipts'))->>'id')::bigint;
+ if not exists(select 1 from public.chat_push_jobs where message_id=mid and employee_number=b.employee_number) then raise exception 'Push not queued';end if;
+ if exists(select 1 from public.chat_receipts where message_id=mid and delivered_at is not null) then raise exception 'Send marked received';end if;
+ perform set_config('request.jwt.claim.sub',b.auth_user_id::text,true);
+ perform public.chat_receipt('delivered',cid,array[mid]);
+ if not exists(select 1 from public.chat_receipts where message_id=mid and employee_number=b.employee_number and delivered_at is not null and read_at is null and acknowledged_at is null) then raise exception 'Delivery conflates read';end if;
+ perform public.chat_receipt('read',cid,array[mid]);
+ if not exists(select 1 from public.chat_receipts where message_id=mid and read_at is not null and acknowledged_at is null) then raise exception 'Read conflates ack';end if;
+ perform public.chat_receipt('ack',cid,array[mid]);
+ select acknowledged_at into stamp from public.chat_receipts where message_id=mid and employee_number=b.employee_number;
+ perform public.chat_receipt('ack',cid,array[mid]);
+ if stamp is null or stamp<>(select acknowledged_at from public.chat_receipts where message_id=mid and employee_number=b.employee_number) then raise exception 'Ack missing or overwritten';end if;
+ if exists(select 1 from public.chat_receipts where message_id=mid and employee_number=a.employee_number and acknowledged_at is not null) then raise exception 'Ack forged';end if;
+ if has_function_privilege('authenticated','public.claim_chat_push()','execute') or has_table_privilege('authenticated','public.chat_receipts','update') then raise exception 'Privileges too broad';end if;
+end $test$;
+rollback;
+select 'PASS: separate delivered/read/ack states, signed immutable ack, push recipients and permissions' result;
