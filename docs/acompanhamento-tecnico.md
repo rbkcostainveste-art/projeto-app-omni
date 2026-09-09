@@ -135,6 +135,8 @@ Referência atual do diário de bordo: [Resolução ANAC 773/2025](https://www.a
 
 ## Cards compactos e TC obrigatória para pane
 
+Relatos técnicos urgentes ou críticos ainda abertos também aparecem automaticamente na Passagem de Serviço, mesmo quando aguardam triagem. Permanecem no filtro padrão de hoje quando vêm de dias anteriores, respeitando os demais filtros de base, aeronave e situação. É o mesmo registro, sem duplicar histórico, ações ou conversas.
+
 Os eixos técnicos detalhados aparecem somente ao abrir o registro (ou expandir o resultado de busca), sem ocupar os cards fechados da manutenção e do Ao vivo. O card do Ao vivo usa os mesmos cantos arredondados da manutenção: 10 px no mobile e 14 px no desktop.
 
 No atalho **Abrir pane**, a TC é obrigatória. O banco também exige TC em novas panes da manutenção e na evolução de relato para discrepância, além de impedir apagar a TC de uma pane que já a possua. Os relatos simples continuam com TC opcional. Os registros históricos sem TC são preservados e podem receber comentários; o reporte inicial da tripulação mantém seu fluxo próprio. TC e identificador eDB continuam campos distintos, sem validação automática no WinAir.
