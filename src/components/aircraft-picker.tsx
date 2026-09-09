@@ -1,5 +1,6 @@
 "use client";
 
+import {matchesSearch} from "@/lib/search-text";
 import { Search } from "lucide-react";
 import { useMemo,useState } from "react";
 
@@ -11,7 +12,7 @@ export function AircraftPicker({ aircraft,value,onChange }:{ aircraft:AircraftOp
   const visible=useMemo(()=>{
     const term=query.trim().toLocaleLowerCase("pt-BR");
     if(!term) return aircraft;
-    return aircraft.filter((item)=>`${item.prefix} ${item.model} ${item.base}`.toLocaleLowerCase("pt-BR").includes(term));
+    return aircraft.filter((item)=>matchesSearch(`${item.prefix} ${item.model} ${item.base}`,term));
   },[aircraft,query]);
 
   return <div>
