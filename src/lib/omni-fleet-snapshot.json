@@ -1,0 +1,706 @@
+[
+  {
+    "prefix": "PP-MEA",
+    "registeredModel": "S-76A",
+    "serialNumber": "76007",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "1979",
+    "rabStatus": "C8"
+  },
+  {
+    "prefix": "PR-BGB",
+    "registeredModel": "S-92A",
+    "serialNumber": "920141",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2010",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-BGI",
+    "registeredModel": "S-76C",
+    "serialNumber": "760537",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2003",
+    "rabStatus": "S8"
+  },
+  {
+    "prefix": "PR-BGJ",
+    "registeredModel": "S-76C",
+    "serialNumber": "760570",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2004",
+    "rabStatus": "S8"
+  },
+  {
+    "prefix": "PR-BGN",
+    "registeredModel": "S-92A",
+    "serialNumber": "920152",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2011",
+    "rabStatus": "C8"
+  },
+  {
+    "prefix": "PR-BGX",
+    "registeredModel": "AW139",
+    "serialNumber": "31492",
+    "manufacturer": "AGUSTA",
+    "manufactureYear": "2013",
+    "rabStatus": "S8"
+  },
+  {
+    "prefix": "PR-CGN",
+    "registeredModel": "AW139",
+    "serialNumber": "31407",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2012",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-CGO",
+    "registeredModel": "AW139",
+    "serialNumber": "31498",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2013",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-CHQ",
+    "registeredModel": "S-76C",
+    "serialNumber": "760734",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2008",
+    "rabStatus": "S8"
+  },
+  {
+    "prefix": "PR-CHS",
+    "registeredModel": "S-92A",
+    "serialNumber": "920113",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2009",
+    "rabStatus": "S8"
+  },
+  {
+    "prefix": "PR-CHT",
+    "registeredModel": "S-92A",
+    "serialNumber": "920119",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2009",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-JBK",
+    "registeredModel": "S-92A",
+    "serialNumber": "920191",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2012",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-LCR",
+    "registeredModel": "S-76C",
+    "serialNumber": "760617",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2006",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OFB",
+    "registeredModel": "H160-B",
+    "serialNumber": "1050",
+    "manufacturer": "AIRBUS HELICOPTERS",
+    "manufactureYear": "2024",
+    "rabStatus": "S18"
+  },
+  {
+    "prefix": "PR-OFC",
+    "registeredModel": "H160-B",
+    "serialNumber": "1065",
+    "manufacturer": "AIRBUS HELICOPTERS",
+    "manufactureYear": "2025",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OFD",
+    "registeredModel": "MBB BK 117 D-3",
+    "serialNumber": "21104",
+    "manufacturer": "AIRBUS HELICOPTERS DEUTSCHLAND",
+    "manufactureYear": "2022",
+    "rabStatus": "S8"
+  },
+  {
+    "prefix": "PR-OFE",
+    "registeredModel": "MBB BK 117 D-3",
+    "serialNumber": "21111",
+    "manufacturer": "AIRBUS HELICOPTERS DEUTSCHLAND",
+    "manufactureYear": "2022",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OFH",
+    "registeredModel": "EC175 B",
+    "serialNumber": "5068",
+    "manufacturer": "AIRBUS HELICOPTERS",
+    "manufactureYear": "2024",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OFJ",
+    "registeredModel": "H160-B",
+    "serialNumber": "1043",
+    "manufacturer": "AIRBUS HELICOPTERS",
+    "manufactureYear": "2025",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OFK",
+    "registeredModel": "EC175 B",
+    "serialNumber": "5079",
+    "manufacturer": "AIRBUS HELICOPTERS",
+    "manufactureYear": "2025",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OFL",
+    "registeredModel": "EC135 P3",
+    "serialNumber": "2111",
+    "manufacturer": "AIRBUS HELICOPTERS DEUTSCHLAND",
+    "manufactureYear": "2020",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OFN",
+    "registeredModel": "EC 225 LP",
+    "serialNumber": "2839",
+    "manufacturer": "AIRBUS HELICOPTERS",
+    "manufactureYear": "2012",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OHA",
+    "registeredModel": "AW139",
+    "serialNumber": "41302",
+    "manufacturer": "AGUSTA",
+    "manufactureYear": "2013",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OHB",
+    "registeredModel": "AW139",
+    "serialNumber": "41304",
+    "manufacturer": "AGUSTA",
+    "manufactureYear": "2013",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OHC",
+    "registeredModel": "AW139",
+    "serialNumber": "41305",
+    "manufacturer": "AGUSTA",
+    "manufactureYear": "2013",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OHD",
+    "registeredModel": "AW139",
+    "serialNumber": "41306",
+    "manufacturer": "AGUSTA",
+    "manufactureYear": "2013",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OHE",
+    "registeredModel": "S-92A",
+    "serialNumber": "920172",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2012",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OHF",
+    "registeredModel": "S-92A",
+    "serialNumber": "920177",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2012",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OHG",
+    "registeredModel": "S-92A",
+    "serialNumber": "920187",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2013",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OHI",
+    "registeredModel": "S-92A",
+    "serialNumber": "920184",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2013",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OHJ",
+    "registeredModel": "AW139",
+    "serialNumber": "41335",
+    "manufacturer": "AGUSTA",
+    "manufactureYear": "2013",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OHK",
+    "registeredModel": "S-92A",
+    "serialNumber": "920137",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2010",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OHL",
+    "registeredModel": "AW139",
+    "serialNumber": "41337",
+    "manufacturer": "AGUSTA",
+    "manufactureYear": "2013",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OHN",
+    "registeredModel": "AW139",
+    "serialNumber": "41331",
+    "manufacturer": "AGUSTA",
+    "manufactureYear": "2013",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OHO",
+    "registeredModel": "S-92A",
+    "serialNumber": "920208",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2013",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OHP",
+    "registeredModel": "AW189",
+    "serialNumber": "89007",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2018",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OHQ",
+    "registeredModel": "AW139",
+    "serialNumber": "41380",
+    "manufacturer": "AGUSTA",
+    "manufactureYear": "2014",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OHR",
+    "registeredModel": "AW139",
+    "serialNumber": "41382",
+    "manufacturer": "AGUSTA",
+    "manufactureYear": "2014",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OHU",
+    "registeredModel": "S-92A",
+    "serialNumber": "920277",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2015",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OHV",
+    "registeredModel": "AW139",
+    "serialNumber": "41357",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2014",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OHW",
+    "registeredModel": "AW139",
+    "serialNumber": "31382",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2011",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OHY",
+    "registeredModel": "AW139",
+    "serialNumber": "41501",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2015",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OHZ",
+    "registeredModel": "AW139",
+    "serialNumber": "41359",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2014",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OMB",
+    "registeredModel": "EC 155 B1",
+    "serialNumber": "6902",
+    "manufacturer": "EUROCOPTER FRANCE",
+    "manufactureYear": "2010",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OMH",
+    "registeredModel": "EC 155 B1",
+    "serialNumber": "6878",
+    "manufacturer": "EUROCOPTER FRANCE",
+    "manufactureYear": "2009",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OML",
+    "registeredModel": "EC 155 B1",
+    "serialNumber": "6661",
+    "manufacturer": "EUROCOPTER FRANCE",
+    "manufactureYear": "2003",
+    "rabStatus": "C8"
+  },
+  {
+    "prefix": "PR-OMT",
+    "registeredModel": "S-76C",
+    "serialNumber": "760661",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2007",
+    "rabStatus": "S8"
+  },
+  {
+    "prefix": "PR-OMU",
+    "registeredModel": "EC 225 LP",
+    "serialNumber": "2909",
+    "manufacturer": "AIRBUS HELICOPTERS",
+    "manufactureYear": "2015",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OMW",
+    "registeredModel": "EC 225 LP",
+    "serialNumber": "2835",
+    "manufacturer": "EUROCOPTER FRANCE",
+    "manufactureYear": "2012",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OOA",
+    "registeredModel": "AW139",
+    "serialNumber": "31587",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2014",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OOB",
+    "registeredModel": "AW139",
+    "serialNumber": "31461",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2013",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OOC",
+    "registeredModel": "AW139",
+    "serialNumber": "41410",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2018",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OOD",
+    "registeredModel": "AW139",
+    "serialNumber": "31308",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2010",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OOE",
+    "registeredModel": "EC135 T3",
+    "serialNumber": "2065",
+    "manufacturer": "AIRBUS HELICOPTERS DEUTSCHLAND",
+    "manufactureYear": "2020",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OOG",
+    "registeredModel": "AW139",
+    "serialNumber": "41580",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2022",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OOH",
+    "registeredModel": "S-92A",
+    "serialNumber": "920231",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2014",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OOI",
+    "registeredModel": "AW139",
+    "serialNumber": "41512",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2016",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OOJ",
+    "registeredModel": "S-92A",
+    "serialNumber": "920134",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2010",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OOL",
+    "registeredModel": "S-92A",
+    "serialNumber": "920281",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2015",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OOM",
+    "registeredModel": "S-92A",
+    "serialNumber": "920273",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2015",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OON",
+    "registeredModel": "AW189",
+    "serialNumber": "89011",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2019",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OOP",
+    "registeredModel": "EC175 B",
+    "serialNumber": "5065",
+    "manufacturer": "AIRBUS HELICOPTERS",
+    "manufactureYear": "2024",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OOQ",
+    "registeredModel": "EC175 B",
+    "serialNumber": "5067",
+    "manufacturer": "AIRBUS HELICOPTERS",
+    "manufactureYear": "2024",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OOR",
+    "registeredModel": "AW189",
+    "serialNumber": "89022",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2024",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OOS",
+    "registeredModel": "AW139",
+    "serialNumber": "41592",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2023",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OOT",
+    "registeredModel": "AW139",
+    "serialNumber": "41593",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2024",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OOU",
+    "registeredModel": "AW139",
+    "serialNumber": "41595",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2024",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OOV",
+    "registeredModel": "AW139",
+    "serialNumber": "41599",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2024",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OOW",
+    "registeredModel": "AW189",
+    "serialNumber": "93001",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2024",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OOX",
+    "registeredModel": "AW189",
+    "serialNumber": "89028",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2025",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OOY",
+    "registeredModel": "AW189",
+    "serialNumber": "89029",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2024",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OOZ",
+    "registeredModel": "EC 225 LP",
+    "serialNumber": "2919",
+    "manufacturer": "AIRBUS HELICOPTERS",
+    "manufactureYear": "2014",
+    "rabStatus": "S8"
+  },
+  {
+    "prefix": "PR-OTD",
+    "registeredModel": "EC175 B",
+    "serialNumber": "5049",
+    "manufacturer": "AIRBUS HELICOPTERS",
+    "manufactureYear": "2020",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OTH",
+    "registeredModel": "AW139",
+    "serialNumber": "41574",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2021",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OTI",
+    "registeredModel": "AW139",
+    "serialNumber": "41406",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2015",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OTN",
+    "registeredModel": "EC175 B",
+    "serialNumber": "5036",
+    "manufacturer": "AIRBUS HELICOPTERS",
+    "manufactureYear": "2019",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OTP",
+    "registeredModel": "EC175 B",
+    "serialNumber": "5006",
+    "manufacturer": "AIRBUS HELICOPTERS",
+    "manufactureYear": "2015",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OTQ",
+    "registeredModel": "EC175 B",
+    "serialNumber": "5007",
+    "manufacturer": "AIRBUS HELICOPTERS",
+    "manufactureYear": "2015",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OTR",
+    "registeredModel": "S-92A",
+    "serialNumber": "920276",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2015",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OTS",
+    "registeredModel": "EC175 B",
+    "serialNumber": "5051",
+    "manufacturer": "AIRBUS HELICOPTERS",
+    "manufactureYear": "2021",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OTU",
+    "registeredModel": "AW139",
+    "serialNumber": "41563",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2021",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OTW",
+    "registeredModel": "AW139",
+    "serialNumber": "41322",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2013",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OTX",
+    "registeredModel": "AW139",
+    "serialNumber": "31467",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2013",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-OTY",
+    "registeredModel": "AW189",
+    "serialNumber": "89013",
+    "manufacturer": "LEONARDO S.P.A",
+    "manufactureYear": "2022",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PR-SED",
+    "registeredModel": "S-76C",
+    "serialNumber": "760539",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2003",
+    "rabStatus": "C8"
+  },
+  {
+    "prefix": "PR-SEF",
+    "registeredModel": "S-76C",
+    "serialNumber": "760542",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "2003",
+    "rabStatus": "S8"
+  },
+  {
+    "prefix": "PR-SEU",
+    "registeredModel": "AW139",
+    "serialNumber": "41231",
+    "manufacturer": "AGUSTA",
+    "manufactureYear": "2009",
+    "rabStatus": "N"
+  },
+  {
+    "prefix": "PT-YSM",
+    "registeredModel": "S-76A",
+    "serialNumber": "760151",
+    "manufacturer": "SIKORSKY AIRCRAFT",
+    "manufactureYear": "1981",
+    "rabStatus": "C18"
+  }
+]

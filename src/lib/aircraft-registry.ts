@@ -8,6 +8,8 @@ export type AircraftRegistryData = {
   reviewStatus: "pending";
   importedAt?: string;
   importedBy?: string;
+  rabStatus?: string;
+  datasetUrl?: string;
 };
 
 // Snapshot transcribed from the official RAB technical-details tab, by prefix.
