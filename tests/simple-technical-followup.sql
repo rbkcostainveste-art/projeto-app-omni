@@ -21,9 +21,15 @@ begin
  failed:=false;begin perform public.technical_case_action('update',r.id,jsonb_build_object('revision',r.revision,'case',r.technical_case||'{"investigation":"condition_watch","reason":"Sem dados"}'));exception when others then failed:=true;end;if not failed then raise exception 'Missing limits accepted';end if;
  c:=r.technical_case||'{"investigation":"condition_watch","reason":"Avaliação documentada","conditionWatch":{"reference":"Documento QA revisão 1","measurement":"Medição QA","limit":"Limite QA","nextInspection":"Antes da próxima operação"}}';
  perform set_config('request.jwt.claim.sub',mech::text,true);
+ failed:=false;begin
+ insert into public.maintenance_records(id,record_type,base,model,prefix,priority,status,title,created_by,data,technical_case)
+ values(gen_random_uuid(),'fault',mb,'S92','PR-QAF','not_logged','open','QA pane negada',me,'{"technicalCase":true,"description":"QA","entries":[]}','{"report":"discrepancy","official":"linked","officialId":"QA-EDB","aircraft":"evaluation","investigation":"triage"}');
+ exception when others then failed:=true;end;if not failed then raise exception 'Mechanic opened direct fault';end if;
  failed:=false;begin perform public.technical_case_action('update',r.id,jsonb_build_object('revision',r.revision,'case',c));exception when others then failed:=true;end;if not failed then raise exception 'Unqualified confirmation allowed';end if;
+ failed:=false;begin perform public.create_maintenance_request(r.id,'Giro em baixa','QA bloqueio mecânico',array[me],'','{}');exception when others then failed:=true;end;if not failed then raise exception 'Mechanic generated an action';end if;
+ perform set_config('request.jwt.claim.sub',a::text,true);
  post_id:=public.create_maintenance_request(r.id,'Giro em baixa','QA ação pendente',array[me],'','{}');
- if not exists(select 1 from public.operational_wall_posts where id=post_id and data#>>'{actions,0,status}'='pending' and data->>'maintenanceRecordId'=r.id::text) then raise exception 'Mechanic action not linked or not pending';end if;
+ if not exists(select 1 from public.operational_wall_posts where id=post_id and data#>>'{actions,0,status}'='pending' and data->>'maintenanceRecordId'=r.id::text) then raise exception 'Leadership action not linked or not pending';end if;
  perform set_config('request.jwt.claim.sub',a::text,true);
  select * into r from public.maintenance_records where id=r.id;
  perform public.technical_case_action('update',r.id,jsonb_build_object('revision',r.revision,'case',c));
@@ -34,5 +40,8 @@ begin
  select * into r from public.maintenance_records where id=r.id;
  if r.technical_case->>'investigation'<>'test_failed' or r.technical_case->>'aircraft'<>'unavailable' then raise exception 'Adverse evidence not preserved';end if;
  if not exists(select 1 from public.technical_case_audit where record_id=r.id and new_value::text like '%condition_watch%') then raise exception 'Condition audit missing';end if;
+ insert into public.maintenance_records(id,record_type,base,model,prefix,priority,status,title,created_by,data,technical_case)
+ values(gen_random_uuid(),'fault',mb,'S92','PR-QAF','not_logged','open','QA pane vinculada',emp,'{"technicalCase":true,"description":"Já registrada","entries":[]}','{"report":"discrepancy","official":"linked","officialId":"QA-EDB","aircraft":"evaluation","investigation":"triage"}') returning * into r;
+ if r.technical_case->>'official'<>'linked' or r.technical_case->>'aircraft'<>'evaluation' then raise exception 'Direct fault linkage changed availability';end if;
 end $$;
 rollback;
