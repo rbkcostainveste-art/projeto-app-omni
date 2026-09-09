@@ -1,6 +1,6 @@
 /** Internal tracking only. Official authorizations remain the operator's responsibility. */
 export const reportTypes = {report:"Relato Técnico",observation:"Observação Operacional",discrepancy:"Discrepância Técnica",trend:"Condição em acompanhamento",question:"Consulta Técnica",recurrence:"Recorrência"} as const;
-export const officialStates = {evaluation:"Em Avaliação",pending:"Registro Oficial Pendente",linked:"Vinculado ao eDB",not_applicable:"Não Aplicável ao eDB"} as const;
+export const officialStates = {evaluation:"Em Avaliação",pending:"Registro Oficial Pendente",linked:"Referência ao eDB informada",not_applicable:"Não Aplicável ao eDB"} as const;
 export const aircraftStates = {evaluation:"Aguardando Avaliação",unavailable:"Indisponível",maintenance:"Em Manutenção",deferred:"Liberada com Diferimento",released:"Liberada para Serviço",monitoring:"Liberada em Monitoramento"} as const;
 export const investigationStates = {triage:"Aguardando Triagem",troubleshooting:"Em Troubleshooting",engineering:"Aguardando Engenharia",parts:"Aguardando Peça",test:"Aguardando Teste",test_passed:"Teste Satisfatório",test_failed:"Teste Não Satisfatório",aprs:"APRS Emitida",condition_watch:"Condição dentro dos limites · acompanhar",monitoring:"Corrigida · acompanhamento pós-APRS",recurrence:"Recorrência Detectada",closed:"Caso Encerrado"} as const;
 export const reportHints:Record<keyof typeof reportTypes,string>={report:"Entrada geral ainda não classificada.",observation:"Situação percebida aguardando avaliação.",discrepancy:"Defeito, falha, ausência ou comportamento anormal que exige tratamento formal.",trend:"Parâmetro ou desgaste confirmado dentro do limite, sob acompanhamento.",question:"Dúvida sem relato de mau funcionamento.",recurrence:"Repetição de um caso anterior; mantém vínculo com o original."};
@@ -12,7 +12,21 @@ export function isUrgentTechnical(c?:TechnicalCase){return !!c&&(c.priority==="u
 export type TechnicalCase={priority?:keyof typeof technicalPriorities;conditionWatch?:Record<string,string>;report:keyof typeof reportTypes;official:keyof typeof officialStates;aircraft:keyof typeof aircraftStates;investigation:keyof typeof investigationStates;officialId?:string;officialClosed?:boolean;officialClosedBy?:string;officialClosedAt?:string;notApplicableReason?:string;notApplicableBy?:string;notApplicableAt?:string;aprsRef?:string;aprsBy?:string;aprsAt?:string;critical?:boolean;criticalReview?:string;criticalBy?:string;criticalAt?:string;cancelledReason?:string;parentId?:string;disposition?:Record<string,string>;document?:Record<string,string>;action?:Record<string,string>;reason?:string;[key:string]:unknown};
 export const initialTechnicalCase=():TechnicalCase=>({report:"report",official:"evaluation",aircraft:"evaluation",investigation:"triage"});
 export function legacyTechnicalCase(type:string,_priority:string):TechnicalCase{return {...initialTechnicalCase(),report:type==="inspection"?"report":"discrepancy",official:type==="inspection"?"evaluation":"pending"};}
-export function technicalTone(c:TechnicalCase){if(c.critical||c.aircraft==="unavailable"||c.investigation==="test_failed")return "bg-red-50 text-red-800 border-red-200";if(c.aircraft==="released"&&c.aprsRef&&c.aprsBy)return "bg-emerald-50 text-emerald-900 border-emerald-200";if(c.official==="pending"||c.aircraft==="deferred"||c.aircraft==="monitoring")return "bg-amber-50 text-amber-900 border-amber-200";return "bg-slate-50 text-slate-700 border-slate-200";}
+export function technicalDeadline(c:TechnicalCase, now=Date.now()) {
+ const w=c.conditionWatch||{};
+ if(c.aircraft==="deferred"&&c.disposition?.deadline&&Date.parse(c.disposition.deadline)<=now)return "Diferimento vencido · reavaliar";
+ if(!["condition_watch","monitoring"].includes(c.investigation))return "";
+ if(w.dueKind==="date"&&w.dueAt&&Date.parse(w.dueAt)<=now)return "Acompanhamento vencido · reavaliar";
+ if(w.dueKind&&["hours","cycles"].includes(w.dueKind)&&w.currentValue?.trim()&&w.dueValue?.trim()&&Number(w.currentValue)>=Number(w.dueValue))return "Limite de acompanhamento atingido · reavaliar";
+ return "";
+}
+export function technicalCardBorder(c:TechnicalCase, now=Date.now()) {
+ if(isUrgentTechnical(c)||c.aircraft==="unavailable"||c.investigation==="test_failed"||technicalDeadline(c,now))return "border-red-500";
+ if(c.investigation==="closed")return "border-slate-400";
+ return "border-amber-400";
+}
+export function technicalTone(c:TechnicalCase){if(technicalCardBorder(c)==="border-red-500")return "bg-red-50 text-red-800 border-red-200";return c.investigation==="closed"?"bg-slate-50 text-slate-700 border-slate-200":"bg-amber-50 text-amber-900 border-amber-200";}
+export function serviceCasePending(c?:TechnicalCase){return !!c&&c.investigation!=="closed"&&(!!c.serviceEnteredAt||isUrgentTechnical(c)||["discrepancy","recurrence"].includes(c.report)||c.official==="pending"||["monitoring","condition_watch"].includes(c.investigation)||["unavailable","maintenance"].includes(c.aircraft));}
 export function criticalTechnicalText(text:string){return /falha presente.{0,40}vai voar|liberado somente para cumprir o voo|teste n[aã]o realizado|colocado ok para produzir/i.test(text);}
 /** Preparation layer: no document corpus is connected and no technical facts are generated. */
 export function technicalDraftReview(text:string,role:"pilot"|"mechanic"){

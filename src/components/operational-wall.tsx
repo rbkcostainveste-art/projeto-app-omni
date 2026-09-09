@@ -1,4 +1,5 @@
 "use client";
+import {technicalCardBorder,technicalDeadline} from "@/lib/technical-case";
 import {TechnicalAxes} from "./technical-case";
 import {reportTypes,type TechnicalCase} from "@/lib/technical-case";
 import {ActivityConversation} from "./internal-chat";
@@ -47,6 +48,7 @@ function addReceipt(items: WallReceipt[], employeeNumber: string) { return items
 function postTone(post: WallPost, user: string) { if(post.resolved) return "border-slate-300"; if(post.actions.some((action) => action.status === "nonconforming")) return "border-red-500"; const postAware = post.acknowledgements.some((item) => item.employeeNumber === user); const pendingAction = post.actions.some((action) => !action.acknowledgements.some((item) => item.employeeNumber === user) && action.status !== "resolved"); if(!postAware || pendingAction) return "border-amber-400"; if(post.actions.length && post.actions.every((action) => action.status === "satisfactory" || action.status === "resolved")) return "border-emerald-500"; return "border-blue-500"; }
 function isOfficialNotice(post: WallPost) { return (post.category === "Comunicado" || noticeCategories.includes(post.category)) && !post.actions.length; }
 function timelineStatus(post: WallPost) {
+  if(post.technicalCase)return technicalDeadline(post.technicalCase)||(post.technicalCase.investigation==="closed"?"Caso encerrado":"Em acompanhamento");
   const last = post.actions.flatMap(action=>action.executions).sort((a,b)=>Date.parse(b.at)-Date.parse(a.at))[0]?.result;
   if(post.maintenanceResult === "nonconforming" || last === "nonconforming" || post.actions.some(a=>a.status === "nonconforming")) return "Não conforme";
   if(post.resolved) return "Concluído";
@@ -54,6 +56,7 @@ function timelineStatus(post: WallPost) {
   return "Em acompanhamento";
 }
 function timelineTone(post: WallPost, user: string) {
+  if(post.technicalCase)return technicalCardBorder(post.technicalCase);
   const lastResult = post.actions.flatMap((action) => action.executions).sort((a, b) => Date.parse(b.at) - Date.parse(a.at))[0]?.result;
   if(post.maintenanceResult === "nonconforming" || lastResult === "nonconforming" || post.actions.some((action) => action.status === "nonconforming")) return "border-red-500";
   if(post.maintenanceResult === "satisfactory" || post.resolved || lastResult === "satisfactory" || post.actions.length > 0 && post.actions.every((action) => action.status === "satisfactory" || action.status === "resolved")) return "border-emerald-500";
