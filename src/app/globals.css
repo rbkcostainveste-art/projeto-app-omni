@@ -293,6 +293,7 @@ nav[aria-label="Navegação principal"] button[aria-current="page"] > span.absol
  .flight-app .flight-trail-grid { gap:10px; }
  .flight-app .flight-trail-grid > button,
  .flight-app .technical-card,
+ .flight-app .timeline-card,
  .flight-app .tool-use-card,
  .flight-app [id^="passage-card-"] { border-radius:10px; }
  .flight-app .notice-board { margin-inline:-4px; padding:8px 0 2px; }

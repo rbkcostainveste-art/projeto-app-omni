@@ -6,8 +6,8 @@ begin
  select d.auth_user_id,d.employee_number into mech,mech_employee from public.device_identities d join public.authorized_users u using(employee_number) where not d.is_admin and u.active and u.job_role='mechanic' limit 1;
  if adm is null or mech is null then raise exception 'Test identities unavailable';end if;
  perform set_config('request.jwt.claim.sub',adm::text,true);
- insert into public.maintenance_records(id,record_type,base,model,prefix,priority,status,title,created_by,data)
- values(gen_random_uuid(),'fault','QA','S92','PR-QAT','not_logged','open','QA technical test',actor,'{"description":"Intermitência HSI","entries":[]}') returning * into r;
+ insert into public.maintenance_records(id,record_type,base,model,prefix,priority,status,title,tc,created_by,data)
+ values(gen_random_uuid(),'fault','QA','S92','PR-QAT','not_logged','open','QA technical test','TC-QA',actor,'{"description":"Intermitência HSI","entries":[]}') returning * into r;
  if r.technical_case->>'official'<>'pending' or r.technical_case->>'report'<>'discrepancy' then raise exception 'Legacy fault incorrectly classified';end if;
  if exists(select 1 from public.technical_case_audit where event='migration' and old_value->>'priority'='not_logged' and new_value->>'official'='not_applicable') then raise exception 'Unsafe migration';end if;
  c:=r.technical_case||'{"investigation":"troubleshooting","reason":"Pesquisa técnica"}';
@@ -36,8 +36,8 @@ begin
  if audit_count<2 then raise exception 'Comment audit missing';end if;
  ok:=false;begin update public.maintenance_records set data=jsonb_set(data,'{entries}','[]') where id=n.id;exception when others then ok:=true;end;if not ok then raise exception 'Confirmed comment silently removed';end if;
  -- Critical text is saved, and is not itself a reason to reject the report.
- insert into public.maintenance_records(id,record_type,base,model,prefix,priority,status,title,created_by,data)
- values(gen_random_uuid(),'fault','QA','S92','PR-QAB','not_logged','open','QA critical test',actor,'{"description":"teste não realizado","entries":[]}') returning * into n;
+ insert into public.maintenance_records(id,record_type,base,model,prefix,priority,status,title,tc,created_by,data)
+ values(gen_random_uuid(),'fault','QA','S92','PR-QAB','not_logged','open','QA critical test','TC-QA',actor,'{"description":"teste não realizado","entries":[]}') returning * into n;
  if not (n.technical_case->>'critical')::boolean then raise exception 'Critical signal absent';end if;
  if not exists(select 1 from public.technical_case_alerts where record_id=n.id and employee_number=actor) then raise exception 'Critical notification absent';end if;
  -- Reclassification has an explicit reason, authorized author and server timestamp/name.
@@ -47,8 +47,8 @@ begin
  if n.technical_case->>'notApplicableBy'<>actor or nullif(n.technical_case->>'notApplicableName','') is null or nullif(n.technical_case->>'notApplicableAt','') is null then raise exception 'Not applicable accountability missing';end if;
  ok:=false;begin perform public.technical_case_action('update',n.id,jsonb_build_object('revision',n.revision,'case',n.technical_case||'{"investigation":"closed","reason":"Alerta crítico ainda ativo"}'));exception when others then ok:=true;end;if not ok then raise exception 'Closed an unresolved critical case';end if;
  -- MEL/CDL stay distinct; no default authorization, and reminders are generated before deadline.
- insert into public.maintenance_records(id,record_type,base,model,prefix,priority,status,title,created_by,data)
- values(gen_random_uuid(),'fault','QA','S92','PR-QAM','not_logged','open','QA MEL test',actor,'{"description":"Componente ausente","entries":[]}') returning * into n;
+ insert into public.maintenance_records(id,record_type,base,model,prefix,priority,status,title,tc,created_by,data)
+ values(gen_random_uuid(),'fault','QA','S92','PR-QAM','not_logged','open','QA MEL test','TC-QA',actor,'{"description":"Componente ausente","entries":[]}') returning * into n;
  disposition:=jsonb_build_object('type','CDL','reference','CDL-1','conditions','Condições documentadas','deadline',now()+interval '12 hours','cdlItem','CDL-TEST','revision','1','performance','Limitação conferida');
  ok:=false;begin perform public.technical_case_action('update',n.id,jsonb_build_object('revision',n.revision,'case',n.technical_case||jsonb_build_object('disposition',disposition,'reason','Teste CDL desabilitada')));exception when others then ok:=true;end;if not ok then raise exception 'Unconfigured CDL enabled';end if;
  disposition:=jsonb_build_object('type','MEL','reference','MEL-AUTH-1','conditions','Condições documentadas','deadline',now()+interval '12 hours');
@@ -67,8 +67,8 @@ begin
  if n.technical_case->>'aircraft'<>'unavailable' or n.technical_case->>'investigation'<>'test_failed' then raise exception 'Failed evidence not reflected';end if;
  ok:=false;begin perform public.technical_case_action('update',n.id,jsonb_build_object('revision',n.revision,'case',n.technical_case||'{"investigation":"test_passed","aircraft":"deferred","reason":"Tentativa de reutilizar autorização anterior à falha"}'));exception when others then ok:=true;end;if not ok then raise exception 'Stale disposition reused after new adverse evidence';end if;
  -- New failed evidence requires renewed official closure and APRS confirmation.
- insert into public.maintenance_records(id,record_type,base,model,prefix,priority,status,title,created_by,data)
- values(gen_random_uuid(),'fault','QA','S92','PR-QAX','not_logged','open','QA renewed APRS',actor,'{"description":"Conferência","entries":[]}') returning * into n;
+ insert into public.maintenance_records(id,record_type,base,model,prefix,priority,status,title,tc,created_by,data)
+ values(gen_random_uuid(),'fault','QA','S92','PR-QAX','not_logged','open','QA renewed APRS','TC-QA',actor,'{"description":"Conferência","entries":[]}') returning * into n;
  perform public.technical_case_action('update',n.id,jsonb_build_object('revision',n.revision,'case',n.technical_case||'{"official":"linked","officialId":"QA-X","officialClosed":true,"aprsRef":"QA-X-APRS","aircraft":"released","investigation":"test_passed","reason":"Conferência inicial"}'));
  update public.maintenance_records set data=data||jsonb_build_object('entries',jsonb_build_array(jsonb_build_object('id','qa-new-failure','kind','action','result','nonconforming','description','Resultado adverso posterior','employeeNumber',actor,'at',clock_timestamp()))) where id=n.id;
  select * into n from public.maintenance_records where id=n.id;

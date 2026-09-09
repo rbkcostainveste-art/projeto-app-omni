@@ -132,3 +132,11 @@ Não há declaração de conformidade automática com a ANAC.
 - `20260909004300_technical_leadership_permissions.sql` restaura a geração de ações exclusiva da liderança e protege a abertura direta de pane. O botão **Abrir pane** aparece para inspetor, coordenação, gerência e direção de manutenção, além da administração. Abre o mesmo formulário simples, já classificado como discrepância técnica, com o vínculo eDB expandido; sem número, o vínculo fica pendente. Não emite APRS nem cria registro no eDB externo. A tripulação mantém seu fluxo próprio; mecânico inicia relato técnico.
 
 Referência atual do diário de bordo: [Resolução ANAC 773/2025](https://www.anac.gov.br/assuntos/legislacao/legislacao-1/resolucoes/2025/resolucao-773), vigente desde 1º de janeiro de 2026, que revogou a Resolução 457. Os nomes internos não dispensam os registros dos arts. 6–8. A confirmação de limites depende da documentação e dos profissionais autorizados, conforme os procedimentos aplicáveis; o aplicativo não valida sozinho os limites informados.
+
+## Cards compactos e TC obrigatória para pane
+
+Os eixos técnicos detalhados aparecem somente ao abrir o registro (ou expandir o resultado de busca), sem ocupar os cards fechados da manutenção e do Ao vivo. O card do Ao vivo usa os mesmos cantos arredondados da manutenção: 10 px no mobile e 14 px no desktop.
+
+No atalho **Abrir pane**, a TC é obrigatória. O banco também exige TC em novas panes da manutenção e na evolução de relato para discrepância, além de impedir apagar a TC de uma pane que já a possua. Os relatos simples continuam com TC opcional. Os registros históricos sem TC são preservados e podem receber comentários; o reporte inicial da tripulação mantém seu fluxo próprio. TC e identificador eDB continuam campos distintos, sem validação automática no WinAir.
+
+Migração: `20260909004400_require_tc_for_maintenance_fault.sql`. Validação: `tests/maintenance-fault-tc.sql`, regressões técnicas e de permissões, lint, TypeScript, build e comparação dos estilos no navegador em 390/1366 px.
