@@ -20,6 +20,9 @@
 # production
 /build
 
+# technical manuals stay local; the generated searchable index is deployed
+/docs/technical-library/**/*.pdf
+
 # misc
 .DS_Store
 *.pem

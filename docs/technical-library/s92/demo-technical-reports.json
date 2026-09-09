@@ -1,0 +1,114 @@
+{
+  "purpose": "Casos simulados para demonstrar transformação de linguagem livre em relato técnico com referência",
+  "operationalUse": false,
+  "cases": [
+    {
+      "id": "S92-DEMO-01",
+      "title": "Marca com metal exposto no prato oscilante",
+      "ata": 62,
+      "mechanicInput": "Achei um risquinho na pintura do prato oscilante perto do lado direito. Parece que aparece o metal e não sei se é trinca.",
+      "suggestedRecord": "Durante inspeção visual do prato oscilante estacionário do rotor principal, foi observada descontinuidade na pintura/primer, com exposição aparente do metal de base, próxima à região do trunnion direito. A natureza da indicação não foi confirmada por inspeção visual.",
+      "references": ["FAA AD 2023-09-07, parágrafos (c), (e), (g) e (h)(2)"],
+      "pendingApplicability": ["P/N do prato oscilante", "horas TIS do componente", "posição e dimensão da indicação", "fotografia"]
+    },
+    {
+      "id": "S92-DEMO-02",
+      "title": "Entalhe ou amassamento no prato oscilante",
+      "ata": 62,
+      "mechanicInput": "Tem uma marquinha amassada na bailarina, parece uma batidinha pequena.",
+      "suggestedRecord": "Foi observada indicação com aparência de entalhe ou deformação localizada no conjunto do prato oscilante estacionário. Dimensões, profundidade e condição da pintura ainda não foram determinadas.",
+      "references": ["FAA AD 2023-09-07, parágrafos (c) e (h)(1)-(2)"],
+      "pendingApplicability": ["P/N", "horas TIS", "dimensões", "limites da publicação técnica vigente"]
+    },
+    {
+      "id": "S92-DEMO-03",
+      "title": "Indicação de trinca no forward root fitting",
+      "ata": 55,
+      "mechanicInput": "Vi uma linha no suporte da frente do estabilizador horizontal e fiquei na dúvida se é trinca.",
+      "suggestedRecord": "Durante inspeção do estabilizador horizontal, foi observada indicação linear no forward root fitting. A indicação requer caracterização para determinar se corresponde a trinca, risco superficial ou outra descontinuidade.",
+      "references": ["FAA AD 2022-11-04, parágrafos (c), (d), (e) e (g)"],
+      "pendingApplicability": ["P/N do fitting e do estabilizador", "localização exata", "tempo em serviço", "resultado de inspeção aplicável"]
+    },
+    {
+      "id": "S92-DEMO-04",
+      "title": "Corrosão ou fretting na fixação do estabilizador",
+      "ata": 55,
+      "mechanicInput": "Na fixação do estabilizador tem um pó escuro e umas marcas, parece corrosão ou peça trabalhando.",
+      "suggestedRecord": "Foram observados resíduos escuros e marcas de contato na região de fixação do estabilizador horizontal, com possível corrosão e/ou fretting. A extensão e os limites aceitáveis não foram determinados.",
+      "references": ["FAA AD 2022-11-04, parágrafos (e) e (g)(3)"],
+      "pendingApplicability": ["P/N", "área afetada", "extensão", "limites aprovados do AMM"]
+    },
+    {
+      "id": "S92-DEMO-05",
+      "title": "Fixador solto no estabilizador",
+      "ata": 55,
+      "mechanicInput": "Tem um parafuso da região do estabilizador que parece estar trabalhando e não está igual aos outros.",
+      "suggestedRecord": "Foi observada possível movimentação ou perda de assentamento de fixador na região de instalação do estabilizador horizontal. A condição de torque, assentamento e integridade do fixador não foi confirmada.",
+      "references": ["FAA AD 2022-11-04, parágrafo (g)(3), inspeção de loose or working fasteners"],
+      "pendingApplicability": ["identificação do fixador", "P/N do conjunto", "evidência de movimento", "publicação de manutenção aplicável"]
+    },
+    {
+      "id": "S92-DEMO-06",
+      "title": "Dano em arruela Mylar do estabilizador",
+      "ata": 55,
+      "mechanicInput": "A arruelinha plástica do estabilizador está raspada e com uma pontinha rasgada.",
+      "suggestedRecord": "Durante inspeção da instalação do estabilizador, foi observado dano visível na superfície da arruela Mylar, caracterizado por abrasão e rasgo localizado.",
+      "references": ["FAA AD 2022-11-04, parágrafo (g), inspeção da Mylar washer P/N 92070-20117-104"],
+      "pendingApplicability": ["confirmação do P/N", "posição", "extensão do dano", "configuração instalada"]
+    },
+    {
+      "id": "S92-DEMO-07",
+      "title": "Rosca danificada em pino do trem de pouso",
+      "ata": 32,
+      "mechanicInput": "O pino do trem tem a rosca meio comida e parece diferente dos outros.",
+      "suggestedRecord": "Foi observada possível não conformidade na região roscada de pino do conjunto do trem de pouso, com aparência de deformação ou perda de perfil de rosca. O P/N e a conformidade dimensional ainda não foram confirmados.",
+      "references": ["FAA AD 2021-08-18, parágrafos (c), (d), (e) e (g)"],
+      "pendingApplicability": ["S/N da aeronave", "P/N e posição do pino", "resultado da verificação de rosca", "configuração MLG ou NLG"]
+    },
+    {
+      "id": "S92-DEMO-08",
+      "title": "Indicação na nervura do pé da MGB",
+      "ata": 63,
+      "mechanicInput": "Achei uma linha perto do parafuso do pé direito da caixa principal. Limpei e continua aparecendo.",
+      "suggestedRecord": "Após limpeza da área, permaneceu visível uma indicação linear próxima ao ponto de fixação do pé direito da caixa de transmissão principal. A natureza e extensão da indicação não foram confirmadas.",
+      "references": ["EASA AD 2011-0109, Applicability, Reason e Required Actions, itens (1)-(2)"],
+      "pendingApplicability": ["P/N do módulo MGB", "P/N da carcaça superior", "posição exata", "resultado de NDI conforme publicação autorizada"]
+    },
+    {
+      "id": "S92-DEMO-09",
+      "title": "Deformação no elemento filtrante da MGB",
+      "ata": 63,
+      "mechanicInput": "O filtro de óleo da caixa saiu com as dobras meio onduladas e uma parte amassada.",
+      "suggestedRecord": "Durante remoção e inspeção do elemento filtrante do sistema de lubrificação da MGB, foram observadas ondulações nas pleats e deformação localizada. A condição requer comparação com os critérios da publicação técnica aplicável.",
+      "references": ["FAA AD 2009-25-10, Applicability, Compliance e parágrafo (a)"],
+      "pendingApplicability": ["S/N da aeronave", "filtro primário ou secundário", "P/N do elemento", "tipo e extensão da deformação"]
+    },
+    {
+      "id": "S92-DEMO-10",
+      "title": "Evidência de óleo no bowl do filtro da MGB",
+      "ata": 63,
+      "mechanicInput": "Tem óleo molhando em volta do copo do filtro da caixa principal. Limpei e voltou a ficar úmido.",
+      "suggestedRecord": "Foi observada evidência recorrente de óleo na região externa do bowl do conjunto de filtros do sistema de lubrificação da MGB após limpeza da área. A origem e a taxa do vazamento não foram determinadas.",
+      "references": ["FAA AD 2009-25-10, Summary e parágrafos de Compliance relacionados à inspeção de vazamento"],
+      "pendingApplicability": ["S/N", "P/N do conjunto", "localização da origem", "quantidade ou taxa", "histórico de substituição do filtro"]
+    },
+    {
+      "id": "S92-DEMO-11",
+      "title": "Indicação na estrutura da cabine STA 361",
+      "ata": 53,
+      "mechanicInput": "Tem uma linha na estrutura da cabine perto da estação 361. Parece trinca mas não confirmei.",
+      "suggestedRecord": "Durante inspeção visual da estrutura da cabine na região da STA 361, foi observada indicação linear com aparência de possível trinca. A extensão e a natureza da indicação ainda não foram confirmadas.",
+      "references": ["FAA SAIB SW-12-23, Background e Recommendations"],
+      "pendingApplicability": ["horas totais da aeronave", "cumprimento da SSI 92-037", "posição e extensão", "resultado da inspeção aprovada"]
+    },
+    {
+      "id": "S92-DEMO-12",
+      "title": "Deformação percebida no tanque auxiliar após abastecimento",
+      "ata": 28,
+      "mechanicInput": "Depois do abastecimento sob pressão parece que o tanque auxiliar ficou estufado e apareceu uma marca.",
+      "suggestedRecord": "Após abastecimento sob pressão, foi observada possível deformação no tanque auxiliar interno dianteiro. Não foram determinados o nível de pressurização, a extensão da indicação ou a integridade do tanque.",
+      "references": ["EASA AD 2015-0013, Applicability, Reason e Required Actions"],
+      "pendingApplicability": ["presença do IAFS", "P/N e S/N do tanque", "P/N da válvula de ventilação", "condições do abastecimento"]
+    }
+  ]
+}

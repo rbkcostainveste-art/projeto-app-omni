@@ -1,0 +1,118 @@
+{
+  "purpose": "Casos simulados de discrepâncias percebidas pela tripulação para demonstração do Flight AI",
+  "operationalUse": false,
+  "rule": "A IA descreve o efeito observado, preserva o relato original, não diagnostica a causa e solicita os dados ausentes.",
+  "generalPublicReferences": [
+    {
+      "document": "FAA-H-8083-25C - Pilot's Handbook of Aeronautical Knowledge",
+      "section": "Chapter 8 - Flight Instruments",
+      "url": "https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/phak/chapter-8-flight-instruments",
+      "scope": "Conceitos gerais de instrumentos, sistema pitot-estático, altímetro, instrumentos de direção e reconhecimento de funcionamento anormal."
+    },
+    {
+      "document": "FAA-H-8083-15B - Instrument Flying Handbook",
+      "section": "Chapter 5 - Flight Instruments",
+      "url": "https://www.faa.gov/sites/faa.gov/files/pilots/FAA-H-8083-15B.pdf",
+      "scope": "Conceitos gerais de indicação de altitude, heading, AHRS, PFD e cross-check de instrumentos."
+    }
+  ],
+  "cases": [
+    {
+      "id": "S92-PILOT-DEMO-01",
+      "title": "Indicação HSI intermitente",
+      "ata": 34,
+      "pilotInput": "O HSI do meu lado ficou doido por alguns segundos, a proa oscilou e depois voltou ao normal.",
+      "suggestedRecord": "Durante o voo, a indicação de proa no HSI do posto do comandante apresentou oscilação intermitente por período não determinado, normalizando posteriormente sem confirmação da causa. A indicação do segundo posto e a presença de mensagens associadas não foram informadas.",
+      "missingData": ["fase do voo", "proa indicada e amplitude da oscilação", "duração", "posto afetado", "comparação com o outro HSI", "modo de navegação selecionado", "mensagens CAS"]
+    },
+    {
+      "id": "S92-PILOT-DEMO-02",
+      "title": "Altímetro congelou e normalizou",
+      "ata": 34,
+      "pilotInput": "Na descida o altímetro travou por um momento e depois voltou sozinho.",
+      "suggestedRecord": "Durante a descida, a indicação de altitude do posto informado permaneceu momentaneamente estática, voltando a apresentar variação normal sem intervenção registrada. Não foi informada a comparação com o altímetro do outro posto, instrumento standby ou indicação de altitude do transponder.",
+      "missingData": ["altitude aproximada", "duração", "posto afetado", "comparação CM1/CM2/standby", "ajuste barométrico", "condições meteorológicas", "mensagens CAS"]
+    },
+    {
+      "id": "S92-PILOT-DEMO-03",
+      "title": "Divergência de altitude entre os postos",
+      "ata": 34,
+      "pilotInput": "O meu altímetro estava dando diferente do copiloto e depois igualou.",
+      "suggestedRecord": "Foi observada divergência temporária entre as indicações de altitude dos postos do comandante e do copiloto. As indicações voltaram a coincidir posteriormente. A magnitude, duração e comparação com o instrumento standby não foram registradas.",
+      "missingData": ["diferença observada em pés", "altitude e fase do voo", "ajustes barométricos", "instrumento standby", "fonte de air data", "mensagens associadas"]
+    },
+    {
+      "id": "S92-PILOT-DEMO-04",
+      "title": "Radioaltímetro oscilando na aproximação",
+      "ata": 34,
+      "pilotInput": "Perto da plataforma o rádio-altímetro começou a pular os valores e depois estabilizou.",
+      "suggestedRecord": "Durante a aproximação, a indicação do radioaltímetro apresentou variações rápidas e intermitentes, estabilizando posteriormente. Não foram informados altura aproximada, superfície sobrevoada, posto afetado ou alertas associados.",
+      "missingData": ["altura aproximada", "duração", "posto afetado", "superfície/obstáculos", "condição meteorológica", "avisos de voz ou CAS", "comparação entre fontes"]
+    },
+    {
+      "id": "S92-PILOT-DEMO-05",
+      "title": "PFD apagou momentaneamente",
+      "ata": 31,
+      "pilotInput": "A tela da esquerda apagou e voltou logo depois, acho que em dois segundos.",
+      "suggestedRecord": "O display primário de voo do posto esquerdo apagou momentaneamente e recuperou a apresentação normal de forma espontânea. O piloto estimou duração aproximada de dois segundos. Não foram registradas perda de dados específica, flag, mensagem CAS ou condição elétrica associada.",
+      "missingData": ["fase do voo", "conteúdo perdido", "presença de flags", "mensagens CAS", "outros displays afetados", "condição elétrica", "recorrência"]
+    },
+    {
+      "id": "S92-PILOT-DEMO-06",
+      "title": "Barras do flight director desapareceram",
+      "ata": 22,
+      "pilotInput": "As barras do diretor de voo sumiram na aproximação e depois apareceram de novo.",
+      "suggestedRecord": "Durante a aproximação, as barras de comando do flight director deixaram de ser apresentadas temporariamente e retornaram posteriormente. Não foram informados o modo ativo, o posto afetado, mudanças no painel de controle ou mensagens associadas.",
+      "missingData": ["modo lateral e vertical", "posto afetado", "estado do piloto automático", "duração", "ações da tripulação", "mensagens CAS"]
+    },
+    {
+      "id": "S92-PILOT-DEMO-07",
+      "title": "Desengajamento inesperado do piloto automático",
+      "ata": 22,
+      "pilotInput": "O automático caiu sozinho no cruzeiro, religamos e ficou normal.",
+      "suggestedRecord": "Durante o cruzeiro, ocorreu desengajamento não comandado do piloto automático. O sistema foi novamente engajado pela tripulação e permaneceu operando normalmente até o término do voo. A condição precedente e os alertas associados não foram registrados.",
+      "missingData": ["altitude e velocidade", "modos ativos", "alerta sonoro", "mensagens CAS", "turbulência", "comandos ou transferências anteriores", "recorrência"]
+    },
+    {
+      "id": "S92-PILOT-DEMO-08",
+      "title": "Comunicação VHF intermitente",
+      "ata": 23,
+      "pilotInput": "O VHF 1 ficou falhando para transmitir, mexemos e depois funcionou.",
+      "suggestedRecord": "Foi observada transmissão intermitente pelo VHF 1. O funcionamento normal foi restabelecido posteriormente, sem identificação da causa. Não foram informados frequência, alcance, recepção, seleção de áudio ou ação exata realizada pela tripulação.",
+      "missingData": ["frequência", "transmissão e/ou recepção", "áudio selecionado", "posição da aeronave", "VHF 2", "ações realizadas", "mensagens"]
+    },
+    {
+      "id": "S92-PILOT-DEMO-09",
+      "title": "Posição do FMS/GPS deslocada",
+      "ata": 34,
+      "pilotInput": "O mapa mostrou a aeronave fora da rota por alguns segundos e depois corrigiu.",
+      "suggestedRecord": "A apresentação de posição no mapa de navegação indicou deslocamento temporário em relação à rota prevista, normalizando posteriormente. Não foram informadas a magnitude do deslocamento, fonte de navegação, integridade GPS ou mensagens do sistema.",
+      "missingData": ["fase do voo e posição", "magnitude", "fonte selecionada", "GPS/FMS afetado", "mensagens de integridade", "comparação com outras fontes"]
+    },
+    {
+      "id": "S92-PILOT-DEMO-10",
+      "title": "Indicação de combustível oscilando",
+      "ata": 28,
+      "pilotInput": "A quantidade do tanque esquerdo ficou subindo e descendo e depois parou.",
+      "suggestedRecord": "A indicação de quantidade de combustível do tanque esquerdo apresentou oscilação intermitente durante o voo, estabilizando posteriormente. Não foram registradas a amplitude, duração, atitude da aeronave ou comparação com consumo calculado.",
+      "missingData": ["quantidade e amplitude", "fase e atitude", "duração", "outros tanques", "combustível calculado", "mensagens CAS", "recorrência"]
+    },
+    {
+      "id": "S92-PILOT-DEMO-11",
+      "title": "Indicação de trem inseguro momentânea",
+      "ata": 32,
+      "pilotInput": "Na extensão demorou para aparecer o verde do trem direito, mas depois acendeu.",
+      "suggestedRecord": "Durante a extensão do trem de pouso, a indicação de posição segura do trem principal direito apresentou atraso em relação às demais indicações, sendo exibida posteriormente. O tempo de atraso e as condições da extensão não foram registrados.",
+      "missingData": ["tempo de atraso", "velocidade", "sequência das indicações", "mensagens CAS", "ruídos ou vibrações", "ciclo subsequente"]
+    },
+    {
+      "id": "S92-PILOT-DEMO-12",
+      "title": "Caution momentâneo de pressão de óleo da MGB",
+      "ata": 63,
+      "pilotInput": "Piscou uma mensagem de pressão de óleo da caixa e sumiu quase na hora, os parâmetros pareceram normais.",
+      "suggestedRecord": "Foi observada apresentação momentânea de mensagem relacionada à pressão de óleo da caixa de transmissão principal, com desaparecimento espontâneo. Segundo a tripulação, os parâmetros aparentavam permanecer normais. O texto exato da mensagem, valor indicado e duração não foram registrados.",
+      "missingData": ["texto exato da mensagem", "valor de pressão", "temperatura", "duração", "fase do voo", "condições de potência", "mensagens associadas"]
+    }
+  ],
+  "aircraftSpecificReferenceNotice": "A classificação ATA e os conceitos gerais podem ser demonstrados com fontes públicas. Diagnóstico, despacho, procedimento, limite e ação corretiva do S-92A exigem RFM, QRH, MEL, AMM ou FIM vigente e autorizado."
+}

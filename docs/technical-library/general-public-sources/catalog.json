@@ -1,0 +1,83 @@
+{
+  "libraryId": "flight-ai-faa-general-public-sources",
+  "purpose": "Referências públicas gerais para relatos simulados de pilotos",
+  "operationalUse": false,
+  "generatedAt": "2026-09-09",
+  "totalDocuments": 8,
+  "totalPages": 547,
+  "totalSizeBytes": 178356792,
+  "documents": [
+    {
+      "file": "10-faa-phak-ch07-aircraft-systems.pdf",
+      "document": "FAA-H-8083-25C - Pilot's Handbook of Aeronautical Knowledge",
+      "section": "Chapter 7 - Aircraft Systems",
+      "pages": 42,
+      "sizeBytes": 18237698,
+      "sha256": "a12f61c6ba3c6ccf1b1881d530925a957c0709668d00d9371c6b5aaa5f9c8759",
+      "sourceUrl": "https://www.faa.gov/sites/faa.gov/files/09_phak_ch7.pdf"
+    },
+    {
+      "file": "11-faa-phak-ch08-flight-instruments.pdf",
+      "document": "FAA-H-8083-25C - Pilot's Handbook of Aeronautical Knowledge",
+      "section": "Chapter 8 - Flight Instruments",
+      "pages": 28,
+      "sizeBytes": 13589925,
+      "sha256": "9117a43d144ea04eec44fc456a6a8d00934fba5e7b4a34431150f82e62deef9b",
+      "sourceUrl": "https://www.faa.gov/sites/faa.gov/files/10_phak_ch8.pdf"
+    },
+    {
+      "file": "12-faa-phak-ch16-navigation.pdf",
+      "document": "FAA-H-8083-25C - Pilot's Handbook of Aeronautical Knowledge",
+      "section": "Chapter 16 - Navigation",
+      "pages": 35,
+      "sizeBytes": 37719970,
+      "sha256": "b05f3e52e64ce91d3a1e8bf6152d530b808f0f2ccb664a4ac4494ecbf7c530c1",
+      "sourceUrl": "https://www.faa.gov/sites/faa.gov/files/18_phak_ch16.pdf"
+    },
+    {
+      "file": "13-faa-instrument-flying-handbook-8083-15b.pdf",
+      "document": "FAA-H-8083-15B - Instrument Flying Handbook",
+      "section": "Full handbook",
+      "pages": 371,
+      "sizeBytes": 68414993,
+      "sha256": "15cbf13fef6bf9810ad38d1f5bbff318133554a6ca118c4474bc1760ad9059d5",
+      "sourceUrl": "https://www.faa.gov/sites/faa.gov/files/pilots/FAA-H-8083-15B.pdf"
+    },
+    {
+      "file": "14-faa-helicopter-flying-handbook-ch04-systems.pdf",
+      "document": "FAA-H-8083-21B - Helicopter Flying Handbook",
+      "section": "Chapter 4 - Helicopter Components, Sections, and Systems",
+      "pages": 20,
+      "sizeBytes": 15210640,
+      "sha256": "9968b84ec8f85e3a7478cc4ea5ed7ed38a4a733b4b11c1eaf67232393f5934e2",
+      "sourceUrl": "https://www.faa.gov/sites/faa.gov/files/regulations_policies/handbooks_manuals/aviation/helicopter_flying_handbook/hfh_ch04.pdf"
+    },
+    {
+      "file": "15-faa-helicopter-flying-handbook-ch05-rfm.pdf",
+      "document": "FAA-H-8083-21B - Helicopter Flying Handbook",
+      "section": "Chapter 5 - Rotorcraft Flight Manual",
+      "pages": 6,
+      "sizeBytes": 8030864,
+      "sha256": "6a8bf5cf350c8ba9cde47cf826df358080c5bad44d894738896781123dd093a2",
+      "sourceUrl": "https://www.faa.gov/sites/faa.gov/files/regulations_policies/handbooks_manuals/aviation/helicopter_flying_handbook/hfh_ch05.pdf"
+    },
+    {
+      "file": "16-faa-helicopter-flying-handbook-ch11-emergencies.pdf",
+      "document": "FAA-H-8083-21B - Helicopter Flying Handbook",
+      "section": "Chapter 11 - Helicopter Emergencies and Hazards",
+      "pages": 27,
+      "sizeBytes": 8113252,
+      "sha256": "f48372232c7a43d294f3d7713707583c5baabca8f7194fb1ba362e70767e0c17",
+      "sourceUrl": "https://www.faa.gov/sites/faa.gov/files/regulations_policies/handbooks_manuals/aviation/helicopter_flying_handbook/hfh_ch11.pdf"
+    },
+    {
+      "file": "17-faa-helicopter-flying-handbook-ch13-adm.pdf",
+      "document": "FAA-H-8083-21B - Helicopter Flying Handbook",
+      "section": "Chapter 13 - Effective Aeronautical Decision-Making",
+      "pages": 18,
+      "sizeBytes": 9039450,
+      "sha256": "4af13f7dae2a5324547162feb6215fd2e56b5b8eb7639f711662d30761ccc4a8",
+      "sourceUrl": "https://www.faa.gov/sites/faa.gov/files/regulations_policies/handbooks_manuals/aviation/helicopter_flying_handbook/hfh_ch13.pdf"
+    }
+  ]
+}

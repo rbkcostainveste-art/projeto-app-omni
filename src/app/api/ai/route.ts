@@ -1,4 +1,5 @@
 import {technicalAssistantPolicy} from "@/lib/technical-case";
+import {searchTechnicalLibrary} from "@/lib/technical-library";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -12,7 +13,9 @@ export async function POST(request: Request) {
   const body = await request.json() as RequestBody;
   if (!body.message?.trim() && !body.image) return NextResponse.json({ error: "Envie uma pergunta, comando ou fotografia." }, { status: 400 });
 
-  const content: Array<Record<string, string>> = [{ type: "input_text", text: `${body.message ?? "Analise esta imagem."}\n\nDADOS ATUAIS DO FLIGHT IA:\n${JSON.stringify(body.context ?? {})}` }];
+  const sources = body.message?.trim() ? searchTechnicalLibrary(body.message,5) : [];
+  const technicalReferences = sources.length ? sources.map((source,index)=>`[Fonte ${index+1}] ${source.documentNumber}; ${source.title}; página ${source.page}; biblioteca ${source.library}. Trecho: ${source.excerpt}`).join("\n\n") : "Nenhuma referência técnica foi localizada automaticamente.";
+  const content: Array<Record<string, string>> = [{ type: "input_text", text: `${body.message ?? "Analise esta imagem."}\n\nDADOS ATUAIS DO FLIGHT IA:\n${JSON.stringify(body.context ?? {})}\n\nREFERÊNCIAS RECUPERADAS DA BIBLIOTECA TÉCNICA:\n${technicalReferences}` }];
   if (body.image) content.push({ type: "input_image", image_url: body.image, detail: "high" });
 
   const response = await fetch("https://api.openai.com/v1/responses", {
@@ -20,7 +23,7 @@ export async function POST(request: Request) {
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL || "gpt-5.4-mini",
-      instructions: "Você é o assistente operacional do Flight IA. Responda em português do Brasil. Use somente os dados fornecidos. Para comandos de lançamento, proponha voos apenas para prefixos cadastrados; nunca invente aeronaves. Se faltar informação, use null e explique. Não confirme que gravou dados: diga que preparou uma proposta para revisão.",
+      instructions: "Você é o assistente operacional do Flight IA. Responda em português do Brasil. Use somente os dados fornecidos. Para comandos de lançamento, proponha voos apenas para prefixos cadastrados; nunca invente aeronaves. Se faltar informação, use null e explique. Não confirme que gravou dados: diga que preparou uma proposta para revisão. Em assuntos técnicos, diferencie observação de diagnóstico, cite somente as fontes recuperadas no formato [Fonte N: documento, p. X], informe dados de aplicabilidade ausentes e nunca invente tarefa, limite, procedimento ou autorização de retorno ao serviço. Fontes FAA gerais são conceituais e não substituem RFM, QRH, MEL, AMM ou FIM do S-92A.",
       input: [{ role: "system", content: [{type:"input_text",text:technicalAssistantPolicy}] },{ role: "user", content }],
       text: { format: { type: "json_schema", name: "flight_assistant", strict: true, schema: { type: "object", properties: { reply: { type: "string" }, proposedFlights: { type: "array", items: { type: "object", properties: { prefix: { type: ["string","null"] }, base: { type: ["string","null"] }, date: { type: ["string","null"] }, departure: { type: ["string","null"] }, duration: { type: ["number","null"] }, fuelAmount: { type: ["number","null"] }, fuelUnit: { type: ["string","null"], enum: ["L","lb","kg",null] } }, required: ["prefix","base","date","departure","duration","fuelAmount","fuelUnit"], additionalProperties: false } } }, required: ["reply","proposedFlights"], additionalProperties: false } } }
     })
@@ -29,5 +32,5 @@ export async function POST(request: Request) {
   if (!response.ok) return NextResponse.json({ error: data?.error?.message || "Não foi possível consultar a IA." }, { status: response.status });
   const outputText = data.output?.flatMap((item: { content?: Array<{ type?: string; text?: string }> }) => item.content ?? []).find((item: { type?: string }) => item.type === "output_text")?.text;
   if (!outputText) return NextResponse.json({ error: "A IA não retornou uma resposta utilizável." }, { status: 502 });
-  return NextResponse.json(JSON.parse(outputText));
+  return NextResponse.json({...JSON.parse(outputText),sources});
 }
