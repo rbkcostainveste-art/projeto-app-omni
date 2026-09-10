@@ -20,7 +20,7 @@ test('drying context fails closed, scopes mechanics to current base and preserve
 });
 test('navigation revalidates access, ignores client scope and rejects absent or revoked targets',async()=>{
  let allowed=false,status='available',rows=[{id}],args;
- const route=load('src/app/api/ai/targets/route.ts',{'@/lib/assistant-access':{assistantAccess:async()=>{if(!allowed)throw Error();return {client:'JWT client',employee:'42'};}},'@/lib/assistant-records':{assistantRecords:async(...a)=>{args=a;return {status,records:rows};}},'@/lib/assistant-drying-context':{assistantDryingContext:async(...a)=>{args=a;return {status,items:rows};}},'@/lib/assistant-targets':lib});
+ const route=load('src/app/api/ai/targets/route.ts',{'@/lib/assistant-queries':{},'@/lib/assistant-access':{assistantAccess:async()=>{if(!allowed)throw Error();return {client:'JWT client',employee:'42'};}},'@/lib/assistant-records':{assistantRecords:async(...a)=>{args=a;return {status,records:rows};}},'@/lib/assistant-drying-context':{assistantDryingContext:async(...a)=>{args=a;return {status,items:rows};}},'@/lib/assistant-targets':lib});
  const req=kind=>new Request(`http://localhost/api/ai/targets?kind=${kind}&id=${id}&base=Forged&role=admin`);
  assert.equal((await route.GET(req('maintenance'))).status,401);allowed=true;assert.equal((await route.GET(req('release'))).status,400);
  let result=await route.GET(req('maintenance'));assert.equal(result.status,200);assert.deepEqual((await result.json()).target,{kind:'maintenance',id});assert.equal(args[0],'JWT client');assert.equal(args[1],'42');assert.equal(args[3],id);

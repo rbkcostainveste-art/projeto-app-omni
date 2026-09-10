@@ -1,6 +1,6 @@
 import type {SupabaseClient} from '@supabase/supabase-js';
 
-export async function assistantRecords(client:SupabaseClient,employee:string,signal:AbortSignal,id?:string){
+export async function assistantRecords(client:SupabaseClient,employee:string,signal:AbortSignal,id?:string,options?:{status:'open'|'closed'|'all'}){
  const unavailable={status:'unavailable',records:[],notice:'Não foi possível verificar os relatos. Não concluir ausência de pane ou relato.'};
  try{
   const {data:identity,error}=await client.rpc('refresh_current_device');
@@ -11,11 +11,11 @@ export async function assistantRecords(client:SupabaseClient,employee:string,sig
   const profile={role,base};
   if(!global.includes(role)&&!local.includes(role))return {...unavailable,status:'not_authorized',profile};
   if(local.includes(role)&&!base)return {...unavailable,profile,notice:'Base não definida para consultar relatos deste perfil.'};
-  let query=client.from('maintenance_records').select('id,record_type,prefix,model,base,title,status,updated_at').in('record_type',['fault','discrepancy']).order('updated_at',{ascending:false}).order('id',{ascending:true}).limit(id?1:101);
-  query=id?query.eq('id',id):query.eq('status','open');
+  let query=client.from('maintenance_records').select('id,record_type,prefix,model,base,title,status,updated_at,created_at,tc,technical_case,description:data->>description').in('record_type',['fault','discrepancy']).order('updated_at',{ascending:false}).order('id',{ascending:true}).limit(id?1:101);
+  if(id)query=query.eq('id',id);else if(options?.status!=='all')query=query.eq('status',options?.status||'open');
   if(local.includes(role))query=query.eq('base',base);
   const result=await query.abortSignal(signal);
   if(result.error||!Array.isArray(result.data))return {...unavailable,profile};
-  return {status:'available',profile,scope:local.includes(role)?base:'Registros autorizados pelo servidor',queriedAt:new Date().toISOString(),complete:result.data.length<=100,records:result.data.slice(0,100),notice:'Relatos técnicos com status aberto acessíveis nesta consulta; não representa diagnóstico de pane nem todos os tipos de registro. Acima de 100, resultado parcial.'};
+  return {status:'available',profile,scope:local.includes(role)?base:'Registros autorizados pelo servidor',queriedAt:new Date().toISOString(),complete:result.data.length<=100,records:result.data.slice(0,100),notice:'Relatos técnicos acessíveis no estado solicitado (padrão: abertos); não representa diagnóstico de pane nem todos os tipos de registro. Acima de 100, resultado parcial.'};
  }catch{return unavailable;}
 }

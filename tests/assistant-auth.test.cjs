@@ -7,6 +7,10 @@ test('general assistant rejects denied sessions before reading content or callin
  const exports={};let allowed=false,checks=0,providerCalls=0,searchCalls=0,sent;
  const load=p=>{const e={};new Function('exports',ts.transpileModule(fs.readFileSync(p,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(e);return e;};
  const deps={
+  '@/lib/assistant-form':load('src/lib/assistant-form.ts'),
+  '@/lib/assistant-queries':{assistantActor:async()=>({employeeNumber:'test-user'}),assistantQuery:async()=>{throw Error('not selected');}},
+  '@/lib/wall-selectors':{calendarDay:()=> '2026-09-09'},
+  '@/lib/assistant-agent':{runAssistantAgent:async options=>{providerCalls++;sent=options;return {reply:'Resposta simulada'};}},
   '@/lib/assistant-targets':load('src/lib/assistant-targets.ts'),
   '@/lib/assistant-drying-context':{assistantDryingContext:async()=>({status:'available',items:[]})},
   '@/lib/contextual-assistant':load('src/lib/contextual-assistant.ts'),
@@ -32,6 +36,6 @@ test('general assistant rejects denied sessions before reading content or callin
   const result=await exports.POST(request(JSON.stringify({message:'E relato técnico?'})));
   assert.equal(result.status,200);assert.equal((await result.json()).reply,'Resposta simulada');
   assert.equal(providerCalls,1);assert.equal(checks,2);
-  assert.equal(sent.input[1].content[0].text,'Tem pane aberta?');assert.equal(sent.input[2].role,'assistant');assert.match(sent.input.at(-1).content[0].text,/PR-CHT/);assert.equal(sent.store,false);
+  assert.equal(sent.history[0].message,'Tem pane aberta?');assert.equal(sent.message,'E relato técnico?');assert.equal(searchCalls,0);
  }finally{global.fetch=priorFetch;if(priorKey===undefined)delete process.env.OPENAI_API_KEY;else process.env.OPENAI_API_KEY=priorKey;}
 });

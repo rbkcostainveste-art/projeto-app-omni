@@ -15,6 +15,19 @@ Marcar uma etapa concluída somente após atender aos critérios descritos. Não
 
 ## Situação atual — assistente da tela
 
+### Revisão profunda autorizada — em andamento
+
+Os testes do usuário no Mural e em Designações demonstraram que identificação visual da área não equivale a compreensão nem consulta dessa área. A versão publicada ainda busca relatos/secagens indiscriminadamente. Não considerar a experiência global pronta.
+
+- [ ] Substituir consultas fixas por ferramentas selecionadas pelo modelo conforme intenção e conversa.
+- [ ] Compartilhar regras de timeline/designações entre a interface e a consulta autorizada.
+- [ ] Fornecer filtros, janela/card e horário locais como contexto estruturado, sem confiar no navegador para autorização.
+- [ ] Consultar mural, designações pessoais, relatos, secagens, frota, voos e ferramentaria com paginação, escopo e falhas explícitos.
+- [ ] Ampliar navegação e preenchimento conectado aos formulários; preservar edição concorrente, desfazer e assinaturas existentes.
+- [ ] Retirar widgets sem relação com o pedido e melhorar apresentação da conversa.
+- [ ] Testar linguagem natural com modelo real, continuações, troca de tela, ambiguidade, ausência de dados e permissões por cargo/base.
+- [ ] Verificar celular/desktop, testes de regressão, build e publicação. Registrar exatamente quais capacidades passaram; não equiparar testes simulados à qualidade real do assistente.
+
 - Publicado e conferido no site: botão flutuante por área/janela, conversa direta e preenchimento de prefixo/título/descrição no relato novo; título/descrição na revisão de relato existente.
 - Texto, imagens/PDF e voz; título automático e histórico por contexto; desfazer e proteção de edições concorrentes. 107 testes e verificações de navegador em celular/desktop aprovados.
 - Teste com OpenAI real: CHT selecionou PR-CHT e preencheu o rascunho. Teste desfeito sem salvar relato. Ajuste adicional de linguagem e nomes legíveis das áreas publicado.
@@ -310,4 +323,18 @@ O inventário é inicial: cada linha deve ser desdobrada nos formulários, campo
 - [ ] Lavagens realizadas hoje requerem consulta aos eventos correspondentes; a abertura de pendência de secagem não comprova data de lavagem. Esse cruzamento continua pendente.
 - [ ] Ferramentaria requer consulta específica com escopo de base e campos mínimos. A função existente de dashboard retorna dados amplos e executa limpeza de fotos; não foi reutilizada pela IA nesta etapa.
 - [ ] Ampliar os cards e comandos para os demais módulos, além de relatos e secagens. Preenchimentos dos demais formulários continuam pendentes conforme inventário.
-- Publicação em preparação; verificar build e funcionamento real antes de marcar publicada.
+- Publicação confirmada: commits `5704353` e `937feb1ea1f9bb3ea643a1ec348c8a7edd4a1cc7`, deployment `dpl_5F17p6LbrTUW5jmMQWGaxavKAg1v`, READY e alias `passagem-de-pista.vercel.app`. Build e TypeScript aprovados, sem fixture. Abas antigas mantêm resposta em texto; recarregar habilita os cards. Conferência funcional real aprovada: a pergunta “Tem algum relato técnico do CHT? Mostre o card para eu abrir.” encontrou PR-CHT / Altimetro; o botão validou o acesso e abriu o relato original PAN-PRCHT-202609-001. Sem alterar o registro. Secagens foram verificadas por testes e consulta SQL, sem novo teste pago de pergunta sobre secagem nesta rodada.
+
+
+### Revisão da integração — ferramentas e formulários (validação local)
+
+- Consulta fixa substituída por ciclo de ferramentas na Responses API. O modelo escolhe o conjunto conforme o pedido e pode consultar detalhes em seguida. Biblioteca técnica só é pesquisada quando a ferramenta correspondente é escolhida.
+- Consultas conectadas: timeline, avisos, designações, relatos abertos/fechados, secagens pendentes, frota, voos, Passagem de Pista e caixas/operações da Ferramentaria. Escopos, datas, identidade e resultados parciais explícitos. Isso não equivale a cobertura de todo o aplicativo.
+- Timeline e correspondência de designações compartilham seletores com a interface. Relato aberto não é tratado como designação. Contexto explícito de filtros/janela em Mural, Atividades, Passagem de Pista e Ferramentaria.
+- Cards e revalidação de acesso ampliados para mural, atividades, voos, passagens e operações de ferramentas. Comando explícito de abertura pode solicitar navegação, executada pela interface após nova verificação.
+- Componente comum de assistência por formulário: campos/opções declarados, resposta validada, proteção de edição concorrente, desfazer em rascunho e revisão explícita de alteração em registro salvo.
+- Conectados: nova atividade, nova publicação, nova passagem (prefixo), observações/descrição de caso em passagem existente, empréstimo de caixa/retirada sem catálogo (campos declarados), execução/comentário/geração de ação em relato. Não marca checks operacionais, não assina e não conclui tarefas automaticamente. Fotos do catálogo e seleção de ferramentas catalogadas continuam no fluxo próprio.
+- Removido bloco fixo de secagens do chat. Mensagens antigas com negrito passam a renderizar o destaque. Áudio no formulário inicia em revisar; usuário pode escolher envio automático.
+- Migração remota `20260910021455_assistant_toolroom_read` aplicada. Endpoint somente de leitura, com identidade ativa, cargo/base e escopo pessoal para mecânico/auxiliar; não retorna fotos/URLs nem executa limpeza. CLI indisponível neste ambiente: arquivo local usa a versão gerada pelo serviço de migrações. Verificação real em transação revertida passou com role authenticated; anon não pode executar. Advisor registra SECURITY DEFINER acessível a authenticated: uso intencional, pois as tabelas não são expostas diretamente; a função valida identidade/base e não concede permissões de escrita. Demais avisos preexistentes não foram alterados.
+- Validação: 121 testes unitários/de rotas passaram; navegador 390/1366 verificou formulário, desfazer, edição concorrente, revisão, histórico e cards. SQL real verificou os SELECTs como authenticated. Build preliminar passou. APIs do modelo simuladas nos testes de navegador; aceitação com OpenAI real e publicação desta revisão ainda pendentes.
+- Pendências da revisão: acervo técnico por operador, lavagem por histórico completo, integração de todos os campos do Cockpit/coordenação/administração, continuação da conversa durante navegação, cobertura completa de anexos e testes reais por cargo. Nenhuma alegação de equivalência ao ChatGPT ou conclusão global.
