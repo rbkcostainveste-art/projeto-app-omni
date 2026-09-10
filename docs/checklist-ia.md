@@ -17,14 +17,14 @@ Marcar uma etapa concluída somente após atender aos critérios descritos. Não
 
 ### Revisão profunda autorizada — em andamento
 
-Os testes do usuário no Mural e em Designações demonstraram que identificação visual da área não equivale a compreensão nem consulta dessa área. A versão publicada ainda busca relatos/secagens indiscriminadamente. Não considerar a experiência global pronta.
+Os testes do usuário no Mural e em Designações demonstraram que identificação visual da área não equivale a compreensão nem consulta dessa área. As consultas fixas foram substituídas por ferramentas escolhidas pelo modelo. Não considerar a experiência global pronta: a cobertura e os testes de aceitação seguem abaixo.
 
-- [ ] Substituir consultas fixas por ferramentas selecionadas pelo modelo conforme intenção e conversa.
-- [ ] Compartilhar regras de timeline/designações entre a interface e a consulta autorizada.
-- [ ] Fornecer filtros, janela/card e horário locais como contexto estruturado, sem confiar no navegador para autorização.
+- [x] Substituir consultas fixas por ferramentas selecionadas pelo modelo conforme intenção e conversa.
+- [x] Compartilhar regras de timeline/designações entre a interface e a consulta autorizada.
+- [x] Fornecer filtros, janela/card e horário locais como contexto estruturado, sem confiar no navegador para autorização.
 - [ ] Consultar mural, designações pessoais, relatos, secagens, frota, voos e ferramentaria com paginação, escopo e falhas explícitos.
 - [ ] Ampliar navegação e preenchimento conectado aos formulários; preservar edição concorrente, desfazer e assinaturas existentes.
-- [ ] Retirar widgets sem relação com o pedido e melhorar apresentação da conversa.
+- [x] Retirar widgets sem relação com o pedido e melhorar apresentação da conversa.
 - [ ] Testar linguagem natural com modelo real, continuações, troca de tela, ambiguidade, ausência de dados e permissões por cargo/base.
 - [ ] Verificar celular/desktop, testes de regressão, build e publicação. Registrar exatamente quais capacidades passaram; não equiparar testes simulados à qualidade real do assistente.
 
@@ -338,3 +338,15 @@ O inventário é inicial: cada linha deve ser desdobrada nos formulários, campo
 - Migração remota `20260910021455_assistant_toolroom_read` aplicada. Endpoint somente de leitura, com identidade ativa, cargo/base e escopo pessoal para mecânico/auxiliar; não retorna fotos/URLs nem executa limpeza. CLI indisponível neste ambiente: arquivo local usa a versão gerada pelo serviço de migrações. Verificação real em transação revertida passou com role authenticated; anon não pode executar. Advisor registra SECURITY DEFINER acessível a authenticated: uso intencional, pois as tabelas não são expostas diretamente; a função valida identidade/base e não concede permissões de escrita. Demais avisos preexistentes não foram alterados.
 - Validação: 121 testes unitários/de rotas passaram; navegador 390/1366 verificou formulário, desfazer, edição concorrente, revisão, histórico e cards. SQL real verificou os SELECTs como authenticated. Build preliminar passou. APIs do modelo simuladas nos testes de navegador; aceitação com OpenAI real e publicação desta revisão ainda pendentes.
 - Pendências da revisão: acervo técnico por operador, lavagem por histórico completo, integração de todos os campos do Cockpit/coordenação/administração, continuação da conversa durante navegação, cobertura completa de anexos e testes reais por cargo. Nenhuma alegação de equivalência ao ChatGPT ou conclusão global.
+
+### 09/09/2026 — validação real da estrutura de consultas
+
+- Produção: `9740a51abb6a102ef9d5944dc7038c4068603798`, deployment `dpl_FryNT2NCj75XrxcfF1yz79yXhnvg`, READY com alias principal. Consulta de Ferramentaria usa a migração `20260910021455_assistant_toolroom_read.sql`, aplicada e validada como authenticated.
+- Testes com OpenAI e sessão real de administrador: Mural respondeu “Nada novo na timeline de Jacarepaguá para hoje”, coerente com a tela; “tem alguma designação para mim pendente” não confundiu tarefa com relato; continuação “e relato técnico do cht, tem?” localizou PR-CHT / Altimetro e trouxe o card correto.
+- Formulário real de nova atividade: frase informal preencheu Procedimentos, PR-CHT, finalidade, TC 123 e rotina. Desfeito e cancelado; nenhuma atividade operacional foi criada. Conversas pessoais de teste permanecem no histórico.
+- Abertura por comando ainda falhou no primeiro teste. O botão abriu corretamente. Após uma primeira correção, o modelo escreveu “abri” sem executar navegação. Falha identificada pelos logs; não considerar navegação por comando aprovada nessa publicação.
+- Segunda publicação: `79e0e100f0bfae9968e7519e1dccd2472e0445b2`, deployment `dpl_26CVVGYbsvnjGV5eiGtWMrodXWRn`, READY. Até três imagens/PDF por mensagem no assistente geral e nos formulários genéricos, 2 MB somados; áudio continua transcrito. Datas impossíveis rejeitadas, revalidação do formulário e diagnósticos de nomes/estados de ferramentas sem conteúdo das conversas nos logs.
+- 123 testes passaram. Navegador em 390/1366 px verificou preenchimento, desfazer, edição concorrente, revisão de registro e múltiplos anexos com APIs simuladas. Build passou e fixtures foram removidas antes de publicar.
+- Próxima correção em andamento: destino de abertura estruturado na resposta, com reconsulta obrigatória de acesso; integração dos campos declarados no Cockpit. Ainda não publicar como concluído até testar.
+
+- Cockpit implementado localmente: campos declarados de preparação, ocorrência, documentos, diário, contadores, jornada, licenças/certificados e cadastros. Somente rascunho; campos derivados, ciência e assinatura ficam fora da ferramenta. Números, datas, URLs, opções e prefixo vinculado ao voo são validados. 124 testes, lint/TypeScript/build e navegador 390/1366 px aprovados; APIs simuladas no teste do Cockpit, sem gravação de operação. Fixtures removidas antes do build.

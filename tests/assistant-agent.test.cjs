@@ -5,11 +5,25 @@ const queries=load('src/lib/assistant-queries.ts'),selectors=load('src/lib/wall-
 const actor={employeeNumber:'42',accessProfile:'mechanic',assignedBase:'Macaé',fleets:['S92']};
 const args=(dataset,extra={})=>({dataset,query:null,prefix:null,base:null,from:null,until:null,status:'all',mine:false,offset:0,id:null,...extra});
 const at='2026-09-09T20:00:00Z';
+test('Cockpit drafts cover every declared kind without exposing signature or derived fields',()=>{
+ const helper=load('src/lib/assistant-cockpit.ts'),cockpit=load('src/lib/cockpit.ts');
+ for(const kind of Object.keys(cockpit.cockpitFields)){
+  const entry={id:'entry1',kind,flight_id:null,revision:2,data:{}};
+  const form=helper.cockpitAssistantForm(entry,{},[{prefix:'PR-CHT'}]);
+  assert.ok(Object.keys(form.fields).length>0);assert.equal(form.revision,2);assert.equal(form.mode,'draft');
+  for(const field of ['acknowledgment','preparedAt','maintenanceId','externalStatus','elapsedMinutes'])assert.equal(form.fields[field],undefined);
+  assert.throws(()=>helper.cockpitAssistantPatch(form,entry,{acknowledgment:'signed'}));
+ }
+ const entry={id:'entry1',kind:'duty',revision:0,flight_id:null,data:{}},form=helper.cockpitAssistantForm(entry,{},[]);
+ assert.deepEqual(helper.cockpitAssistantPatch(form,entry,{flightMinutes:'90',presentation:'2026-09-09T07:30:00-03:00'}),{flightMinutes:'90',presentation:'2026-09-09T07:30:00-03:00'});
+ assert.throws(()=>helper.cockpitAssistantPatch(form,entry,{flightMinutes:'-2'}));assert.throws(()=>helper.cockpitAssistantPatch(form,entry,{presentation:'07:30'}));assert.throws(()=>helper.cockpitAssistantPatch(form,entry,{date:'2026-02-30'}));
+ const occurrence={...entry,kind:'occurrence',flight_id:'flight1'};assert.equal(helper.cockpitAssistantForm(occurrence,{},[{prefix:'PR-CHT'}]).fields.prefix,undefined);
+});
 test('opening a historical card revalidates its current access and blocks revoked records',async()=>{
  const id='11111111-1111-4111-8111-111111111111';
  for(const allowed of [true,false]){
-  let turn=0,reads=0;
-  const result=await agent.runAssistantAgent({apiKey:'test',model:'test',message:'abre esse relato',media:[],history:[{message:'tem relato do cht?',reply:`Sim.\n\n[PR-CHT](flight-ia://maintenance/${id})`}],actor,context:{},navigationEnabled:true,signal:new AbortController().signal,deps:{query:async q=>{reads++;assert.equal(q.id,id);assert.equal(q.dataset,'maintenance');assert.equal(q.status,'all');return {status:'available',items:[],complete:true,cards:allowed?[{kind:'maintenance',id,title:'PR-CHT',detail:'Macaé'}]:[]};},search:()=>[],fetcher:async()=>Response.json({status:'completed',output:turn++===0?[{type:'function_call',name:'abrir_registro',call_id:'open',arguments:JSON.stringify({kind:'maintenance',id})}]:[{type:'message',content:[{type:'output_text',text:JSON.stringify({reply:allowed?'Abrindo o relato.':'Registro indisponível.',targets:[]})}]}]})}});
+  let reads=0;
+  const result=await agent.runAssistantAgent({apiKey:'test',model:'test',message:'abre esse relato',media:[],history:[{message:'tem relato do cht?',reply:`Sim.\n\n[PR-CHT](flight-ia://maintenance/${id})`}],actor,context:{},navigationEnabled:true,signal:new AbortController().signal,deps:{query:async q=>{reads++;assert.equal(q.id,id);assert.equal(q.dataset,'maintenance');assert.equal(q.status,'all');return {status:'available',items:[],complete:true,cards:allowed?[{kind:'maintenance',id,title:'PR-CHT',detail:'Macaé'}]:[]};},search:()=>[],fetcher:async()=>Response.json({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({reply:'Abrindo o relato.',targets:[],openTarget:{kind:'maintenance',id}})}]}]})}});
   assert.equal(reads,1);assert.deepEqual(result.navigation,allowed?{kind:'maintenance',id}:null);
  }
 });

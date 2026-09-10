@@ -1,0 +1,7 @@
+'use client';
+import {CockpitEditor} from '@/components/cockpit';
+import {AssistantWorkspaceProvider,AssistantTarget} from '@/components/assistant-workspace';
+import type {SupabaseClient} from '@supabase/supabase-js';
+const entries:unknown[]=[];
+const client={auth:{getSession:async()=>({data:{session:{access_token:'synthetic'}}})},rpc:async(name:string,args?:{p_action:string;p_payload:Record<string,string>})=>{let data:unknown=[];if(name==='refresh_current_device')data={employeeNumber:'TEST'};if(args?.p_action==='create_conversation')data={id:args.p_payload.id,title:'Teste',context_id:args.p_payload.contextId,context_kind:'general',created_at:new Date().toISOString(),updated_at:new Date().toISOString()};if(args?.p_action==='list')data=entries;if(args?.p_action==='append'){data={id:entries.length+1,message:args.p_payload.message,reply:args.p_payload.reply,created_at:new Date().toISOString()};entries.push(data);}return {data,error:null};}} as unknown as SupabaseClient;
+export default function Page(){return <AssistantWorkspaceProvider><AssistantTarget id="root" label="Cockpit" priority={0} revision="1" content={null}/><CockpitEditor client={client} entry={{id:'test-cockpit',kind:'preparation',flight_id:'flight1',subject:null,revision:0,data:{},created_by:'',updated_by:'',updated_at:''}} requireSignature={async()=>{throw Error('No save allowed in this fixture');}} onClose={()=>{}} onSaved={async()=>{throw Error('No save allowed');}}/></AssistantWorkspaceProvider>;}
