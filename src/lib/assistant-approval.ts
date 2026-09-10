@@ -3,6 +3,17 @@ const normalize=(text:string)=>text.normalize('NFD').replace(/[\u0300-\u036f]/g,
 export function approvesAssistantProposal(text:string){
  return /^(?:(?:sim|ok|certo|beleza),?\s+)?(?:pode (?:aplicar|preencher|colocar|atualizar|publicar|programar)|aplique|aplicar|confirmo|autorizo)(?: (?:isso|a sugestao|essa sugestao|as alteracoes|essas alteracoes|os campos|o texto|no texto|nos campos|no formulario))?$/.test(normalize(text));
 }
+/** Extended instructions require a fresh proposal so qualifiers are not lost to cached approval. For unsaved form fields only. */
+export function requestsAssistantFieldApplication(text:string){
+ const value=normalize(text);
+ if(/[?¿]|\b(?:nao|nunca|depois|talvez|caso|quando|antes|mas|porem|exceto|se)\b/.test(value))return false;
+ return /^(?:(?:sim|ok|certo|beleza),?\s+)?(?:pode (?:aplicar|preencher|colocar|atualizar)|aplique|preencha|atualize)\b/.test(value);
+}
+/** A model prepares a proposal; only the client knows whether fields actually changed. */
+export function pendingAssistantProposalReply(reply:string){
+ return /\b(?:apliquei|salvei|publiquei|atualizei|preenchi|deixei|foi aplicado|foram aplicad|campos (?:ja )?estao)\b/.test(normalize(reply))
+  ? 'Preparei a sugestão abaixo. Ela ainda não foi aplicada; confira e autorize para alterar os campos.' : reply;
+}
 export function requestsTechnicalReview(message:string,label:string){
  return /relato|tecnic|ocorrencia/i.test(normalize(label))&&/tudo (?:certo|correto|ok)|(?:esta|ta) (?:certo|correto|bom)|revis|referencia|valid|adequad|bem descrit|linguagem tecnic/.test(normalize(message));
 }

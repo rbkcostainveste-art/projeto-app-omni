@@ -8,6 +8,14 @@ test('approval is explicit; questions and negations never apply a pending propos
  assert.equal(approval.requestsTechnicalReview('Tá tudo certo assim?','Relato técnico'),true);
  assert.equal(approval.requestsTechnicalReview('Tem relato técnico?','Mural'),false);
 });
+test('extended form approval preserves qualifiers for a fresh proposal and reports actual application',()=>{
+ const text='Pode aplicar a redação que sugeriu aos campos, deixando a referência em branco. Sem salvar o registro.';
+ assert.equal(approval.requestsAssistantFieldApplication(text),true);
+ assert.equal(approval.approvesAssistantProposal(text),false,'qualifiers must not apply an old cached suggestion');
+ for(const value of ['Pode aplicar quando eu revisar','Pode aplicar se eu autorizar','Pode aplicar, mas deixe eu conferir','Pode aplicar?','Não pode aplicar','Pode aplicar depois','aplique antes de eu revisar'])assert.equal(approval.requestsAssistantFieldApplication(value),false,value);
+ assert.match(approval.pendingAssistantProposalReply('Pronto, deixei a redação ajustada nos campos.'),/ainda não foi aplicada/);
+ assert.equal(approval.pendingAssistantProposalReply('Como a intermitência se manifesta?'),'Como a intermitência se manifesta?');
+});
 test('partial plan is allowed, but missing operational fields prevent confirmation',()=>{
  const flight={prefix:'PR-QAT',date:'2026-09-10',departure:'',destination:'',duration:'',fuelAmount:''};
  assert.deepEqual(planning.planningErrors(flight,[{prefix:'PR-QAT'}]),[]);

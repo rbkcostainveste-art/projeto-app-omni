@@ -3,7 +3,8 @@
 import {useAssistantUploadCleanup} from "./use-assistant-upload-cleanup";
 import {FileAttachmentPicker,pastedFiles} from "./file-attachment-picker";
 import {prepareAssistantFiles,removeAssistantFiles} from "@/lib/assistant-uploads";
-import {approvesAssistantProposal} from "@/lib/assistant-approval";
+import {approvesAssistantProposal,requestsAssistantFieldApplication,pendingAssistantProposalReply} from "@/lib/assistant-approval";
+import {technicalAssistantFields} from "@/lib/assistant-technical-fields";
 import {useEffect, useLayoutEffect, useRef, useState} from "react";
 import type {SupabaseClient} from "@supabase/supabase-js";
 import {Bot, Send, ArrowLeft} from "lucide-react";
@@ -81,13 +82,15 @@ function ContextualConversation({open, context, client, user, disabled, onClose,
       if (!response.ok) throw Error(data.error || "A consulta falhou.");
       if (data.contextId !== context.id) throw Error("A resposta pertence a outro rascunho.");
       const answer = parseDraftAnswer(data);
-      pending.current={requestId:crypto.randomUUID(),message:[prompt,...attachments.map(a=>`Anexo: ${a.name}`)].filter(Boolean).join('\n'),reply:answer.reply};setNeedsSave(true);
+      let reply=answer.reply;
       setSources(data.sources ?? []);
       if (answer.proposal.title !== null || answer.proposal.description !== null || answer.proposal.prefix || answer.proposal.tc!==undefined&&answer.proposal.tc!==null || Object.keys(answer.proposal.technical||{}).length) {
-        if(approvesAssistantProposal(prompt)&&sameDraft(latest.current.fields,snapshot)){
+        if((approvesAssistantProposal(prompt)||requestsAssistantFieldApplication(prompt))&&sameDraft(latest.current.fields,snapshot)){
           const next=applyDraftProposal(latest.current.fields,snapshot,answer.proposal);setUndo({before:snapshot,after:next});latest.current.onApply(next,{title:snapshot.title,description:snapshot.description,spoken:prompt});setSuggestion(null);setNotice('Sugestão aplicada aos campos.');
-        }else setSuggestion({original:snapshot,proposal:answer.proposal,spoken:prompt});
+          reply='Apliquei a sugestão aos campos. O registro ainda não foi salvo.';
+        }else {setSuggestion({original:snapshot,proposal:answer.proposal,spoken:prompt});reply=pendingAssistantProposalReply(reply);}
       }
+      pending.current={requestId:crypto.randomUUID(),message:[prompt,...attachments.map(a=>`Anexo: ${a.name}`)].filter(Boolean).join('\n'),reply};setNeedsSave(true);
       await save();
       if(data.navigation&&navigate)await navigate(data.navigation,{conversationId,title,message:data.continuation?prompt:undefined});
     } catch (reason) {
@@ -139,7 +142,7 @@ function ContextualConversation({open, context, client, user, disabled, onClose,
     {history.error?<p role="alert">{history.error}</p>:null}{history.loading?<p role="status">Carregando histórico…</p>:null}{history.more?<button type="button" disabled={history.loading} onClick={()=>void history.older()}>Mensagens anteriores</button>:null}
     <div className="space-y-3" aria-live="polite"><AssistantHistory entries={history.entries} onOpenTarget={navigate?ref=>navigate(ref,{conversationId,title}):undefined}/></div>
     <TechnicalSourceList sources={sources}/>
-    {suggestion ? <section className="my-3 rounded-xl bg-white p-3">{stale?<p role="status">Você alterou o formulário durante a resposta. Mantive sua edição. Peça um novo ajuste.</p>:<><p className="text-sm font-bold">Sugestão para o relato</p>{Object.entries({...suggestion.proposal,...suggestion.proposal.technical}).filter(([,value])=>typeof value==="string").map(([key,value])=><p key={key} className="my-2 whitespace-pre-wrap text-sm"><strong>{key==="title"?"Título":key==="description"?"Descrição":key==="prefix"?"Aeronave":key==="tc"?"TC":key}: </strong>{value as string}</p>)}<p className="text-xs">Diga “pode aplicar” ou use o botão.</p><button type="button" className="min-h-11 text-blue-700 font-bold" disabled={disabled||busy} onClick={apply}>Aplicar sugestão aos campos</button></>}</section>:null}
+    {suggestion ? <section className="my-3 rounded-xl bg-white p-3">{stale?<p role="status">Você alterou o formulário durante a resposta. Mantive sua edição. Peça um novo ajuste.</p>:<><p className="text-sm font-bold">Sugestão para o relato</p>{Object.entries({...suggestion.proposal,...suggestion.proposal.technical}).filter(([,value])=>typeof value==="string").map(([key,value])=><p key={key} className="my-2 whitespace-pre-wrap text-sm"><strong>{key==="title"?"Título":key==="description"?"Descrição":key==="prefix"?"Aeronave":key==="tc"?"TC":technicalAssistantFields.find(field=>field[0]===key)?.[1]||key}: </strong>{value as string}</p>)}<p className="text-xs">Diga “pode aplicar” ou use o botão.</p><button type="button" className="min-h-11 text-blue-700 font-bold" disabled={disabled||busy} onClick={apply}>Aplicar sugestão aos campos</button></>}</section>:null}
     {notice ? <p role="status" className="my-3 text-sm text-green-800">{notice}</p> : null}
     {undo ? <button type="button" disabled={disabled || busy || !sameDraft(context.fields, undo.after)} onClick={() => {if (sameDraft(context.fields, undo.after)) {onApply(undo.before); setUndo(null); setNotice("Aplicação desfeita no rascunho.");}}} className="my-2 min-h-11 text-sm font-bold text-blue-800 disabled:opacity-40">Desfazer última aplicação</button> : null}
     <label className="mt-3 block text-sm font-semibold">Pedido à IA<textarea onPaste={e=>{const files=pastedFiles(e);if(files.length){e.preventDefault();void attachFiles(files);}}} aria-label="Pedido à IA" ref={input} maxLength={4000} rows={3} disabled={busy || disabled||needsSave||recording||transcribing} value={message} onChange={event => setMessage(event.target.value)} placeholder="Fale, escreva ou anexe. Ex.: CHT com vazamento na MGB" className={fieldClass}/></label>
