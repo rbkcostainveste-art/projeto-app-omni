@@ -434,3 +434,13 @@ Acompanhamento detalhado em [ajustes-2026-09-10.md](ajustes-2026-09-10.md).
 - Correção identificada na conferência real: autorização com instruções adicionais (por exemplo, “Pode aplicar a redação que sugeriu aos campos, deixando a referência em branco. Sem salvar o registro.”) gera uma proposta nova, preservando os qualificadores, e aplica somente aos campos. Confirmação de aplicação depende do resultado real da interface. Perguntas, condições e negações não aprovam a alteração. Regressão aprovada em 390/1366 px, incluindo desfazer e observação original; rótulos técnicos apresentados em português.
 
 - Aceite final em produção confirmado: commit `6f64121be1bf8b9779e1f351fdb431cb6bc58977`, deployment `dpl_Gn4ir4f2v8xbkRxGqn8ZeJXRgSGR`, READY. Na IA real do PR-CHT, a autorização completa preencheu título/descrição com “Indicação intermitente do altímetro durante o voo” e componente Altímetro, mantendo Documento e demais referências vazios. Desfazer restaurou “Altimetro / Intermitente em vôo” e componente vazio. Relato fechado sem Confirmar atualização; nenhuma execução nem alteração operacional foi salva. A conversa pessoal de teste permanece.
+
+
+### 10/09/2026 — usabilidade do relato, busca e importação
+
+- Relato principal no topo, comentários amigáveis e vinculação em janela própria com filtros progressivos. Busca paginada no banco respeita as permissões existentes, inclusive para registros antigos.
+- Enter envia; Shift+Enter quebra linha nos compositores de chat, comentários e IA. Formulários e confirmações técnicas mantêm o fluxo de salvar; seletores usam Enter para escolher.
+- Horários/datas são rejeitados como cliente/plataforma; importação preserva o valor original nas observações e deixa o destino desconhecido vazio. Voos incompletos continuam em Programado.
+- Seletor pesquisável de cliente/plataforma e mitigação de interferência de preenchimento automático. LastPass no Chrome do usuário ainda não reproduzido; não se afirma controle sobre a extensão.
+- 149 testes de lógica/rotas, TypeScript e lint aprovados. Navegador 390/1366: relato, comentários, busca remota/paginação/período, seletores, importação/conversa e regressão do mural aprovados. Teste SQL real com rollback confirmou acesso por base, ordenação e paginação.
+- Detalhes e limites em [revisao-usabilidade-2026-09-10.md](revisao-usabilidade-2026-09-10.md). Publicação autorizada; conferência do deployment ao concluir esta entrega.

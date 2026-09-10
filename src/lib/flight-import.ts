@@ -1,10 +1,11 @@
 import {parseAssistantAttachments} from './contextual-assistant';
+import {isScheduleValue} from './flight-destination';
 export const importFields = ["prefix", "date", "departure", "destination", "duration", "fuelAmount", "fuelUnit"] as const;
 export type ImportField = typeof importFields[number];
 export type ImportedFlight = Record<ImportField, string | null> & {notes: string;rowId?:string|null};
 export type ImportAttachment = {name: string; data: string};
 export type FlightIdentity = {id?:string;prefix: string; date: string; departure: string; cancelled?: boolean; deletedAt?: string};
-export const importLabels: Record<ImportField,string> = {prefix:"Prefixo", date:"Data", departure:"Saída", destination:"Destino", duration:"Duração (HH:MM)", fuelAmount:"Abastecimento", fuelUnit:"Unidade"};
+export const importLabels: Record<ImportField,string> = {prefix:"Prefixo", date:"Data", departure:"Saída", destination:"Cliente / plataforma", duration:"Duração (HH:MM)", fuelAmount:"Abastecimento", fuelUnit:"Unidade"};
 function obj(value: unknown): Record<string,unknown> {if (!value || typeof value !== "object" || Array.isArray(value)) throw Error("Dados inválidos."); return value as Record<string,unknown>;}
 function str(value: unknown, max: number): string {if (typeof value !== "string" || value.length > max) throw Error("Texto inválido ou acima do limite.");return value;}
 export function parseFlightImportRequest(value: unknown) {
@@ -23,7 +24,8 @@ export function parseFlightImportAnswer(value: unknown): {reply: string; flights
     if(Object.keys(row).some(key=>![...importFields,"notes","rowId"].includes(key))) throw Error("Campo não permitido na importação.");
     const fields=Object.fromEntries(importFields.map(key=>[key,row[key]===null?null:str(row[key],key==="destination"?300:80)])) as Record<ImportField,string|null>;
     if(row.rowId!==undefined&&row.rowId!==null&&(typeof row.rowId!=='string'||!/^[-a-zA-Z0-9_:]{1,100}$/.test(row.rowId)))throw Error('Identificador inválido.');
-    return {...fields,...(row.rowId?{rowId:row.rowId as string}:{}),prefix:fields.prefix?.trim().toUpperCase()||null,notes:str(row.notes,1200)};
+    const originalNotes=str(row.notes,1200),invalidDestination=isScheduleValue(fields.destination);
+    return {...fields,destination:invalidDestination?null:fields.destination,...(row.rowId?{rowId:row.rowId as string}:{}),prefix:fields.prefix?.trim().toUpperCase()||null,notes:invalidDestination?`O valor "${fields.destination}" parece um horário/data, não um destino. Cliente/plataforma ficou em branco para revisão.\n${originalNotes}`.slice(0,1200):originalNotes};
   });
   return {reply,flights};
 }
@@ -37,7 +39,8 @@ export function importIssues(row:ImportedFlight,aircraft:{prefix:string;availabl
   if(!row.prefix)issues.push("Prefixo ausente");else if(!aircraft.some(a=>a.prefix===row.prefix&&a.available!==false))issues.push("Prefixo não cadastrado ou indisponível");
   if(!row.date||!validDate(row.date))issues.push("Data ausente ou inválida");
   if(!row.departure||!validClock(row.departure))issues.push("Saída ausente ou inválida");
-  if(!row.destination?.trim())issues.push("Destino ausente");
+  if(!row.destination?.trim())issues.push("Cliente/plataforma não informado");
+  else if(isScheduleValue(row.destination))issues.push("O destino contém um horário ou data; confira o cliente/plataforma");
   if(!row.duration||!validClock(row.duration)||row.duration==="00:00")issues.push("Duração ausente ou inválida");
   if(row.fuelAmount!==null&&row.fuelAmount!==""&&(!/^\d+(?:\.\d+)?$/.test(row.fuelAmount)||!Number.isFinite(Number(row.fuelAmount))))issues.push("Abastecimento inválido");
   if(row.fuelAmount&&(!row.fuelUnit||!["L","lb","kg"].includes(row.fuelUnit)))issues.push("Confira a unidade de abastecimento");
@@ -48,7 +51,7 @@ export function importedDraftFields(row:ImportedFlight,aircraft:{prefix:string;a
   return {
     prefix:aircraft.some(a=>a.prefix===row.prefix&&a.available!==false)?row.prefix!:"",
     date:row.date&&validDate(row.date)?row.date:"", departure:row.departure&&validClock(row.departure)?row.departure:"",
-    destination:row.destination||"", duration:row.duration&&validClock(row.duration)&&row.duration!=="00:00"?row.duration:"",
+    destination:isScheduleValue(row.destination)?"":row.destination||"", duration:row.duration&&validClock(row.duration)&&row.duration!=="00:00"?row.duration:"",
     fuelAmount:unit&&row.fuelAmount&&/^\d+(?:\.\d+)?$/.test(row.fuelAmount)&&Number.isFinite(Number(row.fuelAmount))?row.fuelAmount:"",
     fuelUnit:unit||"L", commander:"",copilot:"",flightAttendant:"",repeat:false,weekdays:[] as number[],weekdayTimes:{} as Record<number,string>,
   };
