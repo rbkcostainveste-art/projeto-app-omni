@@ -1,6 +1,8 @@
 # Preparação do voo e prazo MEL
 
-Implementação de 10/09/2026 no projeto local. Banco remoto do protótipo: migração `20260910213111_mel_and_preparation`, aplicada e verificada. O frontend hospedado não foi publicado nesta tarefa.
+> Atualização de 10/09/2026: a confirmação final manual foi substituída por conclusão automática após os OKs aplicáveis, sem impedimento técnico. Consulte [Preparação operacional simples](preparacao-simples-2026-09-10.md). A seção de preparação abaixo registra o funcionamento anterior; os controles MEL continuam válidos.
+
+Implementação de 10/09/2026. Banco remoto do protótipo: migrações `20260910213111_mel_and_preparation` e `20260910213657_mel_alert_stage_deduplication`, aplicadas e verificadas. Interface publicada em https://passagem-de-pista.vercel.app pelo commit `fb3d851d79acfead7803d37f91aad6a94fc79d7c`; deployment `dpl_8KWDsMgNKjZpA3C3pavRvHx1CgKQ`, produção READY e domínio vinculado.
 
 ## Preparação
 
@@ -26,6 +28,7 @@ Cron existente a cada cinco minutos: aviso antecipado configurável (24/48/72 ho
 - `tests/preparation-mel-browser.cjs`: componentes reais com RPC simulado; confirmação e reconfirmação, campos MEL, ausência de overflow/erros em 390 e 1366 pixels. Fixture em `tests/fixtures/preparation-mel-page.tsx`; montar uma rota temporária somente de desenvolvimento para reproduzir.
 - TypeScript verificado com `tsconfig.preparation.json`, que exclui tipos `.next/dev` antigos de rotas de captura removidas. Lint das alterações sem erros; avisos anteriores permanecem em componentes existentes.
 - Advisors: nenhum erro; avisos prévios do projeto e aviso esperado de RPC SECURITY DEFINER autenticado. Novo RPC verifica identidade e autorização por voo; helpers privados sem EXECUTE para clientes. Não representa certificação de segurança do projeto inteiro.
+- Publicação: build Next.js de produção e TypeScript concluídos; os 9 testes Node também passaram na cópia isolada dos arquivos enviados. Página publicada aberta em sessão autenticada: sincronização ativa, Trilhos e acompanhamento técnico carregados, sem erros/avisos no console na inspeção. Nenhum erro de runtime encontrado na Vercel entre o envio e a consulta. O filtro atual do Trilho não retornou voos, e a sessão de administrador não permite confirmar diferimento: não foi criada preparação nem alterada MEL em produção para esta inspeção. A validação completa das regras está nos testes de componentes e de banco descritos acima.
 
 Supabase CLI indisponível no ambiente: migração aplicada via MCP, nome/versão recuperados do histórico do servidor e cópia idêntica preservada no repositório. Nenhum dado operacional real foi alterado pelos testes.
 

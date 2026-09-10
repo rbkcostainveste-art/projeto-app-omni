@@ -54,11 +54,42 @@ begin
  foreach k in array array['drain','fuel','inspection','hums'] loop
   v:=public.record_flight_operation(other_id,gen_random_uuid(),(v->>'revision')::int,'approve',jsonb_build_object('key',k,'result','ok'));
  end loop;
- if v#>>'{preparation,blocked}'<>'false' or v#>>'{preparation,canConfirm}'<>'true' or v#>>'{preparation,status}'='ready' then raise exception 'Checklist incorrectly auto-confirmed';end if;
- v:=public.record_flight_operation(other_id,gen_random_uuid(),(v->>'revision')::int,'confirm_preparation',jsonb_build_object('fingerprint',v#>>'{preparation,fingerprint}'));
- if v#>>'{preparation,status}'<>'ready' then raise exception 'Final confirmation broken';end if;
+ if v#>>'{preparation,blocked}'<>'false' or v#>>'{preparation,canConfirm}'<>'true' or v#>>'{preparation,status}'<>'ready' then raise exception 'Complete checklist did not become ready automatically';end if;
+ execute 'reset role';
+ if exists(select 1 from public.flight_operation_records r,jsonb_array_elements(r.audit) a where r.flight_id=other_id and a->>'action'='confirm_preparation') then raise exception 'Automatic readiness invented a signature';end if;
+ execute 'set local role authenticated';
  v:=public.record_flight_operation(other_id,gen_random_uuid(),(v->>'revision')::int,'approve','{"key":"fuel","result":"no"}');
- if v#>>'{preparation,status}'<>'reconfirm' or v#>>'{preparation,checklist,approved}'<>'3' or v#>>'{preparation,pending,0}'<>'fuel' then raise exception 'Reconfirmation/count regression';end if;
+ if v#>>'{preparation,status}'<>'pending' or v#>>'{preparation,checklist,approved}'<>'3' or v#>>'{preparation,pending,0}'<>'fuel' then raise exception 'Reconfirmation/count regression';end if;
+ v:=public.record_flight_operation(other_id,gen_random_uuid(),(v->>'revision')::int,'approve','{"key":"fuel","result":"ok"}');
+ if v#>>'{preparation,status}'<>'ready' then raise exception 'Last OK did not restore readiness';end if;
+ perform set_config('request.jwt.claim.sub',adm::text,true);
+ perform public.mutate_shared_item('flights',other_id,'{"spot":"A3","departure":"11:00"}','update');
+ v:=public.get_flight_operation(other_id);
+ if v#>>'{preparation,status}'<>'ready' then raise exception 'Routine planning added an extra confirmation';end if;
+ perform public.mutate_shared_item('flights',other_id,'{"fuelAmount":"900","fuelUnit":"L"}','update');
+ v:=public.get_flight_operation(other_id);
+ if v#>>'{preparation,status}'<>'pending' or v#>>'{preparation,checklist,approved}'<>'3' then raise exception 'Fuel change did not invalidate only fuel';end if;
+ perform public.mutate_shared_item('flights',other_id,'{"fuelAmount":null,"fuelUnit":null}','update');
+ v:=public.get_flight_operation(other_id);
+ if v#>>'{preparation,status}'='ready' then raise exception 'Reverting fuel resurrected a stale approval';end if;
+ perform set_config('request.jwt.claim.sub',mech::text,true);
+ v:=public.record_flight_operation(other_id,gen_random_uuid(),(v->>'revision')::int,'approve','{"key":"fuel","result":"ok"}');
+ if v#>>'{preparation,status}'<>'ready' then raise exception 'New fuel approval did not restore readiness';end if;
+ perform set_config('request.jwt.claim.sub',adm::text,true);
+ perform public.mutate_shared_item('flights',other_id,jsonb_build_object('prefix',prefix||'Y'),'update');
+ perform public.mutate_shared_item('flights',other_id,jsonb_build_object('prefix',prefix||'X'),'update');
+ v:=public.get_flight_operation(other_id);
+ if v#>>'{preparation,checklist,approved}'<>'0' then raise exception 'Aircraft change carried over signatures';end if;
+ perform set_config('request.jwt.claim.sub',mech::text,true);
+ foreach k in array array['drain','fuel','inspection','hums'] loop
+  v:=public.record_flight_operation(other_id,gen_random_uuid(),(v->>'revision')::int,'approve',jsonb_build_object('key',k,'result','ok'));
+ end loop;
+ if v#>>'{preparation,status}'<>'ready' then raise exception 'Rechecked aircraft did not become ready';end if;
+ perform set_config('request.jwt.claim.sub',adm::text,true);
+ insert into public.maintenance_records(id,record_type,base,model,prefix,priority,status,title,tc,created_by,data)
+ values(gen_random_uuid(),'fault','QA-visibility','S92',prefix||'X','not_logged','open','QA new blocker','QA-TC',actor,'{"description":"QA","entries":[]}');
+ v:=public.get_flight_operation(other_id);
+ if v#>>'{preparation,status}'<>'pending' or v#>>'{preparation,checklist,approved}'<>'4' or v#>>'{preparation,blocked}'<>'true' then raise exception 'New technical blocker failed to revoke ready';end if;
  execute 'reset role';
  if has_function_privilege('anon','public.get_preparation_statuses(text[])','execute') or has_function_privilege('authenticated','private.preparation_state(text)','execute') then raise exception 'Helper or anonymous access exposed';end if;
 end $$;

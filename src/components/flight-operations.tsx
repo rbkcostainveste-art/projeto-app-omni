@@ -31,7 +31,7 @@ export function FlightOperations({supabase,flight,showDocumentation=false,readOn
   finally{lock.current=false;setBusy(false);}
  }
  const disabled=busy||retry||readOnly||Boolean(flight.cancelled);
- const maintenanceReady=!flight.maintenancePostId||Boolean(data?.events.length)||(data?.checks.fuel?.approval?.result==='ok'&&data?.checks.inspection?.approval?.result==='ok');
+ const maintenanceReady=!flight.maintenancePostId||Boolean(data?.events.length)||(data?.checks.fuel?.approval?.result==='ok'&&data?.checks.inspection?.approval?.result==='ok'&&!data?.checks.fuel?.approval?.invalidated&&!data?.checks.inspection?.approval?.invalidated);
  const sign=(key:string,result:string)=>void requireSignature(()=>send('approve',{key,result}),'Conferir e assinar verificação');
  const controls=<>{error?<p role="alert" className="my-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>:null}{retry?<div className="my-3 flex gap-2"><button disabled={busy} onClick={()=>void send('',{})} className="rounded-xl border px-3 py-2 text-sm">Tentar novamente</button><button disabled={busy} onClick={()=>{pending.current=null;setRetry(false);setError('');void load();}} className="rounded-xl border px-3 py-2 text-sm">Recarregar e conferir</button></div>:null}</>;
  if(!data)return <div className="rounded-xl border p-3 text-sm">{error||'Carregando registros operacionais…'}<button onClick={()=>void load()} className="ml-3 text-blue-700">Recarregar</button></div>;
@@ -44,9 +44,10 @@ export function FlightOperations({supabase,flight,showDocumentation=false,readOn
    const expectedKind=key==='inspection'?(data.first?'preflight':'between'):key;
    const expectedTarget=key==='inspection'&&!data.first?data.previousFlightId:flight.id;
    const stored=data.checks[key];const check=stored?.kind===expectedKind&&stored.targetFlightId===expectedTarget?stored:undefined;
-   const approved=check?.approval;const execution=check?.execution;
+   const approved=check?.approval?.invalidated?undefined:check?.approval;const execution=check?.execution;
    const tone=approved?(approved.result==='ok'?'border-green-300 bg-green-50':'border-red-300 bg-red-50'):execution?'border-orange-400 bg-orange-50':'border-[#d8e4ef] bg-[#f8fbff]';
    return <div key={key} className={`rounded-xl border p-3 ${tone}`}><h4 className="text-sm font-extrabold">{labels[key]}</h4><p className="mt-1 text-xs font-semibold">{approved?(approved.result==='ok'?'Conferido · OK':'Conferido · não conforme'):execution?'Executado · aguardando conferência':'Pendente'}</p>
+    {check?.approval?.invalidated?<p className="mt-2 text-xs text-amber-900">{check.approval.reason}</p>:null}
     {execution?<p className="mt-2 text-xs">Executor: mat. {execution.actor} · {new Date(execution.at).toLocaleString('pt-BR')}</p>:null}
     {approved?<p className="mt-2 text-xs">Assinatura: mat. {approved.actor} · {new Date(approved.at).toLocaleString('pt-BR')}</p>:null}
     {key==='inspection'&&!data.first?<p className="mt-2 text-xs text-[#60758c]">Esta assinatura marca o OK neste voo e fica vinculada ao anterior como inspeção após o voo para o EDB.</p>:null}
@@ -54,7 +55,7 @@ export function FlightOperations({supabase,flight,showDocumentation=false,readOn
     {data.canExecute&&['drain','hums'].includes(key)&&!approved?<button disabled={disabled||Boolean(execution)} onClick={()=>void send('execute',{key})} className="mt-3 min-h-11 w-full rounded-lg bg-orange-100 px-3 text-xs font-bold text-orange-900 disabled:opacity-40">Registrar execução · sem assinatura</button>:null}
    </div>;
   })}</div>
-  <div className="rounded-xl border p-3"><PreparationBadge state={data.preparation}/><p className="mt-2 text-xs text-slate-600">Conclusão da preparação deste voo. A liberação técnica e as verificações do piloto permanecem separadas.</p>{data.preparation?.blocked?<p className="mt-2 text-xs text-red-800">Há pendência técnica: solicite avaliação antes de confirmar.</p>:null}{data.canSign?<button disabled={disabled||!data.preparation?.canConfirm||data.preparation?.status==='ready'} onClick={()=>void requireSignature(()=>send('confirm_preparation',{fingerprint:data.preparation?.fingerprint||''}),'Confirmar preparação concluída deste voo')} className="mt-3 min-h-11 w-full rounded-lg bg-emerald-700 px-3 py-2 text-sm font-bold text-white disabled:opacity-40">Confirmar preparação concluída</button>:null}</div>
+  <PreparationBadge state={data.preparation}/>
   {!open?controls:null}
   <button onClick={()=>setOpen(true)} className="min-h-12 w-full rounded-xl bg-[#1268d8] px-4 py-3 text-sm font-extrabold text-white">{data.events.length?'Eventos da operação':data.canPilot?'Acionar · registrar eventos':'Ver eventos da operação'}</button>
   {open?<OperationDialog title={`${flight.prefix} · ${flight.model}`} onClose={()=>{if(!busy)setOpen(false);}}>

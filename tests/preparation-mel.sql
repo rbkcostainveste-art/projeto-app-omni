@@ -17,18 +17,18 @@ begin
  foreach k in array array['drain','fuel','inspection','hums'] loop
   v:=public.record_flight_operation(fid,gen_random_uuid(),(v->>'revision')::int,'approve',jsonb_build_object('key',k,'result','ok'));
  end loop;
- if not (v#>>'{preparation,canConfirm}')::boolean then raise exception 'Complete checklist not eligible';end if;
+ if v#>>'{preparation,status}'<>'ready' then raise exception 'Complete checklist did not become ready';end if;
  req:=gen_random_uuid();v:=public.record_flight_operation(fid,req,(v->>'revision')::int,'confirm_preparation',jsonb_build_object('fingerprint',v#>>'{preparation,fingerprint}'));
  if v#>>'{preparation,status}'<>'ready' then raise exception 'Readiness missing';end if;
  v:=public.record_flight_operation(fid,req,0,'confirm_preparation',jsonb_build_object('fingerprint',v#>>'{preparation,fingerprint}'));if v#>>'{preparation,status}'<>'ready' then raise exception 'Retry not idempotent';end if;
  v:=public.record_flight_operation(fid,gen_random_uuid(),(v->>'revision')::int,'approve','{"key":"fuel","result":"no"}');
- if v#>>'{preparation,status}'<>'reconfirm' then raise exception 'Failed check did not revoke readiness';end if;
+ if v#>>'{preparation,status}'<>'pending' then raise exception 'Failed check did not revoke readiness';end if;
  v:=public.record_flight_operation(fid,gen_random_uuid(),(v->>'revision')::int,'approve','{"key":"fuel","result":"ok"}');
- if v#>>'{preparation,status}'='ready' then raise exception 'Restoring check resurrected readiness';end if;
+ if v#>>'{preparation,status}'<>'ready' then raise exception 'New approval did not restore readiness';end if;
  v:=public.record_flight_operation(fid,gen_random_uuid(),(v->>'revision')::int,'confirm_preparation',jsonb_build_object('fingerprint',v#>>'{preparation,fingerprint}'));
  perform set_config('request.jwt.claim.sub',adm::text,true);
  perform public.mutate_shared_item('flights',fid,'{"spot":"QA2"}','update');perform public.mutate_shared_item('flights',fid,'{"spot":null}','update');
- v:=public.get_flight_operation(fid);if v#>>'{preparation,status}'='ready' then raise exception 'Restoring plan resurrected readiness';end if;
+ v:=public.get_flight_operation(fid);if v#>>'{preparation,status}'<>'ready' then raise exception 'Position change required redundant confirmation';end if;
  denied:=false;begin perform public.record_flight_operation(fid,gen_random_uuid(),(v->>'revision')::int,'confirm_preparation',jsonb_build_object('fingerprint',v#>>'{preparation,fingerprint}'));exception when raise_exception then denied:=true;end;if not denied then raise exception 'Administrator signed preparation';end if;
  perform set_config('request.jwt.claim.sub',pilot::text,true);v:=public.get_preparation_statuses(array[fid]);if v ? fid then raise exception 'Unassigned pilot accessed readiness';end if;
  perform set_config('request.jwt.claim.sub',adm::text,true);

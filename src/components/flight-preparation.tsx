@@ -12,9 +12,12 @@ export function PreparationBadge({flightId,state}:{flightId?:string;state?:Prepa
  const blockers=value.blockers||[];
  const remaining=Math.max(0,(value.blockerCount||blockers.length)-blockers.length);
  return <span role="status" aria-label="Situação da preparação do voo" className="mt-2 block min-w-0 space-y-1.5 text-xs">
-  {value.checklist?<span className={`block rounded-lg px-2 py-2 font-bold ${complete?'bg-emerald-50 text-emerald-900':'bg-slate-100 text-slate-700'}`}>{complete?'✓ Checklist da manutenção concluído':'Checklist da manutenção'} · {value.checklist.approved}/{value.checklist.total} conferidos{value.pending.length?<span className="mt-1 block font-normal">Falta conferir: {pendingPreparationChecks(value)}.</span>:null}</span>:value.pending.length?<span className="block rounded-lg bg-slate-100 p-2 text-slate-700">Falta conferir: {pendingPreparationChecks(value)}.</span>:null}
+  <span className={`block rounded-lg px-2 py-2 font-bold ${complete||value.status==='ready'?'bg-emerald-50 text-emerald-900':'bg-slate-100 text-slate-700'}`}>
+   {value.status==='ready'?'✓ Preparação concluída':complete?'✓ Checklist da manutenção concluído':'Preparação pendente'}{value.checklist?` · ${value.checklist.approved}/${value.checklist.total} conferidos`:''}
+   {value.pending.length?<span className="mt-1 block font-normal">Falta conferir: {pendingPreparationChecks(value)}.</span>:null}
+  </span>
   {value.blocked?<span className="block rounded-lg border border-amber-200 bg-amber-50 px-2 py-2 text-amber-950"><strong className="block">⚠ Impedimento técnico</strong>{blockers.length?blockers.map((blocker,index)=><span key={index} className="mt-1 block break-words">{preparationBlockerText(blocker)}{blocker.ticketCode?<span className="block text-[10px]">{blocker.ticketCode}</span>:null}</span>):<span className="mt-1 block">Há pendência técnica. A manutenção precisa avaliar.</span>}{remaining?<span className="mt-1 block">E mais {remaining} ocorrência(s) com impedimento.</span>:null}</span>:null}
-  <span className={`block rounded-lg px-2 py-2 font-bold ${value.status==='ready'?'bg-emerald-100 text-emerald-900':value.status==='reconfirm'?'bg-amber-100 text-amber-900':'bg-slate-100 text-slate-700'}`}>{value.status==='ready'?'✓ Preparação concluída':value.status==='reconfirm'?'↻ Preparação precisa ser reconfirmada':'Aguardando confirmação final da manutenção'}{value.status==='reconfirm'&&value.reason?<span className="mt-1 block font-normal">{value.reason}</span>:null}{value.status==='ready'&&value.at?<span className="mt-1 block font-normal">{new Date(value.at).toLocaleString('pt-BR')} · mat. {value.actor}</span>:null}</span>
+  {value.status!=='ready'&&value.reason?<span className="block rounded-lg bg-slate-100 p-2 text-slate-700">{value.reason}</span>:null}
  </span>;
 }
 export function PreparationProvider({client,flights,onOpen,children}:{client:SupabaseClient|null;flights:{id:string;prefix:string;date:string;departure:string;cancelled?:boolean;deletedAt?:string}[];onOpen:(id:string)=>void;children:ReactNode}){
@@ -32,7 +35,7 @@ export function PreparationProvider({client,flights,onOpen,children}:{client:Sup
   const channel=client.channel(`preparation-${crypto.randomUUID()}`).on('postgres_changes',{event:'UPDATE',schema:'public',table:'shared_app_state'},changed).subscribe();
   return()=>{active=false;clearInterval(timer);window.removeEventListener('focus',changed);window.removeEventListener('preparation-updated',changed);void client.removeChannel(channel);};
  },[client,ids]);
- const items=flights.flatMap(f=>{const s=states[f.id];return s?.at&&['ready','reconfirm'].includes(s.status)?[{id:`${f.id}|${s.at}|${s.status}`,title:s.status==='ready'?'Preparação concluída':'Preparação precisa ser reconfirmada',description:`${f.prefix} · ${f.departure} · ${s.status==='ready'?'Conclusão informada pela manutenção':s.reason||'Confira as pendências'}`,at:s.at}]:[];});
+ const items=flights.flatMap(f=>{const s=states[f.id];return s?.at&&['ready','reconfirm'].includes(s.status)?[{id:`${f.id}|${s.at}|${s.status}`,title:s.status==='ready'?'Preparação concluída':'Preparação pendente',description:`${f.prefix} · ${f.departure} · ${s.status==='ready'?'Checklist da manutenção concluído':s.reason||'Confira as pendências'}`,at:s.at}]:[];});
  useScreenNotifications('preparation',items,id=>onOpen(id.split('|')[0]));
  return <PreparationContext.Provider value={states}>{children}</PreparationContext.Provider>;
 }
