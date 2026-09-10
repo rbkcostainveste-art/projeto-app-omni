@@ -1,6 +1,6 @@
 # Revisão de usabilidade e importação — 10/09/2026
 
-Ajustes autorizados após a conferência da versão 75e7bdfc. Implementação e testes desta entrega abaixo; publicação conferida ao concluir o deploy.
+Ajustes autorizados após a conferência da versão 75e7bdfc. Implementação, testes e publicação conferidos nesta entrega.
 
 ## Aplicado
 
@@ -35,3 +35,6 @@ A captura do usuário identifica a extensão LastPass. A proteção dos campos f
 Esta entrega corrige os itens desta revisão. Ela não declara concluído todo o inventário mais amplo de IA e regras operacionais do aplicativo.
 
 Build definitivo aprovado, sem a rota de testes.
+
+
+Publicação confirmada: commit `b2283d1560a804a02c35f1ec44409764c4f67e83`, deployment `dpl_AN1gLE7V61Hybjfs3L1pwHo3BZxN`, READY no domínio principal. Conferência no navegador de produção: relato PR-CHT com título/descrição primeiro, comentários amigáveis e busca de ocorrências respondendo sem erro. Janela de busca fechada sem vincular; nenhuma alteração operacional foi salva.

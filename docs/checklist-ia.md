@@ -443,4 +443,7 @@ Acompanhamento detalhado em [ajustes-2026-09-10.md](ajustes-2026-09-10.md).
 - Horários/datas são rejeitados como cliente/plataforma; importação preserva o valor original nas observações e deixa o destino desconhecido vazio. Voos incompletos continuam em Programado.
 - Seletor pesquisável de cliente/plataforma e mitigação de interferência de preenchimento automático. LastPass no Chrome do usuário ainda não reproduzido; não se afirma controle sobre a extensão.
 - 149 testes de lógica/rotas, TypeScript e lint aprovados. Navegador 390/1366: relato, comentários, busca remota/paginação/período, seletores, importação/conversa e regressão do mural aprovados. Teste SQL real com rollback confirmou acesso por base, ordenação e paginação.
-- Detalhes e limites em [revisao-usabilidade-2026-09-10.md](revisao-usabilidade-2026-09-10.md). Publicação autorizada; conferência do deployment ao concluir esta entrega.
+- Detalhes e limites em [revisao-usabilidade-2026-09-10.md](revisao-usabilidade-2026-09-10.md). Publicação confirmada abaixo.
+
+
+Publicação confirmada: commit `b2283d1560a804a02c35f1ec44409764c4f67e83`, deployment `dpl_AN1gLE7V61Hybjfs3L1pwHo3BZxN`, READY no domínio principal. Conferência no navegador de produção: relato PR-CHT com título/descrição primeiro, comentários amigáveis e busca de ocorrências respondendo sem erro. Janela de busca fechada sem vincular; nenhuma alteração operacional foi salva.
