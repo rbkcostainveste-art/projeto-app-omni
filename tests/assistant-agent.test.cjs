@@ -6,6 +6,30 @@ const actor={employeeNumber:'42',accessProfile:'mechanic',assignedBase:'Macaé',
 const args=(dataset,extra={})=>({dataset,query:null,prefix:null,base:null,from:null,until:null,status:'all',mine:false,offset:0,id:null,...extra});
 const at='2026-09-09T20:00:00Z';
 
+test('incomplete washing evidence cannot omit its coverage limitation from the final answer',async()=>{
+ let step=0;const result=await agent.runAssistantAgent({apiKey:'test',model:'test',message:'quais foram lavados hoje?',media:[],history:[],actor,context:{},navigationEnabled:false,signal:new AbortController().signal,deps:{query:async()=>({status:'available',items:[],cards:[],complete:false}),search:()=>[],fetcher:async()=>Response.json({status:'completed',output:step++===0?[{type:'function_call',call_id:'wash',name:'consultar_app',arguments:JSON.stringify(args('washing',{status:'open'}))}]:[{type:'message',content:[{type:'output_text',text:JSON.stringify({reply:'Não encontrei registros.',targets:[],openTarget:null})}]}]})}});
+ assert.match(result.reply,/não cobre todo esse período/);assert.match(result.reply,/não confirma a lista completa/);
+});
+
+test('Cockpit queries use authorized RPC, redact undeclared/media fields and preserve flight calendar dates',async()=>{
+ const row={id:'duty:42:2026-09-10',kind:'preparation',subject:'42',created_by:'42',flight_id:'f1',data:{flightNumber:'101',secret:'never',mediaJson:'private file',plannedFuel:100},revision:1,updated_at:at};let denied=false;
+ const c={rpc:(name,p)=>{assert.equal(name,'cockpit');assert.equal(p.p_action,'list');return {abortSignal:async()=>({data:[row],error:denied?Error('denied'):null})};},from:()=>({select:()=>({eq:()=>({abortSignal:()=>({maybeSingle:async()=>({data:{flights:[{id:'f1',date:'2026-09-10',prefix:'PR-CHT',base:'Macaé',sensitive:'never'}]},error:null})})})})})};
+ const result=await queries.assistantQuery(c,actor,args('cockpit',{mine:true,from:'2026-09-10',prefix:'CHT'}),new AbortController().signal);
+ assert.equal(result.items.length,1);assert.equal(result.items[0].date,'2026-09-10');assert.equal(result.items[0].fields.plannedFuel,100);assert.equal(JSON.stringify(result).includes('never'),false);assert.equal(JSON.stringify(result).includes('private file'),false);assert.equal(result.cards[0].kind,'cockpit');
+ const targets=load('src/lib/assistant-targets.ts');assert.equal(targets.splitTargetLinks(`[Jornada](flight-ia://cockpit/${row.id})`).cards[0].id,row.id);assert.equal(queries.validateQuery(args('cockpit',{id:row.id})).id,row.id);
+ denied=true;assert.equal((await queries.assistantQuery(c,actor,args('cockpit'),new AbortController().signal)).status,'unavailable');
+});
+
+test('passage patch preserves untouched checks, records explicit quantities and requires real wash confirmation',()=>{
+ const helper=load('src/lib/assistant-passage.ts');const item={id:'p1',prefix:'PR-CHT',revision:3,updatedAt:at,checks:{compressorWash:'pending',hums:'no',discrepancy:'no'},actions:{},notes:'Anterior',discrepancyDetails:''};const labels={compressorWash:'Compressores lavados',hums:'HUMS',discrepancy:'Caso técnico'};
+ const form=helper.passageAssistantForm(item,labels);assert.equal(form.mode,'record');assert.equal(form.fields.hums.value,'Não');
+ const result=helper.passageAssistantPatch(item,labels,{compressorWash:'Sim',engine1Amount:'0,5',engine1Unit:'L'},'42',at);
+ assert.deepEqual(result.washes,['compressorWash']);assert.equal(result.next.checks.hums,'no');assert.equal(result.next.notes,'Anterior');assert.deepEqual(result.next.oilAdditions.engine1,{amount:0.5,unit:'L'});assert.equal(result.next.actions.compressorWash.employeeNumber,'42');assert.equal(item.checks.compressorWash,'pending');
+ assert.deepEqual(helper.passageAssistantPatch(result.next,labels,{compressorWash:'Sim'},'42',at).washes,[]);
+ assert.throws(()=>helper.passageAssistantPatch(item,labels,{engine1Amount:'-2'},'42',at));assert.throws(()=>helper.passageAssistantPatch(item,labels,{dryingRun:'Sim'},'42',at));assert.throws(()=>helper.passageAssistantPatch(item,labels,{discrepancyDetails:'Vazamento'},'42',at));
+ assert.equal(helper.passageAssistantPatch(item,labels,{discrepancy:'Sim',discrepancyDetails:'Vazamento'},'42',at).next.discrepancyDetails,'Vazamento');
+});
+
 test('wash queries preserve coverage, cycle cards and database authorization errors',async()=>{
  const id='11111111-1111-4111-8111-111111111111';let fail=false,parameters;
  const c={rpc:(name,p)=>{assert.equal(name,'assistant_wash_read');parameters=p;return {abortSignal:async()=>({error:fail?Error('denied'):null,data:{status:'available',items:[{prefix:'PR-CHT',base:'Macaé',dryingTaskId:id},{prefix:'PR-CHT',base:'Macaé',dryingTaskId:id}],complete:false,coverageStartsAt:at}})};}};

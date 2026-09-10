@@ -1,3 +1,4 @@
+import {queryCockpit} from './assistant-cockpit-query';
 import {queryToolroom} from './assistant-toolroom';
 import {queryWashing} from './assistant-washing';
 import {queryOperations} from './assistant-operations';
@@ -9,7 +10,7 @@ import {assistantDryingContext} from './assistant-drying-context';
 import type {AssistantRecordCard} from './assistant-targets';
 
 export type AssistantActor={employeeNumber:string;accessProfile:string;assignedBase:string;fleets:string[]};
-export type QueryArgs={dataset:'timeline'|'notices'|'assignments'|'maintenance'|'drying'|'washing'|'fleet'|'flights'|'passage'|'tools';query:string|null;prefix:string|null;base:string|null;from:string|null;until:string|null;status:'open'|'closed'|'all';mine:boolean;offset:number;id:string|null};
+export type QueryArgs={dataset:'timeline'|'notices'|'assignments'|'maintenance'|'drying'|'washing'|'fleet'|'flights'|'passage'|'tools'|'cockpit';query:string|null;prefix:string|null;base:string|null;from:string|null;until:string|null;status:'open'|'closed'|'all';mine:boolean;offset:number;id:string|null};
 export type QueryResult={status:string;items:unknown[];cards:AssistantRecordCard[];complete:boolean;notice?:string;[key:string]:unknown};
 const globalRoles=['admin','app_manager','maintenance_director','maintenance_manager'];
 const localRoles=['mechanic','maintenance_assistant','maintenance_coordinator','maintenance_leader','maintenance_inspector','leader_inspector','toolroom','dispatch'];
@@ -18,10 +19,10 @@ const matches=(text:string,query:string|null)=>!query||normalizeSearch(text).inc
 export function validateQuery(value:unknown):QueryArgs {
  if(!value||typeof value!=='object')throw Error('Consulta inválida.');
  const q=value as QueryArgs;
- if(!['timeline','notices','assignments','maintenance','drying','washing','fleet','flights','passage','tools'].includes(q.dataset)||!['open','closed','all'].includes(q.status)||typeof q.mine!=='boolean'||!Number.isInteger(q.offset)||q.offset<0||q.offset>500)throw Error('Consulta inválida.');
+ if(!['timeline','notices','assignments','maintenance','drying','washing','fleet','flights','passage','tools','cockpit'].includes(q.dataset)||!['open','closed','all'].includes(q.status)||typeof q.mine!=='boolean'||!Number.isInteger(q.offset)||q.offset<0||q.offset>500)throw Error('Consulta inválida.');
  for(const key of ['query','prefix','base','from','until','id'] as const)if(q[key]!==null&&(typeof q[key]!=='string'||q[key]!.length>160))throw Error('Filtro inválido.');
  if(q.id&&['maintenance','drying','tools'].includes(q.dataset)&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q.id))throw Error('id deve ser o UUID interno do card, nunca código PAN ou prefixo. Para buscar CHT, use prefix=CHT e id=null.');
- if(q.id&&!/^[a-zA-Z0-9_-]{1,160}$/.test(q.id))throw Error('Identificador inválido.');
+ if(q.id&&!(q.dataset==='cockpit'?/^[a-zA-Z0-9_:-]{1,160}$/:/^[a-zA-Z0-9_-]{1,160}$/).test(q.id))throw Error('Identificador inválido.');
  for(const key of ['from','until'] as const)if(q[key]&&(!/^\d{4}-\d{2}-\d{2}$/.test(q[key]!)||!Number.isFinite(Date.parse(q[key]!))||new Date(q[key]!).toISOString().slice(0,10)!==q[key]))throw Error('Data inválida.');
  if(q.from&&q.until&&q.from>q.until)throw Error('Período inválido.');
  return q;
@@ -35,6 +36,7 @@ const failed=(status='unavailable',notice='A consulta não foi concluída. Não 
 export async function assistantQuery(client:SupabaseClient,actor:AssistantActor,q:QueryArgs,signal:AbortSignal,timeZone='America/Sao_Paulo'):Promise<QueryResult>{
  const {employeeNumber:employee,accessProfile:role,assignedBase:base}=actor;
  try {
+  if(q.dataset==='cockpit')return await queryCockpit(client,actor,q,signal,timeZone);
   if(q.dataset==='washing')return await queryWashing(client,actor,q,signal,timeZone);
   if(q.dataset==='tools')return await queryToolroom(client,actor,q,signal,timeZone);
   if(['fleet','flights','passage'].includes(q.dataset))return await queryOperations(client,actor,q,signal,calendarDay(new Date(),timeZone));

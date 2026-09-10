@@ -1,0 +1,10 @@
+"use client";
+import {useState} from 'react';
+import type {SupabaseClient} from '@supabase/supabase-js';
+import type {Passage} from '@/components/runway-handover';
+import {AssistantWorkspaceProvider,AssistantTarget} from '@/components/assistant-workspace';
+import {PassageAssistant} from '@/components/assistant-passage';
+const entries:unknown[]=[];
+const client={auth:{getSession:async()=>({data:{session:{access_token:'synthetic'}}})},rpc:async(_name:string,args:{p_action:string;p_payload:Record<string,string>})=>{let data:unknown=[];if(args.p_action==='create_conversation')data={id:args.p_payload.id,title:'Teste',created_at:new Date().toISOString(),updated_at:new Date().toISOString()};if(args.p_action==='list')data=entries;if(args.p_action==='append'){data={id:entries.length+1,message:args.p_payload.message,reply:args.p_payload.reply,created_at:new Date().toISOString()};entries.push(data);}return {data,error:null};}} as unknown as SupabaseClient;
+function Form(){const [item,setItem]=useState({id:'p1',prefix:'PR-CHT',model:'S92',base:'Macaé',date:'2026-09-10',revision:1,updatedAt:'2026-09-10T00:00:00Z',checks:{compressorWash:'pending',discrepancy:'no'},actions:{},notes:'',discrepancyDetails:''} as Passage);const [signed,setSigned]=useState(0);return <main><AssistantTarget id="root" label="Passagem" priority={0} revision="1" content={null}/><PassageAssistant item={item} labels={{compressorWash:'Compressores lavados',discrepancy:'Caso técnico'}} client={client} user="TEST" readOnly={false} onChange={(_id,change)=>setItem(old=>({...change(old),revision:(old.revision||0)+1}))} requireSignature={async action=>{await action();setSigned(n=>n+1);return true;}}/><output aria-label="Estado da lavagem">{item.checks.compressorWash}</output><output aria-label="Quantidade motor 1">{item.oilAdditions?.engine1.amount??''}</output><output aria-label="Assinaturas">{signed}</output></main>;}
+export default function Page(){return <AssistantWorkspaceProvider><Form/></AssistantWorkspaceProvider>;}

@@ -10,10 +10,10 @@ export async function GET(request:Request){
  try{access=await assistantAccess(request);}catch{return json({error:'Entre novamente para abrir o registro.'},401);}
  const params=new URL(request.url).searchParams,ref=parseTarget({kind:params.get('kind'),id:params.get('id')});
  if(!ref)return json({error:'Card inválido.'},400);
- if(ref.kind==='wall'||ref.kind==='activity'||ref.kind==='flight'||ref.kind==='passage'||ref.kind==='tool'){
+ if(ref.kind==='wall'||ref.kind==='activity'||ref.kind==='flight'||ref.kind==='passage'||ref.kind==='tool'||ref.kind==='cockpit'){
   try{
    const actor=await assistantActor(access.client,access.employee);
-   const result=await assistantQuery(access.client,actor,{dataset:ref.kind==='wall'?'timeline':ref.kind==='activity'?'assignments':ref.kind==='flight'?'flights':ref.kind==='tool'?'tools':'passage',query:null,prefix:null,base:null,from:null,until:null,status:'all',mine:false,offset:0,id:ref.id},request.signal);
+   const result=await assistantQuery(access.client,actor,{dataset:ref.kind==='wall'?'timeline':ref.kind==='activity'?'assignments':ref.kind==='flight'?'flights':ref.kind==='tool'?'tools':ref.kind==='cockpit'?'cockpit':'passage',query:null,prefix:null,base:null,from:null,until:null,status:'all',mine:false,offset:0,id:ref.id},request.signal);
    if(result.status==='unavailable')return json({error:'Não foi possível verificar o registro.'},503);
    if(result.status!=='available'||!result.items.length)return json({error:'Registro indisponível ou sem acesso.'},404);
    const item=result.items[0] as {date?:string;prefix?:string};

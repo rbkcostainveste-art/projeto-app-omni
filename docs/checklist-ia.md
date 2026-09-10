@@ -15,7 +15,7 @@ Marcar uma etapa concluída somente após atender aos critérios descritos. Não
 
 ## Situação atual — revisão profunda em andamento
 
-Última publicação confirmada: `8d2178428d5af38adf5b88e3b11c574390ceacf0`, deployment `dpl_2PeywX3C5N3m7iXZiSE9xxpXGpQe`, READY no domínio principal. Atualizações seguintes em validação são descritas no final.
+Última publicação confirmada: `d83c340618cb1aa8f32d9f2f23891700380b0a3c`, deployment `dpl_EWuhwqYWT5Q6HinLKLQ3HvdVAAXf`, READY no domínio principal. Atualizações seguintes em validação são descritas no final.
 
 - [x] Substituir consultas fixas por ferramentas escolhidas conforme a pergunta. Remover bloco de secagens sem relação com o pedido.
 - [x] Compartilhar regras da timeline e das designações entre a tela e a consulta. Contexto inclui área, filtros, card e fuso; identidade/base vêm do servidor.
@@ -24,7 +24,7 @@ Marcar uma etapa concluída somente após atender aos critérios descritos. Não
 - [x] Preenchimento dos campos conectados em nova atividade, publicação, relato, execução/comentário/geração de ação técnica, observações de passagem, empréstimo/retirada de ferramentas e formulários declarados do Cockpit. Campos exatos e limitações constam nas entregas abaixo.
 - [x] Até três imagens/PDF de 2 MB somados no assistente geral; áudio transcrito com envio automático ou revisão. Proteção de edição concorrente, desfazer e preservação dos controles existentes de salvar/assinar.
 - [x] Testes reais: timeline, designações pessoais, continuação para PR-CHT, abertura do relato, ferramentaria e rascunho de nova atividade. Sessão de administrador; consultas de mecânico também verificadas como authenticated no banco em transação revertida.
-- [ ] Completar todos os campos e ações ainda sem adaptador: checks de passagem, ferramentas catalogadas, demais controles de coordenação/administração, notas e ações encadeadas entre telas.
+- [ ] Completar todos os campos e ações ainda sem adaptador: ferramentas catalogadas, demais controles de coordenação/administração, notas e ações encadeadas entre telas.
 - [ ] Continuidade da mesma conversa ao abrir um registro e executar um pedido composto como “abra e preencha X/Y/Z”, sem repetir a solicitação.
 - [x] Captura prospectiva de confirmações autenticadas de lavagem e vínculo ao ciclo de secagem, instalada em 10/09. Consulta em validação de publicação. O histórico anterior permanece incompleto e não será inventado.
 - [ ] Ampliar consultas do Cockpit e demais módulos além dos conjuntos já conectados. Ter preenchimento no formulário não significa ter consulta de todo o módulo.
@@ -368,3 +368,13 @@ O inventário é inicial: cada linha deve ser desdobrada nos formulários, campo
 - Advisor: RLS sem políticas nas tabelas de eventos/cobertura é intencional (acesso direto revogado); RPC SECURITY DEFINER tem identidade ativa e escopo de base conferidos. Não abrir SELECT genérico para eliminar esse aviso.
 - Corrigido identificador de Passagem de Pista: banco utiliza texto, não exclusivamente UUID. Destinos preservam o ID e continuam rejeitando caminhos inválidos.
 - 128 testes de lógica/rotas aprovados; TypeScript aprovado. Publicação da consulta de lavagem ainda em andamento nesta entrada.
+
+
+### Passagem de Pista e consulta do Cockpit — próxima publicação
+
+- Passagem: todos os checks visíveis no card, observações, caso técnico e quantidades/unidades de óleo dos dois motores. Proposta revisada antes de aplicar; lavagem mantém confirmação específica e assinatura. Validação rejeita valor negativo, campo invisível e descrição de caso técnico sem marcação correspondente. Não inferir check executado por dados incompletos.
+- Testes de navegador 390/1366: cancelar não altera registro; confirmar aplica a quantidade e chama assinatura uma vez. Corrigido painel da IA que sobrepunha a janela de confirmação. São dados/APIs simulados, sem lavagem operacional criada.
+- Cockpit: consulta usa RPC existente com private.cockpit_access sob JWT; campos declarados apenas, sem URLs/anexos/campos desconhecidos. Navegação abre editor original. Testes de navegador abriram a qualificação correta em 390/1366. Teste SQL de piloto confirmou isolamento de qualificações pessoais/listagem, em transação revertida.
+- Lavagens: d83c340 READY; pergunta real escolheu washing (logs), mas modelo omitiu a cobertura parcial. Acrescentada limitação explícita no servidor quando o histórico consultado não cobre o período, sem depender dessa decisão do modelo.
+- Migration 20260910033825 alinha coordenação ao acesso já existente à fila de secagem. Teste SQL da coordenação aprovado. As permissões locais e de tripulação permanecem verificadas na função.
+- 130 testes aprovados e build aprovado antes do ajuste final da limitação; última regressão/publicação em andamento. Não concluir escopo integral: conversas entre telas, demais formulários, consulta dos outros conjuntos e testes reais por cargo ainda pendentes.
