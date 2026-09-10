@@ -13,25 +13,25 @@ Criado em 09/09/2026, antes da implementação da transformação contextual. Es
 
 Marcar uma etapa concluída somente após atender aos critérios descritos. Não usar uma porcentagem geral enquanto o inventário de campos/cards não estiver completo. Um botão visível não comprova integração funcional.
 
-## Situação atual — assistente da tela
+## Situação atual — revisão profunda em andamento
 
-### Revisão profunda autorizada — em andamento
+Última publicação confirmada: `504557b5a7e59e9f087783d122a0161dd0fd51fd`, deployment `dpl_Fr7jz1VjbjmuzhjBksAnfwjJwcKx`, READY no domínio principal. Atualizações seguintes em validação são descritas no final.
 
-Os testes do usuário no Mural e em Designações demonstraram que identificação visual da área não equivale a compreensão nem consulta dessa área. As consultas fixas foram substituídas por ferramentas escolhidas pelo modelo. Não considerar a experiência global pronta: a cobertura e os testes de aceitação seguem abaixo.
+- [x] Substituir consultas fixas por ferramentas escolhidas conforme a pergunta. Remover bloco de secagens sem relação com o pedido.
+- [x] Compartilhar regras da timeline e das designações entre a tela e a consulta. Contexto inclui área, filtros, card e fuso; identidade/base vêm do servidor.
+- [x] Consultas autorizadas de Mural, avisos, designações, relatos, secagens atuais, frota, voos, passagem e ferramentaria. Limites/parcialidade são explícitos; isso não é acesso ilimitado nem histórico completo de lavagens.
+- [x] Navegação estruturada com reconsulta de acesso. Teste real “abre esse relato do CHT” abriu o registro original; logs confirmaram consulta, destino e GET autorizado. Outros destinos foram verificados por código/testes, sem afirmar aceite real de todos.
+- [x] Preenchimento dos campos conectados em nova atividade, publicação, relato, execução/comentário/geração de ação técnica, observações de passagem, empréstimo/retirada de ferramentas e formulários declarados do Cockpit. Campos exatos e limitações constam nas entregas abaixo.
+- [x] Até três imagens/PDF de 2 MB somados no assistente geral; áudio transcrito com envio automático ou revisão. Proteção de edição concorrente, desfazer e preservação dos controles existentes de salvar/assinar.
+- [x] Testes reais: timeline, designações pessoais, continuação para PR-CHT, abertura do relato, ferramentaria e rascunho de nova atividade. Sessão de administrador; consultas de mecânico também verificadas como authenticated no banco em transação revertida.
+- [ ] Completar todos os campos e ações ainda sem adaptador: checks de passagem, ferramentas catalogadas, demais controles de coordenação/administração, notas e ações encadeadas entre telas.
+- [ ] Continuidade da mesma conversa ao abrir um registro e executar um pedido composto como “abra e preencha X/Y/Z”, sem repetir a solicitação.
+- [ ] Histórico completo de lavagens por dia e cruzamento com secagem. Abertura da pendência não comprova uma lavagem naquele dia.
+- [ ] Ampliar consultas do Cockpit e demais módulos além dos conjuntos já conectados. Ter preenchimento no formulário não significa ter consulta de todo o módulo.
+- [ ] Aceite real por todos os cargos/bases, imagens/documentos representativos, voz em ambiente de pista e câmera ao vivo integrada às mesmas ações.
+- [ ] Planilhas, documentos maiores, acervo técnico do operador, acompanhamento de consumo e cobertura integral do inventário.
 
-- [x] Substituir consultas fixas por ferramentas selecionadas pelo modelo conforme intenção e conversa.
-- [x] Compartilhar regras de timeline/designações entre a interface e a consulta autorizada.
-- [x] Fornecer filtros, janela/card e horário locais como contexto estruturado, sem confiar no navegador para autorização.
-- [ ] Consultar mural, designações pessoais, relatos, secagens, frota, voos e ferramentaria com paginação, escopo e falhas explícitos.
-- [ ] Ampliar navegação e preenchimento conectado aos formulários; preservar edição concorrente, desfazer e assinaturas existentes.
-- [x] Retirar widgets sem relação com o pedido e melhorar apresentação da conversa.
-- [ ] Testar linguagem natural com modelo real, continuações, troca de tela, ambiguidade, ausência de dados e permissões por cargo/base.
-- [ ] Verificar celular/desktop, testes de regressão, build e publicação. Registrar exatamente quais capacidades passaram; não equiparar testes simulados à qualidade real do assistente.
-
-- Publicado e conferido no site: botão flutuante por área/janela, conversa direta e preenchimento de prefixo/título/descrição no relato novo; título/descrição na revisão de relato existente.
-- Texto, imagens/PDF e voz; título automático e histórico por contexto; desfazer e proteção de edições concorrentes. 107 testes e verificações de navegador em celular/desktop aprovados.
-- Teste com OpenAI real: CHT selecionou PR-CHT e preencheu o rascunho. Teste desfeito sem salvar relato. Ajuste adicional de linguagem e nomes legíveis das áreas publicado.
-- **Ainda parcial:** ações de escrita dos demais módulos, consultas completas, navegação por qualquer card, continuidade entre rascunho e registro salvo e administração do acervo. O botão global não comprova cobertura desses fluxos.
+A experiência global ainda não está concluída. As aprovações de build e testes não equivalem a comprovar entendimento de qualquer pedido. As entradas antigas abaixo são histórico; prevalecem os registros de publicação e validação mais recentes.
 
 ## Base já entregue antes desta transformação
 
@@ -350,3 +350,10 @@ O inventário é inicial: cada linha deve ser desdobrada nos formulários, campo
 - Próxima correção em andamento: destino de abertura estruturado na resposta, com reconsulta obrigatória de acesso; integração dos campos declarados no Cockpit. Ainda não publicar como concluído até testar.
 
 - Cockpit implementado localmente: campos declarados de preparação, ocorrência, documentos, diário, contadores, jornada, licenças/certificados e cadastros. Somente rascunho; campos derivados, ciência e assinatura ficam fora da ferramenta. Números, datas, URLs, opções e prefixo vinculado ao voo são validados. 124 testes, lint/TypeScript/build e navegador 390/1366 px aprovados; APIs simuladas no teste do Cockpit, sem gravação de operação. Fixtures removidas antes do build.
+
+### 09/09/2026 — unificação do relato e ampliação de rascunhos (em validação)
+
+- O assistente dentro do relato passou ao mesmo agente de consultas do painel geral. Mantém autenticação, leitura autorizada e rejeição de versão obsoleta antes do modelo; consulta técnica só busca biblioteca quando necessária. Não altera registros confirmados por conta própria.
+- TC conectada no novo relato, inclusive aplicação/desfazer e detecção de edição concorrente. Prefixos fonéticos generalizados, com ambiguidade preservada e escolha limitada ao catálogo.
+- Rascunhos adicionais: comentários, edição de publicação e execução de atividade no Mural. Os botões preparam os campos; enviar/publicar/registrar continuam pelos fluxos existentes.
+- Teste de interface do relato em 390/1366 px passou com TC, desfazer e resposta obsoleta. Testes da rota agora percorrem o agente compartilhado com provedor simulado, incluindo falhas, quotas e preparação sem gravação.

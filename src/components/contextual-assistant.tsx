@@ -73,7 +73,7 @@ function ContextualConversation({open, context, client, user, disabled, onClose,
       const answer = parseDraftAnswer(data);
       pending.current={requestId:crypto.randomUUID(),message:[prompt,...attachments.map(a=>`Anexo: ${a.name}`)].filter(Boolean).join('\n'),reply:answer.reply};setNeedsSave(true);
       setSources(data.sources ?? []);
-      if (answer.proposal.title !== null || answer.proposal.description !== null || answer.proposal.prefix) {
+      if (answer.proposal.title !== null || answer.proposal.description !== null || answer.proposal.prefix || answer.proposal.tc!==undefined&&answer.proposal.tc!==null) {
         if(sameDraft(latest.current.fields,snapshot)){
           const next=applyDraftProposal(latest.current.fields,snapshot,answer.proposal);
           setUndo({before:snapshot,after:next});latest.current.onApply(next);
