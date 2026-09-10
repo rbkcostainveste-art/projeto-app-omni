@@ -16,7 +16,7 @@ const assert=require('node:assert/strict');
  await page.route('**/api/ai/context',r=>{consults++;const p=r.request().postDataJSON();assert.equal(p.context.record.id,'00000000-0000-4000-8000-000000000123');assert.equal(p.context.record.revision,1);return r.fulfill({status:fail?502:200,json:fail?{error:'Consulta indisponível'}:{contextId:p.context.id,reply:'Organizei o texto para revisão.',proposal:{title:'HSI intermitente em voo',description:'Intermitência observada no HSI.'},sources:[]}});});
  await page.goto((process.env.TEST_BASE_URL||'http://localhost:3210')+'/technical-test');
  await page.getByRole('button',{name:'Conversar com IA neste relato',exact:true}).click();
- await page.getByRole('button',{name:'Nova conversa',exact:true}).click();await page.getByRole('button',{name:'Criar conversa',exact:true}).click();
+ await page.getByRole('button',{name:'Nova conversa',exact:true}).click();
  const input=page.getByLabel('Pedido à IA',{exact:true});
  assert.equal(await page.getByLabel('Modo de envio do áudio').inputValue(),'review');
  async function record(){await page.getByRole('button',{name:'Gravar áudio',exact:true}).click();await page.getByRole('button',{name:'Enviar gravação',exact:true}).waitFor();await page.waitForTimeout(1100);await page.getByRole('button',{name:'Enviar gravação',exact:true}).click();}

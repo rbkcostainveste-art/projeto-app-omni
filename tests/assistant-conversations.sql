@@ -2,7 +2,7 @@
 begin;
 do $$
 declare owner_id uuid; owner_employee text; other_id uuid; other_employee text;
- a uuid:=gen_random_uuid(); b uuid:=gen_random_uuid(); request_id uuid:=gen_random_uuid(); result jsonb;
+ auto_id uuid:=gen_random_uuid(); a uuid:=gen_random_uuid(); b uuid:=gen_random_uuid(); request_id uuid:=gen_random_uuid(); result jsonb;
 begin
  select d.auth_user_id,d.employee_number into owner_id,owner_employee from public.device_identities d join public.authorized_users u using(employee_number) where u.active limit 1;
  select d.auth_user_id,d.employee_number into other_id,other_employee from public.device_identities d join public.authorized_users u using(employee_number) where u.active and d.employee_number<>owner_employee limit 1;
@@ -22,7 +22,22 @@ begin
   perform public.personal_assistant('append',jsonb_build_object('employee',owner_employee,'conversationId',b,'requestId',request_id,'message','Synthetic wrong conversation','reply','Wrong'));
   raise exception 'Cross-conversation request accepted';
  exception when others then if sqlerrm<>'Resposta pertence a outra conversa' then raise;end if;end;
+ perform public.personal_assistant('create_conversation',jsonb_build_object('employee',owner_employee,'id',auto_id,'title','Nova conversa','autoTitle',true));
+ perform public.personal_assistant('append',jsonb_build_object('employee',owner_employee,'conversationId',auto_id,'requestId',gen_random_uuid(),'message',E'  Relato  do\nCHT  ','reply','Resposta de teste'));
+ if (select title from public.personal_assistant_conversations where id=auto_id)<>'Relato do CHT' then raise exception 'Automatic title missing';end if;
+ perform public.personal_assistant('rename_conversation',jsonb_build_object('employee',owner_employee,'conversationId',auto_id,'title','Título escolhido'));
+ perform public.personal_assistant('append',jsonb_build_object('employee',owner_employee,'conversationId',auto_id,'requestId',gen_random_uuid(),'message','Outra mensagem','reply','Outra resposta'));
+ if (select title from public.personal_assistant_conversations where id=auto_id)<>'Título escolhido' then raise exception 'Manual title overwritten';end if;
+ if (select title from public.personal_assistant_conversations where id=a)<>'Synthetic A' then raise exception 'Existing title overwritten';end if;
+ begin
+  perform public.personal_assistant('rename_conversation',jsonb_build_object('employee',owner_employee,'conversationId',a,'title',' '));
+  raise exception 'Empty title accepted';
+ exception when others then if sqlerrm<>'Título inválido' then raise;end if;end;
  perform set_config('request.jwt.claim.sub',other_id::text,true);
+ begin
+  perform public.personal_assistant('rename_conversation',jsonb_build_object('employee',other_employee,'conversationId',auto_id,'title','Intrusion'));
+  raise exception 'Other owner could rename';
+ exception when others then if sqlerrm<>'Conversa indisponível' then raise;end if;end;
  begin
   perform public.personal_assistant('list',jsonb_build_object('employee',other_employee,'conversationId',a));
   raise exception 'Other owner could read';

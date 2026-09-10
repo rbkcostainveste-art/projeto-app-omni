@@ -6,7 +6,7 @@ export function useAssistantHistory(client:SupabaseClient|null,user:string,conve
  const [entries,setEntries]=useState<Entry[]>([]),[loading,setLoading]=useState(true),[more,setMore]=useState(false),[error,setError]=useState('');
  const rpc=useCallback(async(action:string,payload:Record<string,unknown>={})=>{if(!client||!conversationId)throw Error('Selecione uma conversa.');const {data,error}=await client.rpc('personal_assistant',{p_action:action,p_payload:{...payload,employee:user,conversationId}});if(error)throw Error(error.message);return data;},[client,user,conversationId]);
  useEffect(()=>{let live=true;void rpc('list').then(data=>{if(live){setEntries(data);setMore(data.length===50);setError('');}}).catch(e=>{if(live)setError(e.message);}).finally(()=>{if(live)setLoading(false);});return()=>{live=false;};},[rpc]);
- async function append(entry:{requestId:string;message:string;reply:string}){const saved=await rpc('append',entry) as Entry;setEntries(items=>[...items.filter(i=>i.id!==saved.id),saved].sort((a,b)=>a.id-b.id));}
+ async function append(entry:{requestId:string;message:string;reply:string}){const saved=await rpc('append',entry) as Entry;setEntries(items=>[...items.filter(i=>i.id!==saved.id),saved].sort((a,b)=>a.id-b.id));window.dispatchEvent(new Event('flight-ia-assistant-history-saved'));}
  async function older(){setLoading(true);try{const data=await rpc('list',{before:entries[0]?.id}) as Entry[];setEntries(items=>[...new Map([...data,...items].map(e=>[e.id,e])).values()].sort((a,b)=>a.id-b.id));setMore(data.length===50);setError('');}catch(e){setError((e as Error).message);}finally{setLoading(false);}}
  return {entries,loading,more,error,append,older};
 }

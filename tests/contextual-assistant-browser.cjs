@@ -10,8 +10,6 @@ const assert=require('node:assert/strict');
   await description.fill('Vi óleo perto do filtro.');
   await page.getByRole('button',{name:'Conversar com IA neste relato'}).click();
   await page.getByRole('button',{name:'Nova conversa',exact:true}).click();
-  await page.getByLabel('Título da conversa',{exact:true}).fill('Revisão do relato');
-  await page.getByRole('button',{name:'Criar conversa',exact:true}).click();
   await page.getByLabel('Pedido à IA',{exact:true}).fill('Organize este relato');
   await page.getByRole('button',{name:'Enviar à IA',exact:true}).click();
   await page.getByRole('button',{name:'Processando…'}).waitFor();
@@ -28,7 +26,7 @@ const assert=require('node:assert/strict');
   await page.getByText('O rascunho mudou. Peça uma nova sugestão antes de aplicar.',{exact:true}).waitFor();assert.equal(await page.getByRole('button',{name:'Aplicar ao rascunho',exact:true}).isDisabled(),true);
   await page.screenshot({path:`contextual-assistant-${width}.png`,fullPage:true});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
-  await page.getByRole('button',{name:'Fechar assistente do relato'}).click();await page.getByRole('button',{name:/Revisão do relato/}).click();await page.getByText('Outra proposta.',{exact:false}).waitFor();
+  await page.getByRole('button',{name:'Fechar assistente do relato'}).click();await page.getByRole('button',{name:/^Nova conversa.*[0-9]/}).click();await page.getByText('Outra proposta.',{exact:false}).waitFor();
   assert.deepEqual(errors,[]);await page.close();console.log('PASS contextual draft',width);
  }
 }finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

@@ -42,7 +42,7 @@ O usuário autorizou aplicar e publicar todo o escopo. Essa autorização inclui
 
 Conversas por assunto e os dois modos de áudio do assistente geral já estão publicados. As linhas antigas com “local” abaixo são histórico da primeira entrega e não significam publicação pendente.
 
-### Em implementação nesta rodada
+### Ampliação publicada nesta rodada
 
 - [x] Conectar IA à revisão de título/descrição do relato existente, usando a confirmação, assinatura e versão do fluxo atual.
 - [x] Reconsultar o registro no servidor com JWT do usuário, cargo/base e versão antes de chamar o modelo.
@@ -50,7 +50,8 @@ Conversas por assunto e os dois modos de áudio do assistente geral já estão p
 - [x] Testes de interface de registros existentes e áudio aprovados em 390/1366 px, com APIs e microfone simulados; regressão do novo relato aprovada.
 - [x] 104 testes de lógica/rotas aprovados; TypeScript e lint dos arquivos alterados sem erros.
 - [x] Build de produção aprovado, sem páginas sintéticas de teste.
-- [ ] Publicação desta ampliação em andamento; confirmar deployment abaixo.
+- [x] Publicado: commit `ea7c73bc415511dd4907a343894f8bc5738eb188`, deployment `dpl_XWjE3uST1pkv7eAQTnBB3MqeFWJr` READY, domínio de produção associado.
+- [x] Conferência real de interface: botão da IA no relato do PR-CHT e lista vinculada ao registro. Sem alterar o relato, criar conversa ou chamar o modelo nessa conferência.
 - [ ] Continuar a expansão e o inventário detalhado acima; esta rodada não encerra o escopo global.
 
 ### Escopo ampliado aprovado pelo usuário
@@ -78,7 +79,7 @@ Esses itens estão pendentes de implementação salvo indicação explícita. As
 - [x] Conferência na sessão real do site: lista de conversas, histórico anterior preservado, duas opções de áudio e botão “Conversar com IA neste relato” abrindo o painel vinculado ao rascunho.
 - [x] 102 testes de lógica/rotas aprovados antes da publicação. Privacidade no banco e testes simulados de interface registrados nas etapas abaixo.
 - [ ] Aceite com perguntas reais ao modelo, documentos reais e gravações operacionais. Esta conferência de publicação não criou registros nem chamou o modelo.
-- [ ] Expansão para todos os módulos, edição contextual de registros existentes e voz nos painéis contextuais. A publicação não conclui o escopo global.
+- [ ] Expansão para todos os módulos e campos. Edição de título/descrição de relatos existentes e voz contextual foram publicadas na ampliação ea7c73b; o escopo global permanece incompleto.
 
 | ID | Entrega | Situação | Critério para concluir |
 | --- | --- | --- | --- |
@@ -90,7 +91,7 @@ Esses itens estão pendentes de implementação salvo indicação explícita. As
 | IA-06 | Correção, tradução e proposta de texto | Parcial: revisão/aplicação/desfazer validados com simulação | Comparação original/proposta, edição e bloqueio de resposta obsoleta; qualidade das respostas reais e demais campos pendentes |
 | IA-07 | Anexos e extração parcial | Parcial: texto, imagem e PDF na programação, publicados parcialmente | Até 2 MB e 30 voos por análise; tipo/tamanho verificados. XLSX, áudio, anexos no relato e precisão de leitura real pendentes |
 | IA-08 | Coordenação: importar programação | Parcial: revisão e adição aos rascunhos validadas com simulação | Editar/selecionar itens, detectar duplicidade, conferir antes de programar; validação com documentos e gravação reais pendente |
-| IA-09 | Manutenção: elaborar relato no card | Parcial: texto na criação do relato publicado parcialmente | Propostas de título/descrição; anexos à IA, edição de registros existentes e demais campos pendentes |
+| IA-09 | Manutenção: elaborar relato no card | Publicado parcialmente: criação e revisão de relato existente, com voz transcrita | Propostas de título/descrição, revisão, desfazer e confirmação existente; anexos à IA, demais campos e aceite do modelo com dados reais pendentes |
 | IA-10 | Piloto: mural, Cockpit e documentos | Pendente | Extrair campos pertinentes, propor relatos e interpretar dados disponíveis; não inventar validade, assinatura ou cálculo regulamentar |
 | IA-11 | Expansão aos demais módulos | Pendente | Cobertura por campo/card inventariada, ações e permissões verificadas; sem atalhos que só abrem chat genérico |
 | IA-12 | Biblioteca administrável e pesquisa técnica | Pendente / dependência externa parcial | Importar acervo autorizado, revisões e efetividade; citar página/seção, conferir fontes e identificar referência ausente; AMM/FIM/IPC reais dependem dos documentos |
@@ -165,6 +166,16 @@ O inventário é inicial: cada linha deve ser desdobrada nos formulários, campo
 - Amostras reais anonimizadas de programação e documentos do piloto ajudam na validação; enquanto indisponíveis, identificar claramente os testes sintéticos.
 
 ## Registro de entregas
+
+### 09/09/2026 — nova conversa direta e títulos automáticos
+
+- Nova conversa abre diretamente o compositor de texto/voz, sem formulário de título nem confirmação adicional. A criação continua sendo uma escolha explícita; reabrir o assistente não cria conversa.
+- Título curto extraído da primeira mensagem salva, inclusive transcrição; sem chamada adicional ao modelo. Conversas antigas preservadas. O nome pode ser alterado em “Editar título”, na lista, e não é sobrescrito por novas mensagens.
+- Migração `20260910010847_assistant_automatic_titles.sql` aplicada. RPC mantém verificação de identidade/proprietário, cria com ID idempotente, serializa alterações do título e rejeita nomes vazios/acima do limite.
+- Testes reais do banco com rollback passaram: título automático, renomeação, preservação do título manual/antigo, isolamento entre usuários e idempotência. Testes de interface em 390/1366 px aprovados; regressões contextual e áudio aprovadas com provedor simulado.
+- Advisors mantêm os avisos já conhecidos de [RLS sem política direta](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy) e [RPC security definer autenticada](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable). Acesso direto segue revogado; esta mudança não amplia permissões.
+- Publicação em andamento após o build.
+
 
 ### 09/09/2026 — publicação solicitada
 
