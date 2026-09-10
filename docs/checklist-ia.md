@@ -15,7 +15,7 @@ Marcar uma etapa concluída somente após atender aos critérios descritos. Não
 
 ## Situação atual — revisão profunda em andamento
 
-Última publicação confirmada: `504557b5a7e59e9f087783d122a0161dd0fd51fd`, deployment `dpl_Fr7jz1VjbjmuzhjBksAnfwjJwcKx`, READY no domínio principal. Atualizações seguintes em validação são descritas no final.
+Última publicação confirmada: `8d2178428d5af38adf5b88e3b11c574390ceacf0`, deployment `dpl_2PeywX3C5N3m7iXZiSE9xxpXGpQe`, READY no domínio principal. Atualizações seguintes em validação são descritas no final.
 
 - [x] Substituir consultas fixas por ferramentas escolhidas conforme a pergunta. Remover bloco de secagens sem relação com o pedido.
 - [x] Compartilhar regras da timeline e das designações entre a tela e a consulta. Contexto inclui área, filtros, card e fuso; identidade/base vêm do servidor.
@@ -26,7 +26,7 @@ Marcar uma etapa concluída somente após atender aos critérios descritos. Não
 - [x] Testes reais: timeline, designações pessoais, continuação para PR-CHT, abertura do relato, ferramentaria e rascunho de nova atividade. Sessão de administrador; consultas de mecânico também verificadas como authenticated no banco em transação revertida.
 - [ ] Completar todos os campos e ações ainda sem adaptador: checks de passagem, ferramentas catalogadas, demais controles de coordenação/administração, notas e ações encadeadas entre telas.
 - [ ] Continuidade da mesma conversa ao abrir um registro e executar um pedido composto como “abra e preencha X/Y/Z”, sem repetir a solicitação.
-- [ ] Histórico completo de lavagens por dia e cruzamento com secagem. Abertura da pendência não comprova uma lavagem naquele dia.
+- [x] Captura prospectiva de confirmações autenticadas de lavagem e vínculo ao ciclo de secagem, instalada em 10/09. Consulta em validação de publicação. O histórico anterior permanece incompleto e não será inventado.
 - [ ] Ampliar consultas do Cockpit e demais módulos além dos conjuntos já conectados. Ter preenchimento no formulário não significa ter consulta de todo o módulo.
 - [ ] Aceite real por todos os cargos/bases, imagens/documentos representativos, voz em ambiente de pista e câmera ao vivo integrada às mesmas ações.
 - [ ] Planilhas, documentos maiores, acervo técnico do operador, acompanhamento de consumo e cobertura integral do inventário.
@@ -357,3 +357,14 @@ O inventário é inicial: cada linha deve ser desdobrada nos formulários, campo
 - TC conectada no novo relato, inclusive aplicação/desfazer e detecção de edição concorrente. Prefixos fonéticos generalizados, com ambiguidade preservada e escolha limitada ao catálogo.
 - Rascunhos adicionais: comentários, edição de publicação e execução de atividade no Mural. Os botões preparam os campos; enviar/publicar/registrar continuam pelos fluxos existentes.
 - Teste de interface do relato em 390/1366 px passou com TC, desfazer e resposta obsoleta. Testes da rota agora percorrem o agente compartilhado com provedor simulado, incluindo falhas, quotas e preparação sem gravação.
+
+
+### Leitura real de imagem e histórico de lavagem — 10/09/2026
+
+- Publicação contextual `8d21784` READY. Teste real no domínio principal, administrador: imagem sintética com PR-CHT, “Luz da cabine intermitente” e TC 456 preencheu prefixo/título/descrição/TC corretamente, sem acréscimos. Desfazer restaurou todos os campos; rascunho cancelado, nenhum relato operacional criado. A conversa pessoal de teste ficou no histórico.
+- Migration aplicada `20260910032516_assistant_wash_history`: eventos capturados somente a partir da instalação, sem backfill fictício; vínculo por ID e instante do ciclo de secagem. Repetir Sim não duplica evento. Uma nova transição para Sim corresponde a nova confirmação.
+- Teste SQL em transação revertida, antes e depois da aplicação: captura, não duplicação, ciclo reutilizado, cobertura parcial, identidade falsificada, isolamento da base do mecânico e ausência de acesso anônimo/direto. Dados sintéticos não persistidos.
+- Consulta `washing` usa data/fuso, prefixo/modelo/base e situação da pendência. `closed` significa ausência de pendência ativa daquele ciclo, não comprova execução. Consultas que incluem período anterior à instalação indicam cobertura parcial.
+- Advisor: RLS sem políticas nas tabelas de eventos/cobertura é intencional (acesso direto revogado); RPC SECURITY DEFINER tem identidade ativa e escopo de base conferidos. Não abrir SELECT genérico para eliminar esse aviso.
+- Corrigido identificador de Passagem de Pista: banco utiliza texto, não exclusivamente UUID. Destinos preservam o ID e continuam rejeitando caminhos inválidos.
+- 128 testes de lógica/rotas aprovados; TypeScript aprovado. Publicação da consulta de lavagem ainda em andamento nesta entrada.

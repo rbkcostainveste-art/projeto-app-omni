@@ -4,7 +4,8 @@ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function parseTarget(value:unknown):AssistantTargetRef|null{
  if(!value||typeof value!=='object')return null;
  const item=value as Record<string,unknown>;
- return (item.kind==='maintenance'||item.kind==='drying'||item.kind==='wall'||item.kind==='activity'||item.kind==='flight'||item.kind==='passage'||item.kind==='tool')&&typeof item.id==='string'&&((item.kind==='wall'||item.kind==='activity'||item.kind==='flight')?/^[a-zA-Z0-9_-]{1,160}$/.test(item.id):uuid.test(item.id))?{kind:item.kind,id:(item.kind==='wall'||item.kind==='activity'||item.kind==='flight')?item.id:item.id.toLowerCase()}:null;
+ const textId=item.kind==='wall'||item.kind==='activity'||item.kind==='flight'||item.kind==='passage';
+ return (item.kind==='maintenance'||item.kind==='drying'||textId||item.kind==='tool')&&typeof item.id==='string'&&(textId?/^[a-zA-Z0-9_-]{1,160}$/.test(item.id):uuid.test(item.id))?{kind:item.kind as AssistantTargetRef['kind'],id:textId?item.id:item.id.toLowerCase()}:null;
 }
 /** The model only chooses identifiers. Labels and destinations come from authorized server results. */
 export function appendTargetLinks(reply:string,chosen:unknown,available:AssistantRecordCard[]){

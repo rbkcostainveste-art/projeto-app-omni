@@ -5,6 +5,23 @@ const queries=load('src/lib/assistant-queries.ts'),selectors=load('src/lib/wall-
 const actor={employeeNumber:'42',accessProfile:'mechanic',assignedBase:'Macaé',fleets:['S92']};
 const args=(dataset,extra={})=>({dataset,query:null,prefix:null,base:null,from:null,until:null,status:'all',mine:false,offset:0,id:null,...extra});
 const at='2026-09-09T20:00:00Z';
+
+test('wash queries preserve coverage, cycle cards and database authorization errors',async()=>{
+ const id='11111111-1111-4111-8111-111111111111';let fail=false,parameters;
+ const c={rpc:(name,p)=>{assert.equal(name,'assistant_wash_read');parameters=p;return {abortSignal:async()=>({error:fail?Error('denied'):null,data:{status:'available',items:[{prefix:'PR-CHT',base:'Macaé',dryingTaskId:id},{prefix:'PR-CHT',base:'Macaé',dryingTaskId:id}],complete:false,coverageStartsAt:at}})};}};
+ const q=args('washing',{query:'S92',from:'2026-09-09',until:'2026-09-09',status:'open'});
+ assert.equal(queries.validateQuery(q).dataset,'washing');
+ const result=await queries.assistantQuery(c,actor,q,new AbortController().signal);
+ assert.equal(result.complete,false);assert.equal(result.cards.length,1);assert.equal(result.coverageStartsAt,at);assert.equal(parameters.p_model,'S92');assert.equal(parameters.p_employee,'42');assert.equal(parameters.p_timezone,'America/Sao_Paulo');assert.equal(parameters.p_status,'open');
+ fail=true;const denied=await queries.assistantQuery(c,actor,q,new AbortController().signal);assert.equal(denied.status,'unavailable');assert.equal(denied.complete,false);assert.deepEqual(denied.items,[]);
+});
+
+test('passage identifiers retain text IDs without allowing path traversal',()=>{
+ const targets=load('src/lib/assistant-targets.ts');
+ assert.deepEqual(targets.parseTarget({kind:'passage',id:'PR-CHT-2026-09-10'}),{kind:'passage',id:'PR-CHT-2026-09-10'});
+ assert.equal(queries.validateQuery(args('passage',{id:'PR-CHT-2026-09-10'})).id,'PR-CHT-2026-09-10');
+ assert.equal(targets.parseTarget({kind:'passage',id:'../secret'}),null);assert.throws(()=>queries.validateQuery(args('passage',{id:'../secret'})));
+});
 test('Cockpit drafts cover every declared kind without exposing signature or derived fields',()=>{
  const helper=load('src/lib/assistant-cockpit.ts'),cockpit=load('src/lib/cockpit.ts');
  for(const kind of Object.keys(cockpit.cockpitFields)){
