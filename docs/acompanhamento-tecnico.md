@@ -176,3 +176,11 @@ Os eixos técnicos detalhados aparecem somente ao abrir o registro (ou expandir 
 No atalho **Abrir pane**, a TC é obrigatória. O banco também exige TC em novas panes da manutenção e na evolução de relato para discrepância, além de impedir apagar a TC de uma pane que já a possua. Os relatos simples continuam com TC opcional. Os registros históricos sem TC são preservados e podem receber comentários; o reporte inicial da tripulação mantém seu fluxo próprio. TC e identificador eDB continuam campos distintos, sem validação automática no WinAir.
 
 Migração: `20260909004400_require_tc_for_maintenance_fault.sql`. Validação: `tests/maintenance-fault-tc.sql`, regressões técnicas e de permissões, lint, TypeScript, build e comparação dos estilos no navegador em 390/1366 px.
+
+## Atalho da chave no voo — 10/09/2026
+
+- Removida a opção duplicada **Lançar caso técnico**. Para mecânico e líder, a chave abre diretamente **Novo relato técnico**.
+- Inspetor, coordenador, gerente e diretor de manutenção, além da administração, recebem **Lançar relato técnico** e **Abrir pane**. É a mesma permissão já usada na área de manutenção.
+- Os dois caminhos levam a aeronave e o vínculo do voo. **Abrir pane** usa o formulário existente, classifica a entrada como discrepância e exige TC; o relato comum mantém TC opcional. A escolha abre um rascunho, sem gravar automaticamente.
+- A regra dos cargos está centralizada em `src/lib/maintenance-entry.ts`. Nenhuma migração ou mudança de permissão no banco é necessária.
+- Validação: TypeScript e lint sem erros; navegador em 390 e 1366 px, cobrindo oito perfis, abertura com um clique, menu autorizado, prefixo preenchido e TC obrigatória somente na pane. Nenhum registro operacional foi criado durante a verificação.
