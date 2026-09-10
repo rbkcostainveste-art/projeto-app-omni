@@ -1,6 +1,6 @@
 export type DraftFields = { title: string; description: string };
 export type DraftProposal = { title: string | null; description: string | null };
-export type DraftContext = { kind: "maintenance-draft"; id: string; prefix: string; model: string; fields: DraftFields };
+export type DraftContext = { kind: "maintenance-draft"; id: string; prefix: string; model: string; fields: DraftFields; record?: {id: string; revision: number} };
 export type ContextTurn = { message: string; reply: string };
 
 function object(value: unknown): Record<string, unknown> {
@@ -21,6 +21,13 @@ export function parseContextRequest(value: unknown) {
     fields: {title: text(fields.title, 500), description: text(fields.description, 12000)},
   };
   if (!context.id) throw Error("Rascunho não identificado.");
+  if (raw.record !== undefined) {
+    const record = object(raw.record);
+    const id = text(record.id, 36);
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id) || !Number.isSafeInteger(record.revision) || Number(record.revision) < 1) throw Error("Registro inválido.");
+    if (context.id !== `record:${id}`) throw Error("Contexto de registro inválido.");
+    context.record = {id, revision: Number(record.revision)};
+  }
   const message = text(body.message, 4000).trim();
   if (!message) throw Error("Escreva o que deseja fazer neste relato.");
   const history = body.history ?? [];

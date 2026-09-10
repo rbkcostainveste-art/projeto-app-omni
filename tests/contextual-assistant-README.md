@@ -29,4 +29,10 @@ Para reproduzir a verificação isolada, copie `tests/fixtures/assistant-drying-
 Para interface, copie temporariamente `tests/fixtures/assistant-conversations-page.tsx` para `src/app/conversations-test/page.tsx`, rode `tests/assistant-conversations-browser.cjs` com `PLAYWRIGHT_MODULE` e `TEST_BASE_URL`, e remova a página antes de build/publicação. API/histórico simulados: criação de dois assuntos, retomada e isolamento visual em 390/1366 px. O teste contextual também foi atualizado para criação explícita de conversa.
 # Opções de áudio
 
+## Relatos existentes e áudio contextual
+
+`tests/contextual-record-audio-browser.cjs` usa `tests/fixtures/technical-case-page.tsx` em `/technical-test`, no servidor local indicado por `TEST_BASE_URL` (padrão porta 3210). Simula sessão, histórico, configuração técnica, transcrição e resposta do modelo. Verifica revisão por padrão, envio automático, preservação da transcrição após falha, ausência de retranscrição indevida, aplicação/desfazer e confirmação pelo fluxo técnico com revisão original. Microfone sintético, sem áudio real, gravação em produção ou cobrança. Execute com `PLAYWRIGHT_MODULE` como os testes anteriores e remova a página temporária antes do build.
+
+`tests/contextual-assistant.test.cjs` inclui consulta de registro salvo: ID/versão válidos, filtro pela base resolvida no servidor, rejeição de perfil não autorizado, identidade divergente, ausência de registro e versão desatualizada. Banco simulado; não substitui o teste real das políticas.
+
 `tests/assistant-audio-modes-browser.cjs` usa a fixture `tests/fixtures/assistant-media-page.tsx` em `/assistant-test`, microfone sintético e APIs simuladas. Configure `PLAYWRIGHT_MODULE`/`TEST_BASE_URL`. Cobre envio automático, revisão, falhas separadas e preservação de rascunho em 390/1366 px. Remova a página temporária antes de build/publicação. `tests/assistant-media-browser.cjs` mantém a regressão de áudio/câmera ao vivo.

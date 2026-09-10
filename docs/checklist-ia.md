@@ -24,6 +24,35 @@ Marcar uma etapa concluída somente após atender aos critérios descritos. Não
 
 ## Etapas da transformação
 
+### Comparação com a lista original e autorização integral — 09/09/2026
+
+O usuário autorizou aplicar e publicar todo o escopo. Essa autorização inclui as próximas entregas verificadas, sem nova confirmação a cada publicação. Dependências do operador continuam identificadas; autorização de desenvolvimento não define regras operacionais ainda ausentes.
+
+| Grupo | O que ainda falta |
+| --- | --- |
+| IA-02 | Avaliar a qualidade das respostas reais após a política publicada; evitar confundir documentos da biblioteca com relatos operacionais |
+| IA-03/04/06/09 | Expandir além de título/descrição, integrar registros existentes, voz e anexos, revisão e desfazer em cada formulário; registrar cobertura por alvo |
+| IA-05 | Continuidade entre o rascunho e o registro salvo, retomada contextual dos demais módulos e validação de acesso ao alvo em cada consulta |
+| IA-07/08 | Planilhas, anexos nos demais lançamentos, documentos reais, associação de tripulação e garantia de duplicidade entre usuários simultâneos |
+| IA-10/11 | Piloto/Cockpit, documentos, ferramentas, atividades, mural, cadastros, contadores, Passagem de Pista/serviço, notas e administração |
+| IA-12 | Administração do acervo, importação autorizada, revisão e aplicabilidade dos manuais; fontes disponíveis sem bibliografia automática na conversa |
+| IA-13 | Limites distribuídos, medição de consumo, auditoria das aplicações e testes de autorização para cada nova capacidade |
+| IA-14 | Aceite de ponta a ponta com perfis, bases e dados reais para cada entrega; a publicação anterior já foi concluída |
+| Pedidos posteriores IA-15/16/17/18 | Perguntas livres e continuidade natural, resolução de prefixos, consultas entre módulos, eventos de lavagem por dia, cards clicáveis e comandos de preenchimento em todos os lançamentos |
+
+Conversas por assunto e os dois modos de áudio do assistente geral já estão publicados. As linhas antigas com “local” abaixo são histórico da primeira entrega e não significam publicação pendente.
+
+### Em implementação nesta rodada
+
+- [x] Conectar IA à revisão de título/descrição do relato existente, usando a confirmação, assinatura e versão do fluxo atual.
+- [x] Reconsultar o registro no servidor com JWT do usuário, cargo/base e versão antes de chamar o modelo.
+- [x] Voz no painel contextual: revisar por padrão, opção automática e preservação da transcrição em falha da consulta.
+- [x] Testes de interface de registros existentes e áudio aprovados em 390/1366 px, com APIs e microfone simulados; regressão do novo relato aprovada.
+- [x] 104 testes de lógica/rotas aprovados; TypeScript e lint dos arquivos alterados sem erros.
+- [x] Build de produção aprovado, sem páginas sintéticas de teste.
+- [ ] Publicação desta ampliação em andamento; confirmar deployment abaixo.
+- [ ] Continuar a expansão e o inventário detalhado acima; esta rodada não encerra o escopo global.
+
 ### Escopo ampliado aprovado pelo usuário
 
 A importação de voos é um exemplo, não o limite da transformação. A IA deve apoiar **todo tipo de lançamento**, explicar o aplicativo, consultar registros reais autorizados, localizar e abrir os cards originais e propor o preenchimento de seus campos por conversa. Isso vale para o assistente geral e para os pontos contextuais de cada módulo. O objetivo é executar fluxos completos com as regras existentes, não apenas acrescentar botões de chat.
@@ -39,26 +68,36 @@ A importação de voos é um exemplo, não o limite da transformação. A IA dev
 - [ ] Aplicar o mesmo contexto entre assistente geral, painel local e card aberto.
 - [ ] Validar cada capacidade com diferentes cargos e bases antes de publicá-la.
 
-Esses itens estão pendentes de implementação salvo indicação explícita. As integrações locais de relato e programação continuam parciais.
+Esses itens estão pendentes de implementação salvo indicação explícita. As integrações de relato e programação foram publicadas e continuam parciais. Os estados locais na tabela e no histórico abaixo descrevem a validação de cada etapa; a publicação consolidada está registrada a seguir.
+
+### Publicação confirmada — 09/09/2026
+
+- [x] Commit `7fe04a37ab9270dee9d93a7c60f83997a9d3a4aa` enviado para `main`.
+- [x] Vercel `dpl_98XWJnDoekA5H55LcTRoqwZCoDZp`: **READY**, produção, build aprovado e domínio [passagem-de-pista.vercel.app](https://passagem-de-pista.vercel.app/) associado.
+- [x] Publicadas as entregas prontas de conversas por assunto, opções de áudio, consultas autenticadas de relatos/secagens, painel do novo relato técnico, importação de programação e ajustes de linguagem/fontes.
+- [x] Conferência na sessão real do site: lista de conversas, histórico anterior preservado, duas opções de áudio e botão “Conversar com IA neste relato” abrindo o painel vinculado ao rascunho.
+- [x] 102 testes de lógica/rotas aprovados antes da publicação. Privacidade no banco e testes simulados de interface registrados nas etapas abaixo.
+- [ ] Aceite com perguntas reais ao modelo, documentos reais e gravações operacionais. Esta conferência de publicação não criou registros nem chamou o modelo.
+- [ ] Expansão para todos os módulos, edição contextual de registros existentes e voz nos painéis contextuais. A publicação não conclui o escopo global.
 
 | ID | Entrega | Situação | Critério para concluir |
 | --- | --- | --- | --- |
 | IA-01 | Checklist e mapeamento inicial | Concluído | Escopo, módulos, critérios e dependências registrados neste arquivo |
-| IA-02 | Corrigir orientação contraditória sobre fontes | Implementado localmente; verificações estáticas e regressões aprovadas | Política diferencia referências recuperadas, ausência de resultado e manuais indisponíveis; publicação e avaliação de respostas reais pendentes |
-| IA-03 | Contrato de contexto e ações por módulo | Parcial: rascunho técnico implementado localmente | Alvo e campos tipados; rota aceita somente título/descrição e verifica sessão; outros módulos e ações persistentes pendentes |
+| IA-02 | Corrigir orientação contraditória sobre fontes | Publicado; regressões aprovadas | Política diferencia referências recuperadas e ausência de resultado; avaliação de respostas reais pendente |
+| IA-03 | Contrato de contexto e ações por módulo | Parcial: rascunho técnico publicado parcialmente | Alvo e campos tipados; rota aceita somente título/descrição e verifica sessão; outros módulos e ações persistentes pendentes |
 | IA-04 | Painel lateral reutilizável e botões locais | Parcial: criação de relato técnico validada com simulação | Painel ao lado em desktop e empilhado no celular; expansão aos demais campos/cards pendente |
-| IA-05 | Conversas pessoais por assunto | Banco aplicado; interface local validada com simulação | Lista, título, criação explícita, histórico por conversa e vínculo ao rascunho; publicação da interface e expansão a registros existentes pendentes |
+| IA-05 | Conversas pessoais por assunto | Publicado; privacidade no banco e interface verificadas | Lista, título, criação explícita, histórico por conversa e vínculo ao rascunho; continuidade entre rascunho salvo e outros módulos pendente |
 | IA-06 | Correção, tradução e proposta de texto | Parcial: revisão/aplicação/desfazer validados com simulação | Comparação original/proposta, edição e bloqueio de resposta obsoleta; qualidade das respostas reais e demais campos pendentes |
-| IA-07 | Anexos e extração parcial | Parcial: texto, imagem e PDF na programação, implementados localmente | Até 2 MB e 30 voos por análise; tipo/tamanho verificados. XLSX, áudio, anexos no relato e precisão de leitura real pendentes |
+| IA-07 | Anexos e extração parcial | Parcial: texto, imagem e PDF na programação, publicados parcialmente | Até 2 MB e 30 voos por análise; tipo/tamanho verificados. XLSX, áudio, anexos no relato e precisão de leitura real pendentes |
 | IA-08 | Coordenação: importar programação | Parcial: revisão e adição aos rascunhos validadas com simulação | Editar/selecionar itens, detectar duplicidade, conferir antes de programar; validação com documentos e gravação reais pendente |
-| IA-09 | Manutenção: elaborar relato no card | Parcial: texto na criação do relato implementado localmente | Propostas de título/descrição; anexos à IA, edição de registros existentes e demais campos pendentes |
+| IA-09 | Manutenção: elaborar relato no card | Parcial: texto na criação do relato publicado parcialmente | Propostas de título/descrição; anexos à IA, edição de registros existentes e demais campos pendentes |
 | IA-10 | Piloto: mural, Cockpit e documentos | Pendente | Extrair campos pertinentes, propor relatos e interpretar dados disponíveis; não inventar validade, assinatura ou cálculo regulamentar |
 | IA-11 | Expansão aos demais módulos | Pendente | Cobertura por campo/card inventariada, ações e permissões verificadas; sem atalhos que só abrem chat genérico |
 | IA-12 | Biblioteca administrável e pesquisa técnica | Pendente / dependência externa parcial | Importar acervo autorizado, revisões e efetividade; citar página/seção, conferir fontes e identificar referência ausente; AMM/FIM/IPC reais dependem dos documentos |
-| IA-13 | Segurança, auditoria e consumo | Parcial: autenticação também aplicada localmente à rota geral de texto | Rascunho sem escrita no banco; validar sessões reais, revisar escopo dos dados, limites distribuídos de uso, auditoria persistente e consumo |
+| IA-13 | Segurança, auditoria e consumo | Parcial: autenticação também publicada na rota geral de texto | Rascunho sem escrita no banco; validar sessões reais, revisar escopo dos dados, limites distribuídos de uso, auditoria persistente e consumo |
 | IA-14 | Validação completa e publicação | Pendente | Testes por perfil e base, concorrência/duplicidade, mobile/desktop, regressão, deployment confirmado e aceite dos fluxos reais |
-| IA-15 | Consultas operacionais entre módulos | Parcial local: fila atual de secagens por botão no assistente | Consulta autenticada no servidor, perfil/base e RLS; interpretação de pergunta livre e lavagem realizada hoje ainda pendentes |
-| IA-16 | Cards acionáveis e navegação na conversa | Parcial local: secagem abre Trilho filtrado | Reconsulta do ID antes de abrir; validação de navegação integrada em sessão real, destaque do card exato, demais registros e ambiguidades pendentes |
+| IA-15 | Consultas operacionais entre módulos | Publicado parcialmente: fila atual de secagens por botão no assistente | Consulta autenticada no servidor, perfil/base e RLS; interpretação de pergunta livre e lavagem realizada hoje ainda pendentes |
+| IA-16 | Cards acionáveis e navegação na conversa | Publicado parcialmente: secagem abre Trilho filtrado | Reconsulta do ID antes de abrir; validação de navegação integrada em sessão real, destaque do card exato, demais registros e ambiguidades pendentes |
 | IA-17 | Comandos para todos os lançamentos | Pendente | Localizar alvo, propor campos permitidos, revisar, aplicar e salvar pelas regras do módulo; testar comando de preenchimento na Passagem de Pista |
 | IA-18 | Conhecimento do aplicativo e continuidade | Pendente | Explicar funções existentes, conhecer capacidades disponíveis e continuar conversa entre painel/card; informar quando uma ação ainda não é suportada |
 
@@ -66,7 +105,7 @@ IA-13 deve ser construída junto com as primeiras rotas/ações; sua posição n
 
 ## Cobertura inicial do aplicativo
 
-O inventário é inicial: cada linha deve ser desdobrada nos formulários, campos e cards efetivos antes de ser marcada como coberta. A criação de relato técnico é a primeira integração parcial local; as demais linhas continuam pendentes. Textos estáticos/cards de leitura recebem explicação/consulta; campos editáveis podem receber propostas conforme permissão. Senhas, tokens e ações técnicas formais não serão enviados ou alterados automaticamente.
+O inventário é inicial: cada linha deve ser desdobrada nos formulários, campos e cards efetivos antes de ser marcada como coberta. A criação de relato técnico e importação da programação são integrações publicadas parciais; os demais alvos ainda exigem integração. Textos estáticos/cards de leitura recebem explicação/consulta; campos editáveis podem receber propostas conforme permissão. Senhas, tokens e ações técnicas formais não serão enviados ou alterados automaticamente.
 
 | Área | Arquivos de referência em `src/components` | Uso previsto |
 | --- | --- | --- |
@@ -132,7 +171,7 @@ O inventário é inicial: cada linha deve ser desdobrada nos formulários, campo
 - Usuário autorizou publicar as entregas prontas: conversas por assunto, opções de áudio, consultas autenticadas de relatos/secagens, painel do rascunho técnico, importação de programação e ajustes de linguagem/fontes.
 - Revisão do pacote: 102 testes de lógica/rotas aprovados, além dos testes de navegador e builds registrados nas entregas anteriores. Capturas, vídeos, apresentações e páginas sintéticas não integram o pacote.
 - Migração local alinhada à versão efetivamente aplicada no Supabase: `20260910001601_personal_assistant_conversations.sql`.
-- Publicação em andamento; registrar abaixo o commit e deployment confirmado. As funcionalidades ainda pendentes de implementação não fazem parte desta entrega.
+- Publicação concluída pelo commit `7fe04a3`, deployment `dpl_98XWJnDoekA5H55LcTRoqwZCoDZp` em produção, estado READY. As funcionalidades ainda pendentes de implementação não fazem parte desta entrega.
 
 ### 09/09/2026 — áudio transcrito com envio automático ou revisão
 
