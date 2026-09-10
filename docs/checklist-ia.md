@@ -15,7 +15,7 @@ Marcar uma etapa concluída somente após atender aos critérios descritos. Não
 
 ## Situação atual — revisão profunda em andamento
 
-Última publicação confirmada: `d83c340618cb1aa8f32d9f2f23891700380b0a3c`, deployment `dpl_EWuhwqYWT5Q6HinLKLQ3HvdVAAXf`, READY no domínio principal. Atualizações seguintes em validação são descritas no final.
+Última publicação confirmada: `0a1479d07e9ea3cada32cd5affebb5715958325f`, deployment `dpl_3oZ9Naw3CbrPkyiv867hC2vxNGjA`, READY no domínio principal. Atualizações seguintes em validação são descritas no final.
 
 - [x] Substituir consultas fixas por ferramentas escolhidas conforme a pergunta. Remover bloco de secagens sem relação com o pedido.
 - [x] Compartilhar regras da timeline e das designações entre a tela e a consulta. Contexto inclui área, filtros, card e fuso; identidade/base vêm do servidor.
@@ -378,3 +378,11 @@ O inventário é inicial: cada linha deve ser desdobrada nos formulários, campo
 - Lavagens: d83c340 READY; pergunta real escolheu washing (logs), mas modelo omitiu a cobertura parcial. Acrescentada limitação explícita no servidor quando o histórico consultado não cobre o período, sem depender dessa decisão do modelo.
 - Migration 20260910033825 alinha coordenação ao acesso já existente à fila de secagem. Teste SQL da coordenação aprovado. As permissões locais e de tripulação permanecem verificadas na função.
 - 130 testes aprovados e build aprovado antes do ajuste final da limitação; última regressão/publicação em andamento. Não concluir escopo integral: conversas entre telas, demais formulários, consulta dos outros conjuntos e testes reais por cargo ainda pendentes.
+
+
+### Continuidade entre conversa e registro — em validação
+
+- Pedido composto pode abrir relato, passagem ou registro do Cockpit e continuar o texto original no editor, na mesma conversa pessoal. Destino revalidado antes da navegação; pedido de apenas abrir não gera segunda chamada ao modelo.
+- A continuação só é executada ao registrar o alvo exato, uma vez por transferência. Em rascunho preenche; alterações persistentes mantêm a revisão/assinatura do formulário. Outros destinos abrem normalmente, mas ainda não têm transferência automática de campos.
+- Testes de navegador 390/1366: uma única conversa, abertura do relato original, preenchimento uma única vez e desfazer. APIs/modelo simulados; teste real após publicação pendente.
+- 132 testes aprovados, build aprovado; esta entrega não encerra o inventário de formulários.

@@ -68,6 +68,11 @@ test('opening a historical card revalidates its current access and blocks revoke
   assert.equal(reads,1);assert.deepEqual(result.navigation,allowed?{kind:'maintenance',id}:null);
  }
 });
+
+test('open-and-fill forwards the original request only after current authorization succeeds',async()=>{
+ const id='11111111-1111-4111-8111-111111111111',message='Abra o relato CHT e ajuste o título';
+ for(const allowed of [true,false]){const result=await agent.runAssistantAgent({apiKey:'test',model:'test',message,media:[],history:[{message:'qual relato?',reply:`Sim.\n\n[CHT](flight-ia://maintenance/${id})`}],actor,context:{},navigationEnabled:true,signal:new AbortController().signal,deps:{query:async()=>({status:'available',items:[],complete:true,cards:allowed?[{kind:'maintenance',id,title:'CHT',detail:'Relato'}]:[]}),search:()=>[],fetcher:async()=>Response.json({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({reply:'Abrindo.',targets:[],openTarget:{kind:'maintenance',id},continueInTarget:true})}]}]})}});assert.equal(result.continuation,allowed?message:undefined);}
+});
 test('calendar filters reject impossible dates rather than silently shifting the query',()=>{
  assert.throws(()=>queries.validateQuery(args('timeline',{from:'2026-02-30'})));
  assert.throws(()=>queries.validateQuery(args('timeline',{from:'2026-13-01'})));

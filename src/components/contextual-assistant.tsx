@@ -8,6 +8,7 @@ import {TechnicalSourceList, type TechnicalSource} from "./technical-library-sea
 import {AssistantConversations} from './assistant-conversations';
 import {useAssistantHistory} from './assistant-history';
 import {ChatCapture} from './chat-capture';
+import {useAssistantContinuation} from './assistant-workspace';
 
 type Suggestion = {original: DraftFields; proposal: DraftProposal};
 const fieldClass = "w-full rounded-xl border border-blue-200 bg-white p-3 text-sm text-slate-900";
@@ -43,6 +44,7 @@ function ContextualConversation({open, context, client, user, disabled, onClose,
   useEffect(() => () => audioRequest.current?.abort(), []);
   const request = useRef<AbortController | null>(null);
   const input = useRef<HTMLTextAreaElement>(null);
+  useAssistantContinuation(context.id,conversationId,!history.loading&&!disabled,text=>{setMessage(text);void send(text);});
   useEffect(() => () => request.current?.abort(), []);
   useEffect(() => {if (open) input.current?.focus();}, [open]);
 

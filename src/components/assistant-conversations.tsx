@@ -1,8 +1,10 @@
 "use client";
 import {useCallback,useEffect,useRef,useState,type ReactNode} from 'react';
 import type {SupabaseClient} from '@supabase/supabase-js';
+import {useAssistantWorkspace} from './assistant-workspace';
 type Conversation={id:string;title:string;context_kind:string;context_id:string|null;context_label:string|null;created_at:string;updated_at:string};
 export function AssistantConversations({client,user,onClose,renderConversation,context,direct=false}:{client:SupabaseClient|null;user:string;onClose:()=>void;renderConversation:(id:string,onBack:()=>void,title:string)=>ReactNode;context?:{id:string;label:string;kind?:string};direct?:boolean}){
+ const workspace=useAssistantWorkspace();const transfer=workspace?.transfer?.contextId===context?.id?workspace?.transfer:null;
  const [items,setItems]=useState<Conversation[]>([]),[selected,setSelected]=useState<Conversation|null>(null),[renaming,setRenaming]=useState<string|null>(null),[title,setTitle]=useState(''),[busy,setBusy]=useState(true),[error,setError]=useState(''),[more,setMore]=useState(false);
  const creationId=useRef<string|null>(null),mounted=useRef(true);
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
@@ -13,7 +15,7 @@ export function AssistantConversations({client,user,onClose,renderConversation,c
  const create=useCallback(async()=>{if(busy)return;setBusy(true);setError('');try{const id=creationId.current??(creationId.current=crypto.randomUUID());const item=await call('create_conversation',{id,title:'Nova conversa',autoTitle:true,contextKind:context?.kind||(context?'maintenance-draft':'general'),contextId:context?.id,contextLabel:context?.label}) as Conversation;if(!mounted.current)return;setItems(previous=>[item,...previous.filter(c=>c.id!==item.id)]);setSelected(item);creationId.current=null;}catch(e){if(mounted.current)setError((e as Error).message);}finally{if(mounted.current)setBusy(false);}},[busy,call,context]);
  async function rename(){if(busy||!renaming||!title.trim())return;setBusy(true);setError('');try{const item=await call('rename_conversation',{conversationId:renaming,title:title.trim()}) as Conversation;if(!mounted.current)return;setItems(previous=>previous.map(c=>c.id===item.id?item:c));setRenaming(null);}catch(e){if(mounted.current)setError((e as Error).message);}finally{if(mounted.current)setBusy(false);}}
  const started=useRef(false);
- useEffect(()=>{if(!direct||busy||error||started.current)return;started.current=true;const existing=items.find(item=>context?item.context_kind===(context.kind||'maintenance-draft')&&item.context_id===context.id:item.context_kind==='general');if(existing){void Promise.resolve().then(()=>setSelected(existing));}else{void Promise.resolve().then(()=>create());}},[direct,busy,error,items,context,create]);
+ useEffect(()=>{if(!direct||busy||error||started.current)return;started.current=true;const existing=transfer?{id:transfer.conversationId,title:transfer.title,context_kind:context?.kind||'general',context_id:context?.id||null,context_label:context?.label||null,created_at:'',updated_at:''}:items.find(item=>context?item.context_kind===(context.kind||'maintenance-draft')&&item.context_id===context.id:item.context_kind==='general');if(existing){void Promise.resolve().then(()=>setSelected(existing));}else{void Promise.resolve().then(()=>create());}},[direct,busy,error,items,context,create,transfer]);
  if(selected)return <div className="flex min-h-0 min-w-0 flex-1 flex-col">{renderConversation(selected.id,()=>setSelected(null),selected.title)}</div>;
  const visible=context?items.filter(item=>item.context_kind===(context.kind||'maintenance-draft')&&item.context_id===context.id):items;
  return <section aria-label="Conversas com a IA" className="flex min-h-0 flex-1 flex-col overflow-auto bg-white p-4 text-slate-900">
