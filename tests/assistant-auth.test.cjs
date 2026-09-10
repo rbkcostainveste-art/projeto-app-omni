@@ -7,6 +7,8 @@ test('general assistant rejects denied sessions before reading content or callin
  const exports={};let allowed=false,checks=0,providerCalls=0,searchCalls=0,sent;
  const load=p=>{const e={};new Function('exports',ts.transpileModule(fs.readFileSync(p,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(e);return e;};
  const deps={
+  '@/lib/assistant-targets':load('src/lib/assistant-targets.ts'),
+  '@/lib/assistant-drying-context':{assistantDryingContext:async()=>({status:'available',items:[]})},
   '@/lib/contextual-assistant':load('src/lib/contextual-assistant.ts'),
   '@/lib/assistant-media':load('src/lib/assistant-media.ts'),
   'next/server':{NextResponse:Response},

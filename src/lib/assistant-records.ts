@@ -1,6 +1,6 @@
 import type {SupabaseClient} from '@supabase/supabase-js';
 
-export async function assistantRecords(client:SupabaseClient,employee:string,signal:AbortSignal){
+export async function assistantRecords(client:SupabaseClient,employee:string,signal:AbortSignal,id?:string){
  const unavailable={status:'unavailable',records:[],notice:'Não foi possível verificar os relatos. Não concluir ausência de pane ou relato.'};
  try{
   const {data:identity,error}=await client.rpc('refresh_current_device');
@@ -11,7 +11,8 @@ export async function assistantRecords(client:SupabaseClient,employee:string,sig
   const profile={role,base};
   if(!global.includes(role)&&!local.includes(role))return {...unavailable,status:'not_authorized',profile};
   if(local.includes(role)&&!base)return {...unavailable,profile,notice:'Base não definida para consultar relatos deste perfil.'};
-  let query=client.from('maintenance_records').select('id,record_type,prefix,model,base,title,status,updated_at').eq('status','open').in('record_type',['fault','discrepancy']).order('updated_at',{ascending:false}).order('id',{ascending:true}).limit(101);
+  let query=client.from('maintenance_records').select('id,record_type,prefix,model,base,title,status,updated_at').in('record_type',['fault','discrepancy']).order('updated_at',{ascending:false}).order('id',{ascending:true}).limit(id?1:101);
+  query=id?query.eq('id',id):query.eq('status','open');
   if(local.includes(role))query=query.eq('base',base);
   const result=await query.abortSignal(signal);
   if(result.error||!Array.isArray(result.data))return {...unavailable,profile};

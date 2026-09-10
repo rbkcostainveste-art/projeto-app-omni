@@ -17,7 +17,7 @@ Marcar uma etapa concluída somente após atender aos critérios descritos. Não
 
 - Publicado e conferido no site: botão flutuante por área/janela, conversa direta e preenchimento de prefixo/título/descrição no relato novo; título/descrição na revisão de relato existente.
 - Texto, imagens/PDF e voz; título automático e histórico por contexto; desfazer e proteção de edições concorrentes. 107 testes e verificações de navegador em celular/desktop aprovados.
-- Teste com OpenAI real: CHT selecionou PR-CHT e preencheu o rascunho. Teste desfeito sem salvar relato. Ajuste adicional de linguagem e nomes legíveis das áreas enviado para publicação.
+- Teste com OpenAI real: CHT selecionou PR-CHT e preencheu o rascunho. Teste desfeito sem salvar relato. Ajuste adicional de linguagem e nomes legíveis das áreas publicado.
 - **Ainda parcial:** ações de escrita dos demais módulos, consultas completas, navegação por qualquer card, continuidade entre rascunho e registro salvo e administração do acervo. O botão global não comprova cobertura desses fluxos.
 
 ## Base já entregue antes desta transformação
@@ -294,3 +294,20 @@ O inventário é inicial: cada linha deve ser desdobrada nos formulários, campo
 
 - Verificação real em produção: “cht com vazamento na mgb” selecionou PR-CHT, preencheu título “Vazamento na MGB” e descrição fiel; título da conversa foi gerado automaticamente. Desfazer limpou os três campos e o formulário foi cancelado, sem criar relato técnico. Apenas a conversa pessoal de teste foi preservada.
 - A resposta real usou “Posso registrar como referência...”. Ajustada a orientação para evitar nova oferta/permissão ao preparar o rascunho e usar prefixo completo e linguagem direta. Isso não garante ausência de variação do modelo; continuar avaliando a naturalidade em uso.
+
+- Publicação final confirmada: `bce3fb655146be4d5d22375b648b26d03c533230`, deployment `dpl_3V4cAuf75igVBSfzbyp8UiYjfacV`, READY e alias de produção associado. Inclui orientação de linguagem do commit `86db3d1`.
+- Segundo teste com OpenAI real: resposta “Preparei o rascunho sobre o vazamento na MGB do PR-CHT.”; prefixo PR-CHT, título “Vazamento na MGB” e descrição “Vazamento na MGB do PR-CHT.” preenchidos. Desfeito e cancelado, sem salvar registro operacional. Nenhum teste real de leitura de imagem/PDF ou microfone nesta rodada; esses fluxos foram verificados com APIs simuladas.
+
+
+### 09/09/2026 — cards de relatos e secagens na conversa livre
+
+- [x] Renovada a autorização do usuário para continuar implementando e publicar as próximas entregas verificadas sem nova confirmação.
+- [x] A consulta geral busca relatos abertos e secagens pendentes no servidor, com JWT do usuário e filtros/permissões atuais. Falha, falta de acesso e resultado parcial não equivalem a ausência de registros.
+- [x] A IA pode apresentar até 12 cards pertinentes de relatos e secagens. O servidor aceita somente identificadores presentes na consulta autorizada e monta os destinos; o modelo não escolhe URL externa nem concede acesso.
+- [x] Cards preservados no histórico da própria conversa. Clique reconsulta o registro e suas permissões atuais antes de navegar. Um relato fechado pode continuar acessível pelo histórico se o usuário ainda tiver acesso; ausência de acesso impede abrir.
+- [x] Atalhos ligados ao assistente geral de Mensagens e ao painel flutuante: abrir relato original ou card de secagem no Trilho. Se o card do Trilho não estiver carregado, informa indisponibilidade em vez de simular abertura.
+- [x] 110 testes de lógica/rotas; navegador em 390/1366 px para persistência dos cards, abertura e acesso revogado; consultas SQL reais como authenticated com identidade de mecânico, em transação revertida, aprovadas. Não houve alteração de schema ou ampliação de permissões.
+- [ ] Lavagens realizadas hoje requerem consulta aos eventos correspondentes; a abertura de pendência de secagem não comprova data de lavagem. Esse cruzamento continua pendente.
+- [ ] Ferramentaria requer consulta específica com escopo de base e campos mínimos. A função existente de dashboard retorna dados amplos e executa limpeza de fotos; não foi reutilizada pela IA nesta etapa.
+- [ ] Ampliar os cards e comandos para os demais módulos, além de relatos e secagens. Preenchimentos dos demais formulários continuam pendentes conforme inventário.
+- Publicação em preparação; verificar build e funcionamento real antes de marcar publicada.
