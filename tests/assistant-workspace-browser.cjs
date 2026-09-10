@@ -1,0 +1,25 @@
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+const assert=require('node:assert/strict');
+(async()=>{const browser=await chromium.launch({channel:'msedge',headless:true});try{for(const width of [390,1366]){
+ const page=await browser.newPage({viewport:{width,height:950}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ let calls=0,general=0;
+ await page.route('**/api/ai',async r=>{general++;const body=r.request().postDataJSON();assert.equal(body.context.area,'Ferramentaria');assert.equal(body.context.capabilities.createFlights,false);await r.fulfill({json:{reply:'Consulta da ferramentaria.',proposedFlights:[],sources:[]}});});
+ await page.route('**/api/ai/context',async r=>{calls++;const body=r.request().postDataJSON();assert.equal(body.context.aircraft[0].prefix,'PR-CHT');assert.equal(body.attachments[0].name,'relato.pdf');await r.fulfill({json:{contextId:body.context.id,reply:'Preparei os campos.',proposal:{title:'Vazamento na MGB',description:'Observado vazamento na MGB.',prefix:'PR-CHT'},sources:[]}});});
+ await page.goto('http://localhost:3210/workspace-test');
+ await page.getByRole('button',{name:'Abrir assistente IA · Ferramentaria',exact:true}).click();
+ await page.getByLabel('Mensagem ao assistente').fill('O que posso consultar aqui?');await page.getByRole('button',{name:'Enviar ao assistente',exact:true}).click();await page.getByText('Consulta da ferramentaria.',{exact:true}).waitFor();assert.equal(general,1);
+ await page.getByRole('button',{name:'Fechar assistente',exact:true}).click();
+ await page.getByRole('button',{name:'Novo relato',exact:true}).click();
+ const floating=page.getByRole('button',{name:/Abrir assistente IA · Novo relato/});await floating.click();
+ const panel=page.getByRole('complementary',{name:'Assistente da tela atual',exact:true});assert.equal(await panel.evaluate(el=>Boolean(el.closest('dialog[open]'))),true);
+ await page.getByLabel('Pedido à IA',{exact:true}).fill('cht com vazamento na mgb');
+ await page.getByLabel('Anexar imagem, PDF ou áudio',{exact:true}).setInputFiles({name:'relato.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.7\n')});
+ await page.getByRole('button',{name:'Enviar à IA',exact:true}).click();await page.getByText('Campos preenchidos. Confira no formulário antes de salvar.',{exact:true}).waitFor();
+ assert.equal(calls,1);assert.equal(await page.getByLabel('Título',{exact:true}).inputValue(),'Vazamento na MGB');assert.equal(await page.getByLabel('Descrição',{exact:true}).inputValue(),'Observado vazamento na MGB.');
+ assert.equal(await page.getByLabel('Pedido à IA',{exact:true}).count(),1);
+ await page.screenshot({path:`assistant-workspace-${width}.png`,fullPage:true});
+ await page.getByRole('button',{name:'Fechar assistente',exact:true}).click();
+ await page.getByRole('button',{name:'Cancelar',exact:true}).click();
+ await page.getByRole('button',{name:'Abrir assistente IA · Ferramentaria',exact:true}).click();await page.getByText('Consulta da ferramentaria.',{exact:true}).waitFor();
+ assert.equal(await page.getByText('Preparei os campos.',{exact:true}).count(),0);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);assert.deepEqual(errors,[]);await page.close();console.log('PASS global context and media',width);
+}}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

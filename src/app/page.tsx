@@ -1,5 +1,7 @@
 import { FlightBoard } from "@/components/flight-board";
 
+import {AssistantWorkspaceProvider} from "@/components/assistant-workspace";
+
 export default function Home() {
-  return <FlightBoard />;
+  return <AssistantWorkspaceProvider><FlightBoard /></AssistantWorkspaceProvider>;
 }

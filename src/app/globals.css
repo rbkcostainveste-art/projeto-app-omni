@@ -317,3 +317,8 @@ nav[aria-label="Navegação principal"] button[aria-current="page"] > span.absol
 @media(min-width:1100px) {
  .flight-app:not(.split-workspace) > main:has(.wall-columns) { max-width:1440px; padding-inline:24px; }
 }
+
+/* Keep the form and its assistant side by side when the desktop has room. */
+@media (min-width: 1100px) {
+ .app-modal-layer[data-assistant-open="true"] > div.fixed { padding-right:472px; }
+}

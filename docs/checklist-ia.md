@@ -174,7 +174,7 @@ O inventário é inicial: cada linha deve ser desdobrada nos formulários, campo
 - Migração `20260910010847_assistant_automatic_titles.sql` aplicada. RPC mantém verificação de identidade/proprietário, cria com ID idempotente, serializa alterações do título e rejeita nomes vazios/acima do limite.
 - Testes reais do banco com rollback passaram: título automático, renomeação, preservação do título manual/antigo, isolamento entre usuários e idempotência. Testes de interface em 390/1366 px aprovados; regressões contextual e áudio aprovadas com provedor simulado.
 - Advisors mantêm os avisos já conhecidos de [RLS sem política direta](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy) e [RPC security definer autenticada](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable). Acesso direto segue revogado; esta mudança não amplia permissões.
-- Publicação em andamento após o build.
+- Publicado: commit `7e7a6231202b621c0efafde8ecff5aea143f3512`, deployment `dpl_33iHCy8Y3SxFBLJqBkgm5q9e8BjY` READY, produção. Build/lint aprovados. Conferida a nova lista com Editar título no site; nenhuma conversa de teste criada em produção.
 
 
 ### 09/09/2026 — publicação solicitada
@@ -270,3 +270,17 @@ O inventário é inicial: cada linha deve ser desdobrada nos formulários, campo
 - Fixture de teste removida da árvore de rotas. Reprodução documentada em `tests/contextual-assistant-README.md`.
 - Não houve teste pago de leitura real pela OpenAI, gravação no banco de produção ou publicação nesta etapa. IA-07 e IA-08 continuam parciais.
 - Verificação final: build de produção e TypeScript aprovados, sem rota sintética na saída. Mais 30 regressões de coordenação aprovadas (47 testes de lógica/rotas no total desta rodada, além dos testes de navegador).
+
+
+### 09/09/2026 — assistente da tela e rascunho direto
+
+- [x] Botão flutuante nas áreas autenticadas, incluindo Ferramentaria, com painel lateral e identificação da tela. A janela de relato aberta fornece seu próprio contexto. Visualização de outro perfil não oferece o assistente.
+- [x] Abrir o assistente contextual leva diretamente à conversa; histórico e nova conversa continuam acessíveis, sem pedir título. Reabrir retoma a conversa daquele contexto.
+- [x] Relato novo: IA preenche título, descrição e prefixo do catálogo do formulário. Abreviação CHT e fala Charlie Hotel Tango resolvem PR-CHT se houver uma única opção. Ambiguidade não escolhe uma aeronave.
+- [x] Relato existente: ajuste direto de título/descrição na revisão, preservando verificação de versão, base, autorização e confirmação final existente.
+- [x] Aplicação automática apenas se os campos continuam iguais aos enviados. Desfazer disponível; edições manuais concorrentes são preservadas. Não há gravação nem assinatura automática.
+- [x] Relatos aceitam até três imagens/PDF, 2 MB somados, gravação de voz e arquivo de áudio para transcrição. Geral aceita imagem ou PDF de 2 MB e áudio. Histórico guarda texto e nomes dos anexos; binários não são arquivados na conversa nesta etapa.
+- [x] Instrução de redação exige fatos informados, sem inventar circunstâncias como “durante a operação” e sem repetir bibliografia no texto da conversa.
+- [x] Verificação: 107 testes de lógica/rotas; navegador em 390/1366 px para formulário, desfazer, edição concorrente, áudio revisar/automático, falha e repetição, painel sobre janela modal, anexos e isolamento de contexto. APIs de IA simuladas nesses testes; qualidade do modelo real ainda precisa de validação.
+- [ ] Conectar preenchimento específico dos demais módulos (ferramentaria, passagem de pista, cockpit e outros), consultas completas e abertura de qualquer card por comando. O botão global identifica a área; isso não equivale a ter acesso a todos os dados ou ações. No fallback geral não são oferecidos lançamentos de voo ou edição do formulário sem integração.
+- Publicação: em preparação após build. As notas históricas acima descrevem entregas anteriores; esta entrada substitui o fluxo antigo de revisão em formulário duplicado para relatos.

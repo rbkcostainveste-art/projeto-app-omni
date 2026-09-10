@@ -1,6 +1,7 @@
-export type DraftFields = { title: string; description: string };
-export type DraftProposal = { title: string | null; description: string | null };
-export type DraftContext = { kind: "maintenance-draft"; id: string; prefix: string; model: string; fields: DraftFields; record?: {id: string; revision: number} };
+export type DraftFields = { title: string; description: string; prefix?:string };
+export type DraftProposal = { title: string | null; description: string | null; prefix?:string|null };
+export type DraftContext = { kind: "maintenance-draft"; id: string; prefix: string; model: string; fields: DraftFields; aircraft?:{prefix:string;model:string}[]; record?: {id: string; revision: number} };
+export type AssistantAttachment={name:string;data:string};
 export type ContextTurn = { message: string; reply: string };
 
 function object(value: unknown): Record<string, unknown> {
@@ -21,6 +22,8 @@ export function parseContextRequest(value: unknown) {
     fields: {title: text(fields.title, 500), description: text(fields.description, 12000)},
   };
   if (!context.id) throw Error("Rascunho não identificado.");
+  if(fields.prefix!==undefined)context.fields.prefix=text(fields.prefix,20);
+  if(raw.aircraft!==undefined){if(!Array.isArray(raw.aircraft)||raw.aircraft.length>300)throw Error('Catálogo inválido.');context.aircraft=raw.aircraft.map(item=>{const a=object(item);return {prefix:text(a.prefix,20),model:text(a.model,80)};});}
   if (raw.record !== undefined) {
     const record = object(raw.record);
     const id = text(record.id, 36);
@@ -29,35 +32,47 @@ export function parseContextRequest(value: unknown) {
     context.record = {id, revision: Number(record.revision)};
   }
   const message = text(body.message, 4000).trim();
-  if (!message) throw Error("Escreva o que deseja fazer neste relato.");
+  const attachments=parseAssistantAttachments(body.attachments);
+  if (!message&&!attachments.length) throw Error("Escreva ou anexe o que deseja usar neste relato.");
   const history = body.history ?? [];
   if (!Array.isArray(history) || history.length > 8) throw Error("Histórico acima do limite.");
   const turns: ContextTurn[] = history.map(item => {
     const turn = object(item);
     return {message: text(turn.message, 4000), reply: text(turn.reply, 16000)};
   });
-  return {context, message, history: turns};
+  return {context, message, history: turns,attachments};
+}
+
+export function parseAssistantAttachments(value:unknown):AssistantAttachment[]{
+ if(value===undefined)return [];
+ if(!Array.isArray(value)||value.length>3)throw Error('Envie até três anexos.');
+ let size=0;return value.map(item=>{const f=object(item),name=text(f.name,180),data=text(f.data,2800000);size+=data.length;if(size>2800000||!/^data:(application\/pdf|image\/(png|jpeg|webp));base64,[A-Za-z0-9+/]+={0,2}$/.test(data))throw Error('Use imagens ou PDF, até 2 MB no total.');return {name,data};});
+}
+export function resolveDraftAircraft(message:string,aircraft:{prefix:string;model:string}[]){
+ const words=message.toUpperCase().replace(/CHARLIE\s+HOTEL\s+TANGO/g,'CHT').match(/[A-Z0-9]+(?:-[A-Z0-9]+)?/g)||[];
+ return aircraft.filter(a=>{const compact=a.prefix.toUpperCase().replace(/[^A-Z0-9]/g,'');return words.some(w=>{const token=w.replace(/-/g,'');return token===compact||(token.length===3&&compact.endsWith(token));});});
 }
 
 export function parseDraftAnswer(value: unknown): {reply: string; proposal: DraftProposal} {
   const answer = object(value), proposed = object(answer.proposal);
-  if (Object.keys(proposed).some(key => !["title", "description"].includes(key))) throw Error("Proposta contém campos não permitidos.");
+  if (Object.keys(proposed).some(key => !["title", "description","prefix"].includes(key))) throw Error("Proposta contém campos não permitidos.");
   const reply = text(answer.reply, 16000);
   if (!reply.trim()) throw Error("Resposta vazia.");
   return {reply, proposal: {
+    ...(proposed.prefix===undefined?{}:{prefix:proposed.prefix===null?null:text(proposed.prefix,20)}),
     title: proposed.title === null ? null : text(proposed.title, 500),
     description: proposed.description === null ? null : text(proposed.description, 12000),
   }};
 }
 
 export function sameDraft(a: DraftFields, b: DraftFields) {
-  return a.title === b.title && a.description === b.description;
+  return a.title === b.title && a.description === b.description&&a.prefix===b.prefix;
 }
 
 /** Reject stale answers and keep missing fields unchanged. Never persists a record. */
 export function applyDraftProposal(current: DraftFields, original: DraftFields, proposal: DraftProposal): DraftFields {
   if (!sameDraft(current, original)) throw Error("O rascunho mudou. Peça uma nova sugestão antes de aplicar.");
-  return {title: proposal.title ?? current.title, description: proposal.description ?? current.description};
+  return {...current,title: proposal.title ?? current.title, description: proposal.description ?? current.description,...(current.prefix===undefined?{}:{prefix:proposal.prefix??current.prefix})};
 }
 
 export const draftAnswerSchema = {
@@ -65,7 +80,8 @@ export const draftAnswerSchema = {
   properties: {
     reply: {type: "string"},
     proposal: {type: "object", additionalProperties: false, properties: {
+      prefix:{type:["string","null"]},
       title: {type: ["string", "null"]}, description: {type: ["string", "null"]},
-    }, required: ["title", "description"]},
+    }, required: ["title", "description","prefix"]},
   }, required: ["reply", "proposal"],
 };
