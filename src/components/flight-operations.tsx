@@ -1,4 +1,5 @@
 "use client";
+import {PreparationBadge} from "./flight-preparation";
 import {AircraftTechnicalStatus} from "./technical-case";
 
 import {openCockpit} from "./cockpit";
@@ -25,7 +26,7 @@ export function FlightOperations({supabase,flight,showDocumentation=false,readOn
   if(!data||!supabase||lock.current||readOnly)return;
   lock.current=true;setBusy(true);setError('');
   const request=pending.current??{id:crypto.randomUUID(),revision:data.revision,action,payload};pending.current=request;
-  try{const {data:result,error:failure}=await supabase.rpc('record_flight_operation',{p_flight_id:flight.id,p_request_id:request.id,p_revision:request.revision,p_action:request.action,p_payload:request.payload});if(failure)throw failure;setData(result as OperationData);pending.current=null;setRetry(false);setCorrection(null);setDeleting(null);}
+  try{const {data:result,error:failure}=await supabase.rpc('record_flight_operation',{p_flight_id:flight.id,p_request_id:request.id,p_revision:request.revision,p_action:request.action,p_payload:request.payload});if(failure)throw failure;setData(result as OperationData);window.dispatchEvent(new Event('preparation-updated'));pending.current=null;setRetry(false);setCorrection(null);setDeleting(null);}
   catch(failure){const message=typeof failure==='object'&&failure&&'message' in failure?String(failure.message):'Não foi possível salvar';setError(message);const rejected=typeof failure==='object'&&failure&&'code' in failure&&['P0001','42501','22023'].includes(String(failure.code));if(rejected)pending.current=null;setRetry(!rejected);}
   finally{lock.current=false;setBusy(false);}
  }
@@ -53,6 +54,7 @@ export function FlightOperations({supabase,flight,showDocumentation=false,readOn
     {data.canExecute&&['drain','hums'].includes(key)&&!approved?<button disabled={disabled||Boolean(execution)} onClick={()=>void send('execute',{key})} className="mt-3 min-h-11 w-full rounded-lg bg-orange-100 px-3 text-xs font-bold text-orange-900 disabled:opacity-40">Registrar execução · sem assinatura</button>:null}
    </div>;
   })}</div>
+  <div className="rounded-xl border p-3"><PreparationBadge state={data.preparation}/><p className="mt-2 text-xs text-slate-600">Conclusão da preparação deste voo. A liberação técnica e as verificações do piloto permanecem separadas.</p>{data.preparation?.blocked?<p className="mt-2 text-xs text-red-800">Há pendência técnica: solicite avaliação antes de confirmar.</p>:null}{data.canSign?<button disabled={disabled||!data.preparation?.canConfirm||data.preparation?.status==='ready'} onClick={()=>void requireSignature(()=>send('confirm_preparation',{fingerprint:data.preparation?.fingerprint||''}),'Confirmar preparação concluída deste voo')} className="mt-3 min-h-11 w-full rounded-lg bg-emerald-700 px-3 py-2 text-sm font-bold text-white disabled:opacity-40">Confirmar preparação concluída</button>:null}</div>
   {!open?controls:null}
   <button onClick={()=>setOpen(true)} className="min-h-12 w-full rounded-xl bg-[#1268d8] px-4 py-3 text-sm font-extrabold text-white">{data.events.length?'Eventos da operação':data.canPilot?'Acionar · registrar eventos':'Ver eventos da operação'}</button>
   {open?<OperationDialog title={`${flight.prefix} · ${flight.model}`} onClose={()=>{if(!busy)setOpen(false);}}>

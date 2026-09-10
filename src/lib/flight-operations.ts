@@ -1,7 +1,7 @@
 export type OperationEvent = { id: string; type: string; at: string; recordedAt: string; actor: string; corrections?: { at: string; actor: string; recordedAt: string }[] };
 export type FlightCounter = {key:string;label:string;unit:string;value:number;inProgress:boolean};
 export type MaintenanceCheck = { kind: string; targetFlightId: string; execution?: { actor: string; at: string }; approval?: { actor: string; at: string; result: 'ok'|'no' } };
-export type OperationData = { counterSource?:string; counters?:FlightCounter[]; events: OperationEvent[]; checks: Record<string, MaintenanceCheck>; revision: number; first: boolean; previousFlightId: string|null; nextFlightId: string|null; day: string; canPilot: boolean; canSign: boolean; canExecute: boolean; closed: boolean };
+export type OperationData = { preparation?:import("@/components/flight-preparation").PreparationState; counterSource?:string; counters?:FlightCounter[]; events: OperationEvent[]; checks: Record<string, MaintenanceCheck>; revision: number; first: boolean; previousFlightId: string|null; nextFlightId: string|null; day: string; canPilot: boolean; canSign: boolean; canExecute: boolean; closed: boolean };
 export const eventLabels: Record<string,string> = { apu_on:'Ligar APU',apu_off:'Desligar APU',engine1_on:'Acionar motor 1',engine1_off:'Cortar motor 1',engine2_on:'Acionar motor 2',engine2_off:'Cortar motor 2',takeoff:'Decolar',landing:'Pousar',rotor_brake:'Aplicar freio rotor',finish:'Encerrar operação' };
 export const maintenanceSigners=['mechanic','maintenance_director','maintenance_manager','maintenance_coordinator','maintenance_leader','maintenance_inspector'];
 export function isS92(model:string){return model.toUpperCase().replace(/[^A-Z0-9]/g,'').includes('S92');}

@@ -1,0 +1,55 @@
+-- Synthetic fixtures and every identity/configuration change are rolled back.
+begin;
+do $$
+declare adm uuid;mech uuid;pilot uuid;actor text;employee text;fid text:=gen_random_uuid()::text;prefix text:='QA-'||substr(gen_random_uuid()::text,1,8);v jsonb;f jsonb;k text;denied boolean;req uuid;r public.maintenance_records;c jsonb;d jsonb;cfg jsonb;found_at timestamptz:=now()-interval '1 day';expected timestamptz;
+begin
+ select d.auth_user_id,d.employee_number into adm,actor from public.device_identities d join public.authorized_users u using(employee_number) where d.is_admin and u.active limit 1;
+ select d.auth_user_id,d.employee_number into mech,employee from public.device_identities d join public.authorized_users u using(employee_number) where u.job_role='mechanic' and u.active limit 1;
+ select d.auth_user_id into pilot from public.device_identities d join public.authorized_users u using(employee_number) where u.job_role='commander' and u.active limit 1;
+ if adm is null or mech is null or pilot is null then raise exception 'Fixture identities unavailable';end if;
+ update public.authorized_users set assigned_base=null where employee_number=employee;
+ perform set_config('request.jwt.claim.sub',adm::text,true);
+ f:=jsonb_build_object('id',fid,'prefix',prefix,'model','S92','base','QA','date',to_char(now() at time zone 'America/Sao_Paulo','YYYY-MM-DD'),'departure','09:00','planningStatus','confirmed','fuel','pending','preflight','pending','hums','pending','engineStart','pending','shutdown','pending','revision',1,'acknowledged','{}'::jsonb);
+ perform public.mutate_shared_item('flights',fid,f,'create');
+ perform set_config('request.jwt.claim.sub',mech::text,true);
+ v:=public.get_flight_operation(fid);
+ denied:=false;begin perform public.record_flight_operation(fid,gen_random_uuid(),0,'confirm_preparation',jsonb_build_object('fingerprint',v#>>'{preparation,fingerprint}'));exception when raise_exception then denied:=true;end;if not denied then raise exception 'Incomplete checklist accepted';end if;
+ foreach k in array array['drain','fuel','inspection','hums'] loop
+  v:=public.record_flight_operation(fid,gen_random_uuid(),(v->>'revision')::int,'approve',jsonb_build_object('key',k,'result','ok'));
+ end loop;
+ if not (v#>>'{preparation,canConfirm}')::boolean then raise exception 'Complete checklist not eligible';end if;
+ req:=gen_random_uuid();v:=public.record_flight_operation(fid,req,(v->>'revision')::int,'confirm_preparation',jsonb_build_object('fingerprint',v#>>'{preparation,fingerprint}'));
+ if v#>>'{preparation,status}'<>'ready' then raise exception 'Readiness missing';end if;
+ v:=public.record_flight_operation(fid,req,0,'confirm_preparation',jsonb_build_object('fingerprint',v#>>'{preparation,fingerprint}'));if v#>>'{preparation,status}'<>'ready' then raise exception 'Retry not idempotent';end if;
+ v:=public.record_flight_operation(fid,gen_random_uuid(),(v->>'revision')::int,'approve','{"key":"fuel","result":"no"}');
+ if v#>>'{preparation,status}'<>'reconfirm' then raise exception 'Failed check did not revoke readiness';end if;
+ v:=public.record_flight_operation(fid,gen_random_uuid(),(v->>'revision')::int,'approve','{"key":"fuel","result":"ok"}');
+ if v#>>'{preparation,status}'='ready' then raise exception 'Restoring check resurrected readiness';end if;
+ v:=public.record_flight_operation(fid,gen_random_uuid(),(v->>'revision')::int,'confirm_preparation',jsonb_build_object('fingerprint',v#>>'{preparation,fingerprint}'));
+ perform set_config('request.jwt.claim.sub',adm::text,true);
+ perform public.mutate_shared_item('flights',fid,'{"spot":"QA2"}','update');perform public.mutate_shared_item('flights',fid,'{"spot":null}','update');
+ v:=public.get_flight_operation(fid);if v#>>'{preparation,status}'='ready' then raise exception 'Restoring plan resurrected readiness';end if;
+ denied:=false;begin perform public.record_flight_operation(fid,gen_random_uuid(),(v->>'revision')::int,'confirm_preparation',jsonb_build_object('fingerprint',v#>>'{preparation,fingerprint}'));exception when raise_exception then denied:=true;end;if not denied then raise exception 'Administrator signed preparation';end if;
+ perform set_config('request.jwt.claim.sub',pilot::text,true);v:=public.get_preparation_statuses(array[fid]);if v ? fid then raise exception 'Unassigned pilot accessed readiness';end if;
+ perform set_config('request.jwt.claim.sub',adm::text,true);
+ cfg:=public.technical_case_action('config');c:=cfg->'data';c:=jsonb_set(c,'{permissions,defer}',jsonb_build_array(actor));
+ perform public.technical_case_action('configure',null,jsonb_build_object('revision',cfg->'revision','data',c,'reason','QA rollback'));
+ insert into public.maintenance_records(id,record_type,base,model,prefix,priority,status,title,tc,created_by,data) values(gen_random_uuid(),'fault','QA','S92',prefix,'not_logged','open','QA MEL','TC-QA',actor,'{"description":"QA","entries":[]}') returning * into r;
+ d:=jsonb_build_object('type','MEL','reference','MEL QA','melItem','QA','revision','QA','category','B','repairCategory','B','repairDays','3','timeZone','UTC','discoveredAt',found_at,'deferredAt',now(),'deadline',now()+interval '99 days','maintenanceProcedures','QA','operationalProcedures','QA','weather','QA','conditions','QA');
+ c:=r.technical_case||jsonb_build_object('official','linked','officialId','DB-QA','disposition',d,'reason','QA late entry');
+ v:=public.technical_case_action('update',r.id,jsonb_build_object('revision',r.revision,'case',c));
+ expected:=(((found_at at time zone 'UTC')::date+4)::timestamp at time zone 'UTC');
+ if (v#>>'{technical_case,disposition,deadline}')::timestamptz<>expected then raise exception 'MEL deadline not calculated from discovery';end if;
+ select * into r from public.maintenance_records where id=r.id;
+ c:=jsonb_set(r.technical_case,'{disposition,repairDays}','"4"');denied:=false;
+ begin perform public.technical_case_action('update',r.id,jsonb_build_object('revision',r.revision,'case',c));exception when raise_exception then denied:=true;end;if not denied then raise exception 'MEL exceeded category';end if;
+ cfg:=public.technical_case_action('config');c:=cfg->'data';c:=jsonb_set(c,'{permissions,release}',jsonb_build_array(actor));c:=jsonb_set(c,'{recipients}',jsonb_build_array(actor));
+ perform public.technical_case_action('configure',null,jsonb_build_object('revision',cfg->'revision','data',c,'reason','QA alert recipient'));
+ c:=jsonb_set(r.technical_case,'{disposition,alertHours}','"72"')||'{"aircraft":"deferred","confirmDisposition":true,"reason":"QA MEL alert"}';
+ v:=public.technical_case_action('update',r.id,jsonb_build_object('revision',r.revision,'case',c));
+ perform private.technical_deadline_alerts();perform private.technical_deadline_alerts();
+ if (select count(*) from public.technical_case_alerts where record_id=r.id and employee_number=actor and kind like 'melsoon:%')<>1 then raise exception 'Early MEL notification missing or duplicated';end if;
+ if not exists(select 1 from jsonb_array_elements(public.technical_case_action('alerts')) a where a->>'record_id'=r.id::text and a->>'kind' like 'melsoon:%') then raise exception 'MEL alert not visible to recipient';end if;
+ if not exists(select 1 from public.technical_case_audit where record_id=r.id and old_value is not null) then raise exception 'MEL history missing';end if;
+end $$;
+rollback;

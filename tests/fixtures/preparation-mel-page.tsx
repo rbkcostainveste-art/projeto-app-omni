@@ -1,0 +1,11 @@
+'use client';
+import {useState} from 'react';
+import {MelDeadlineFields} from '@/components/mel-deadline';
+import {FlightOperations} from '@/components/flight-operations';
+import {PreparationProvider,PreparationBadge} from '@/components/flight-preparation';
+import {ScreenNotificationsProvider,ScreenNotificationBell} from '@/components/screen-notifications';
+import type {SupabaseClient} from '@supabase/supabase-js';
+const channel={on:()=>channel,subscribe:()=>channel};
+const client={channel:()=>channel,removeChannel:async()=>{},rpc:async(name:string,args:unknown)=>{const r=await fetch('/__preparation_test',{method:'POST',body:JSON.stringify({name,args})});return r.json();}} as unknown as SupabaseClient;
+const flight={id:'qa-flight',prefix:'PR-DEMO',model:'S92',date:'2026-09-10',departure:'09:00',maintenancePostId:'qa-maintenance'};
+export default function Fixture(){const [d,setD]=useState<Record<string,string>>({type:'MEL',repairCategory:'B',repairDays:'3',timeZone:'UTC',discoveredAt:'2026-09-09T10:00:00Z',deferredAt:'2026-09-09T11:00:00Z',deadline:'2026-09-13T00:00:00Z',calculationBasis:'Item e revisão da MEL aprovada a conferir',alertHours:'48'});return <ScreenNotificationsProvider scope="qa"><PreparationProvider client={client} flights={[flight]} onOpen={()=>{}}><main className="mx-auto max-w-5xl space-y-6 p-4 text-slate-800"><header className="flex items-center justify-between"><div><h1 className="text-xl font-bold">Preparação do voo e prazo MEL</h1><p className="text-xs">Demonstração · dados fictícios</p></div><ScreenNotificationBell/></header><div id="ready-shot" className="space-y-3 rounded-xl border bg-white p-4"><p className="text-sm font-bold">Piloto e coordenação · cartão do voo</p><p>PR-DEMO · 09:00 · Voo confirmado</p><PreparationBadge flightId={flight.id}/><p className="text-xs text-slate-600">A conclusão da preparação não substitui a liberação técnica.</p></div><section id="mechanic-shot"><h2 className="mb-3 font-bold">Mecânico · verificações e confirmação</h2><FlightOperations supabase={client} flight={flight} requireSignature={async fn=>{await fn();return true;}}/></section><section id="mel-shot" className="rounded-xl bg-white p-3"><h2 className="mb-3 font-bold">Inspetor · controle de prazo MEL</h2><MelDeadlineFields value={d} onChange={setD}/></section></main></PreparationProvider></ScreenNotificationsProvider>;}
