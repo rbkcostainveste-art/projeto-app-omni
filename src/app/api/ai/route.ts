@@ -11,7 +11,7 @@ import {assistantAccess} from "@/lib/assistant-access";
 export const runtime = "nodejs";
 export const maxDuration=120;
 
-type RequestBody = { message?: string; image?: string; context?: unknown };
+type RequestBody = { message?: string; image?: string; attachments?: unknown; context?: unknown };
 
 export async function POST(request: Request) {
   let access:Awaited<ReturnType<typeof assistantAccess>>;
@@ -24,8 +24,8 @@ export async function POST(request: Request) {
   if (!apiKey) return NextResponse.json({ error: "A IA ainda precisa da chave OPENAI_API_KEY na Vercel." }, { status: 503 });
 
   let body:RequestBody,media:ReturnType<typeof assistantMediaContent>;
-  try {const raw=await request.text();if(raw.length>2900000)return NextResponse.json({error:'Pedido acima do limite.'},{status:413});body=JSON.parse(raw);if(body.message!==undefined&&(typeof body.message!=="string"||body.message.length>8000))throw Error("Invalid message");media=assistantMediaContent(parseAssistantAttachments(body.image?[{name:body.image.startsWith('data:application/pdf')?'documento.pdf':'imagem',data:body.image}]:[]));}catch{return NextResponse.json({error:'Envie texto, imagem ou PDF válido de até 2 MB.'},{status:400});}
-  if (!body.message?.trim() && !body.image) return NextResponse.json({ error: "Envie uma pergunta, comando ou fotografia." }, { status: 400 });
+  try {const raw=await request.text();if(raw.length>2900000)return NextResponse.json({error:'Pedido acima do limite.'},{status:413});body=JSON.parse(raw);if(body.message!==undefined&&(typeof body.message!=="string"||body.message.length>8000))throw Error("Invalid message");media=assistantMediaContent(parseAssistantAttachments(body.attachments??(body.image?[{name:body.image.startsWith('data:application/pdf')?'documento.pdf':'imagem',data:body.image}]:[])));}catch{return NextResponse.json({error:'Envie texto, imagem ou PDF válido de até 2 MB.'},{status:400});}
+  if (!body.message?.trim() && !media.length) return NextResponse.json({ error: "Envie uma pergunta, comando ou fotografia." }, { status: 400 });
 
   try {
     const actor=await assistantActor(access.client,access.employee);
@@ -35,7 +35,9 @@ export async function POST(request: Request) {
     const context={area:typeof raw.area==='string'?raw.area.slice(0,120):'',screen:raw.screen&&JSON.stringify(raw.screen).length<12000?raw.screen:null,timeZone,today:calendarDay(new Date(),timeZone)};
     const form=parseAssistantForm(raw.form);
     const allowFlightCreation=Boolean((raw.capabilities as {createFlights?:boolean}|undefined)?.createFlights)&&['admin','app_manager','coordination','maintenance_director','maintenance_manager','maintenance_coordinator','maintenance_leader','maintenance_inspector','mechanic'].includes(actor.accessProfile);
-    const result=await runAssistantAgent({allowFlightCreation,form,apiKey,model:process.env.OPENAI_MODEL||'gpt-5.4-mini',message:body.message||'',media,history:access.history,actor,context,navigationEnabled:request.headers.get('x-assistant-cards')==='1',signal:AbortSignal.any([request.signal,AbortSignal.timeout(110000)]),deps:{query:q=>assistantQuery(access.client,actor,q,request.signal,timeZone),search:query=>searchTechnicalLibrary(query,5)}});
+    const signal=AbortSignal.any([request.signal,AbortSignal.timeout(110000)]);
+    const result=await runAssistantAgent({allowFlightCreation,form,apiKey,model:process.env.OPENAI_MODEL||'gpt-5.4-mini',message:body.message||'',media,history:access.history,actor,context,navigationEnabled:request.headers.get('x-assistant-cards')==='1',signal,deps:{query:q=>assistantQuery(access.client,actor,q,signal,timeZone),search:query=>searchTechnicalLibrary(query,5)}});
+    console.info('assistant_tools',JSON.stringify(result.trace));
     return NextResponse.json(result,{headers:{'Cache-Control':'no-store'}});
   }catch{return NextResponse.json({error:'A consulta não foi concluída. Seu texto foi preservado para tentar novamente.'},{status:502,headers:{'Cache-Control':'no-store'}});}
 }

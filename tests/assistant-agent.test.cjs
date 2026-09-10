@@ -5,6 +5,19 @@ const queries=load('src/lib/assistant-queries.ts'),selectors=load('src/lib/wall-
 const actor={employeeNumber:'42',accessProfile:'mechanic',assignedBase:'Macaé',fleets:['S92']};
 const args=(dataset,extra={})=>({dataset,query:null,prefix:null,base:null,from:null,until:null,status:'all',mine:false,offset:0,id:null,...extra});
 const at='2026-09-09T20:00:00Z';
+test('opening a historical card revalidates its current access and blocks revoked records',async()=>{
+ const id='11111111-1111-4111-8111-111111111111';
+ for(const allowed of [true,false]){
+  let turn=0,reads=0;
+  const result=await agent.runAssistantAgent({apiKey:'test',model:'test',message:'abre esse relato',media:[],history:[{message:'tem relato do cht?',reply:`Sim.\n\n[PR-CHT](flight-ia://maintenance/${id})`}],actor,context:{},navigationEnabled:true,signal:new AbortController().signal,deps:{query:async q=>{reads++;assert.equal(q.id,id);assert.equal(q.dataset,'maintenance');assert.equal(q.status,'all');return {status:'available',items:[],complete:true,cards:allowed?[{kind:'maintenance',id,title:'PR-CHT',detail:'Macaé'}]:[]};},search:()=>[],fetcher:async()=>Response.json({status:'completed',output:turn++===0?[{type:'function_call',name:'abrir_registro',call_id:'open',arguments:JSON.stringify({kind:'maintenance',id})}]:[{type:'message',content:[{type:'output_text',text:JSON.stringify({reply:allowed?'Abrindo o relato.':'Registro indisponível.',targets:[]})}]}]})}});
+  assert.equal(reads,1);assert.deepEqual(result.navigation,allowed?{kind:'maintenance',id}:null);
+ }
+});
+test('calendar filters reject impossible dates rather than silently shifting the query',()=>{
+ assert.throws(()=>queries.validateQuery(args('timeline',{from:'2026-02-30'})));
+ assert.throws(()=>queries.validateQuery(args('timeline',{from:'2026-13-01'})));
+ assert.equal(queries.validateQuery(args('timeline',{from:'2024-02-29'})).from,'2024-02-29');
+});
 function post(id,overrides={}){return {id,base:'Macaé',audienceArea:'maintenance',title:'Atividade de manutenção',body:'Inspeção visual',category:'Manutenção',createdBy:'99',createdAt:at,updatedAt:at,resolved:false,actions:[],history:[{event:'Criou atividade',at,employeeNumber:'99'}],comments:[],views:[],attachments:[],...overrides};}
 function action(id,assignedTo,status='pending'){return {id,assignedTo,status,title:'Verificar luz',description:'Luz apagada',prefix:'PR-CHT',createdAt:at,executions:[],views:[],acknowledgements:[]};}
 function client(posts,{error=null}={}){const filters=[];const q={};for(const name of ['select','order','limit','eq','in','gte','lte'])q[name]=(...a)=>{filters.push([name,...a]);return q;};q.abortSignal=async()=>({error,data:posts.map(p=>({id:p.id,base:p.base,audience_area:p.audienceArea,resolved:p.resolved,revision:1,created_at:p.createdAt,updated_at:p.updatedAt,data:p}))});return {filters,from:()=>q};}

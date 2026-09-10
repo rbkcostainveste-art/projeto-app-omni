@@ -19,7 +19,8 @@ export function validateQuery(value:unknown):QueryArgs {
  const q=value as QueryArgs;
  if(!['timeline','notices','assignments','maintenance','drying','fleet','flights','passage','tools'].includes(q.dataset)||!['open','closed','all'].includes(q.status)||typeof q.mine!=='boolean'||!Number.isInteger(q.offset)||q.offset<0||q.offset>500)throw Error('Consulta inválida.');
  for(const key of ['query','prefix','base','from','until','id'] as const)if(q[key]!==null&&(typeof q[key]!=='string'||q[key]!.length>160))throw Error('Filtro inválido.');
- for(const key of ['from','until'] as const)if(q[key]&&!/^\d{4}-\d{2}-\d{2}$/.test(q[key]!))throw Error('Data inválida.');
+ if(q.id&&['maintenance','drying','passage','tools'].includes(q.dataset)&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q.id))throw Error('id deve ser o UUID interno do card, nunca código PAN ou prefixo. Para buscar CHT, use prefix=CHT e id=null.');
+ for(const key of ['from','until'] as const)if(q[key]&&(!/^\d{4}-\d{2}-\d{2}$/.test(q[key]!)||!Number.isFinite(Date.parse(q[key]!))||new Date(q[key]!).toISOString().slice(0,10)!==q[key]))throw Error('Data inválida.');
  if(q.from&&q.until&&q.from>q.until)throw Error('Período inválido.');
  return q;
 }
@@ -32,7 +33,7 @@ const failed=(status='unavailable',notice='A consulta não foi concluída. Não 
 export async function assistantQuery(client:SupabaseClient,actor:AssistantActor,q:QueryArgs,signal:AbortSignal,timeZone='America/Sao_Paulo'):Promise<QueryResult>{
  const {employeeNumber:employee,accessProfile:role,assignedBase:base}=actor;
  try {
-  if(q.dataset==='tools')return await queryToolroom(client,actor,q,signal);
+  if(q.dataset==='tools')return await queryToolroom(client,actor,q,signal,timeZone);
   if(['fleet','flights','passage'].includes(q.dataset))return await queryOperations(client,actor,q,signal,calendarDay(new Date(),timeZone));
   if(q.dataset==='maintenance'||q.dataset==='drying'){
    if(q.dataset==='drying'&&(q.from||q.until||q.status==='closed'))return failed('unsupported','Esta consulta cobre pendências atuais, sem filtro de data. Para eventos do dia use timeline/assignments; abertura de secagem não comprova lavagem.');
