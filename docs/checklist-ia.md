@@ -17,7 +17,7 @@ Marcar uma etapa concluída somente após atender aos critérios descritos. Não
 
 [Cobertura por área, campos e limitações](cobertura-ia.md).
 
-Última publicação confirmada: `671f8a3a31f20feb14131e98a1af0689d44b90f2`, deployment `dpl_3XGCZfa7o8ufmQRs64gGzw4TpyVp`, READY no domínio principal. Atualizações seguintes em validação são descritas no final.
+Última publicação confirmada: `680cc8fe11a8d77a9109218b20a360a09cc0207f`, deployment `dpl_HCVH5JcfhtpDLtwLVy1TowV6ytx9`, READY no domínio principal. Atualizações seguintes em validação são descritas no final.
 
 - [x] Substituir consultas fixas por ferramentas escolhidas conforme a pergunta. Remover bloco de secagens sem relação com o pedido.
 - [x] Compartilhar regras da timeline e das designações entre a tela e a consulta. Contexto inclui área, filtros, card e fuso; identidade/base vêm do servidor.
@@ -401,3 +401,15 @@ O inventário é inicial: cada linha deve ser desdobrada nos formulários, campo
 - 135 testes unitários/de rotas passaram. Navegador de notas/coordenação aprovado em 390/1366 px com APIs simuladas; seleção de ferramentas e regressão da navegação ainda em validação. Esta entrada não afirma publicação dos adaptadores novos.
 
 - Regressão final: navegação/continuação em uma conversa e desfazer aprovados em 390/1366 px com build otimizado; seleção múltipla/catálogo aprovada nas duas larguras. Ambiente de desenvolvimento ficou lento; teste final usou build local de produção. Notas/coordenação: restaurar o valor original (inclusive horários) aprovado. Lint sem erros, três avisos preexistentes. Fixtures removidas para o build definitivo.
+
+- Publicação da ampliação confirmada: `680cc8fe11a8d77a9109218b20a360a09cc0207f`, `dpl_HCVH5JcfhtpDLtwLVy1TowV6ytx9`, READY. Conferência real no domínio principal: nota “conferir a escala do CHT amanhã às 08h” preencheu título, texto, PR-CHT e 11/09/2026 08:00, sem ativar notificação. Desfeito e fechado sem salvar. Conversa pessoal de teste permanece; nenhuma nota operacional foi criada. Build definitivo aprovado sem fixtures.
+
+
+### 10/09/2026 — evidências técnicas no mesmo relato e foco do formulário
+
+- Mesmo assistente/contexto/conversa do relato ampliado para TC, componente, posição, ação, teste, medição, limite e resultado informado, identificação/revisão/efetividade do documento consultado e justificativa. Não oferece alteração de APRS, condição da aeronave, conclusão do teste nem confirmações formais.
+- Campos técnicos têm lista explícita no servidor, preservação de campos ausentes, detecção de edição concorrente e desfazer. A atualização usa o estado mais recente e não apaga confirmações feitas pelo usuário em outros controles. Persistência continua por Confirmar atualização e assinatura.
+- Botão flutuante respeita o formulário que recebeu foco; seções fechadas e elementos ocultos não assumem o contexto. A conversa não muda só porque a página foi rolada.
+- 136 testes de lógica/rotas aprovados. Testes de navegador 390/1366 aprovados para foco/seção fechada; evidências técnicas em validação final. Publicação desta etapa pendente.
+
+- Evidências técnicas: navegador 390/1366 aprovado, incluindo aplicação/desfazer no componente real, sem salvar nem assinar. Lint sem erros ou avisos nos arquivos desta etapa. Fixtures removidas antes do build.

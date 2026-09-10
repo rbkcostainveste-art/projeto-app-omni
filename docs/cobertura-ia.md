@@ -6,7 +6,7 @@ Atualizado em 10/09/2026. Complementa checklist-ia.md; o registro de deployment 
 | --- | --- | --- | --- |
 | Mural | Timeline e avisos, filtros e audiência autorizada | Nova publicação, edição, comentário; título/texto/categoria | Validar todos os públicos com sessões reais |
 | Atividades | Designações pessoais e por escopo | Nova atividade e execução: título, finalidade, TC, prefixo, categoria, prioridade e responsável declarado | Ampliar seleção múltipla de responsáveis/destinatários |
-| Relatos | Relatos reais abertos/fechados por prefixo/base | Novo: prefixo, título, descrição, TC; existente: correção, execução, comentário e geração de ação | Demais campos técnicos estruturados ainda precisam de adaptadores; nenhuma liberação inferida |
+| Relatos | Relatos reais abertos/fechados por prefixo/base | Novo: prefixo, título, descrição, TC; existente: correção, execução, comentário e geração de ação | Evidências técnicas estruturadas implementadas na próxima entrega; nenhuma liberação inferida |
 | Passagem de Pista | Registros autorizados | Checks visíveis, observações, caso técnico, óleo/quantidades/unidades | Proposta revisada; confirmação de lavagem e assinatura preservadas |
 | Lavagem / secagem | Eventos desde instalação e vínculo ao ciclo de secagem | Marcações pelos controles da passagem | Histórico anterior incompleto; ausência de pendência não comprova secagem executada |
 | Frota | Cadastro por escopo | Prefixos são opções dos formulários | Cadastros administrativos da frota ainda não integralmente adaptados |

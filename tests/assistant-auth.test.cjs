@@ -5,7 +5,7 @@ const ts=require('typescript');
 
 test('general assistant rejects denied sessions before reading content or calling provider',async()=>{
  const exports={};let allowed=false,checks=0,providerCalls=0,searchCalls=0,sent;
- const load=p=>{const e={};new Function('exports',ts.transpileModule(fs.readFileSync(p,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(e);return e;};
+ const load=p=>{const e={};new Function('exports','require',ts.transpileModule(fs.readFileSync(p,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(e,n=>load(require('node:path').resolve(require('node:path').dirname(p),n+'.ts')));return e;};
  const deps={
   '@/lib/assistant-form':load('src/lib/assistant-form.ts'),
   '@/lib/assistant-queries':{assistantActor:async()=>({employeeNumber:'test-user'}),assistantQuery:async()=>{throw Error('not selected');}},

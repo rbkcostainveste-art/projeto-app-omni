@@ -47,17 +47,37 @@ export function AssistantWorkspaceProvider({children}:{children:ReactNode}){
  const [transfer,setTransfer]=useState<AssistantTransfer|null>(null);const transferRef=useRef<AssistantTransfer|null>(null);const claimed=useRef<string|null>(null);
  const [requestedId,setRequestedId]=useState<string|null>(null);
  const [suspended,setSuspended]=useState(false);
+ const [visibleTargetIds,setVisibleTargetIds]=useState<string[]>([]);
  const [targets,setTargets]=useState<Target[]>([]),[opened,setOpened]=useState(false),[host,setHost]=useState<HTMLElement|null>(null),[modalLabel,setModalLabel]=useState('');
  const register=useCallback((target:Target)=>{setTargets(old=>[...old.filter(t=>t.id!==target.id),target]);return()=>setTargets(old=>old.filter(t=>t!==target));},[]);
- const open=useCallback((targetId?:string)=>{setRequestedId(targetId||null);setOpened(true);},[]),close=useCallback(()=>{setOpened(false);setRequestedId(null);setTransfer(null);transferRef.current=null;},[]);
+ const open=useCallback((targetId?:string)=>{if(targetId)setRequestedId(targetId);setOpened(true);},[]),close=useCallback(()=>{setOpened(false);setRequestedId(null);setTransfer(null);transferRef.current=null;},[]);
  const beginTransfer=useCallback((value:AssistantTransfer)=>{transferRef.current=value;claimed.current=null;setTransfer(value);setRequestedId(value.targetId);setOpened(false);},[]);
  const claimTransfer=useCallback((contextId:string,conversationId:string)=>{const value=transferRef.current;if(!value?.message||value.contextId!==contextId||value.conversationId!==conversationId||claimed.current===value.nonce)return null;claimed.current=value.nonce;return value.message;},[]);
  useEffect(()=>{
-  const sync=()=>{const dialogs=Array.from(document.querySelectorAll<HTMLDialogElement>('dialog.app-modal-layer[open],dialog[data-assistant-layer][open]'));const top=dialogs.at(-1);const paused=Boolean(top?.querySelector('[data-assistant-suspend]'));setSuspended(paused);if(paused)return;setHost(top||document.body);setModalLabel(top?.querySelector('h2,h3')?.textContent?.slice(0,80)||'Janela aberta');};
-  sync();const observer=new MutationObserver(sync);observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['open']});return()=>observer.disconnect();
+  let frame=0;
+  const sync=()=>{
+   const dialogs=Array.from(document.querySelectorAll<HTMLDialogElement>('dialog.app-modal-layer[open],dialog[data-assistant-layer][open]')),top=dialogs.at(-1);
+   const paused=Boolean(top?.querySelector('[data-assistant-suspend]'));setSuspended(paused);if(paused)return;
+   setHost(top||document.body);setModalLabel(top?.querySelector('h2,h3')?.textContent?.slice(0,80)||'Janela aberta');
+   const ids=Array.from(document.querySelectorAll<HTMLElement>('[data-assistant-target]')).filter(element=>{
+    const parent=element.parentElement;if(!parent||element.closest('details:not([open])')||parent.closest('[hidden]')||!parent.getClientRects().length)return false;
+    return true;
+   }).map(element=>element.dataset.assistantTarget!);
+   setVisibleTargetIds(previous=>JSON.stringify(previous)===JSON.stringify(ids)?previous:ids);
+  };
+  const schedule=()=>{if(frame)return;frame=requestAnimationFrame(()=>{frame=0;sync();});};
+  sync();const observer=new MutationObserver(schedule);observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['open','hidden']});
+  window.addEventListener('resize',schedule);
+  return()=>{observer.disconnect();cancelAnimationFrame(frame);window.removeEventListener('resize',schedule);};
  },[]);
+ useEffect(()=>{
+  const focus=(event:FocusEvent)=>{let element=event.target instanceof HTMLElement?event.target:null;if(!element?.matches('input,textarea,select,[contenteditable="true"]')||element?.closest('[aria-label="Assistente da tela atual"]')||element?.getAttribute('aria-label')?.startsWith('Abrir assistente IA'))return;
+   while(element&&element!==document.body){const target=targets.find(t=>t.element.parentElement===element&&visibleTargetIds.includes(t.id));if(target){setRequestedId(target.id);return;}element=element.parentElement;}
+  };
+  document.addEventListener('focusin',focus);return()=>document.removeEventListener('focusin',focus);
+ },[targets,visibleTargetIds]);
  useEffect(()=>{if(!host||!opened)return;host.setAttribute('data-assistant-open','true');return()=>host.removeAttribute('data-assistant-open');},[host,opened]);
- const scoped=host?targets.filter(t=>t.element.isConnected&&host.contains(t.element)&&(host!==document.body||!t.element.closest('dialog.app-modal-layer,dialog[data-assistant-layer]'))):[];
+ const scoped=host?targets.filter(t=>visibleTargetIds.includes(t.id)&&t.element.isConnected&&host.contains(t.element)&&(host!==document.body||!t.element.closest('dialog.app-modal-layer,dialog[data-assistant-layer]'))):[];
  const active=scoped.find(t=>t.id===requestedId)||scoped.toSorted((a,b)=>a.priority-b.priority).at(-1);
  const transferReady=Boolean(transfer&&scoped.some(t=>t.id===transfer.targetId));
  useEffect(()=>{if(!transferReady)return;const timer=setTimeout(()=>setOpened(true),0);return()=>clearTimeout(timer);},[transferReady,transfer?.nonce]);

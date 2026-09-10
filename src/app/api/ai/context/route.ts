@@ -1,3 +1,4 @@
+import {technicalAssistantFields} from '@/lib/assistant-technical-fields';
 import {assistantAccess} from "@/lib/assistant-access";
 import {parseContextRequest, parseDraftAnswer,resolveDraftAircraft} from "@/lib/contextual-assistant";
 import {runAssistantAgent} from "@/lib/assistant-agent";
@@ -42,10 +43,12 @@ export async function POST(request: Request) {
     const actor=await assistantActor(access.client,access.employee);
     const signal=AbortSignal.any([request.signal,AbortSignal.timeout(110000)]);
     const form:AssistantFormContext={id:body.context.id,label:`Relato técnico · ${body.context.prefix||'nova ocorrência'}`,mode:'draft',revision:body.context.record?.revision,fields:{...(body.context.fields.tc!==undefined?{tc:{label:'Número da TC informado',value:body.context.fields.tc,maxLength:100}}:{}),title:{label:'Título do relato, fiel e curto',value:body.context.fields.title,maxLength:500},description:{label:'Descrição: somente fatos informados, sem presumir fase, causa, horário, execução ou teste',value:body.context.fields.description,maxLength:12000},...(!body.context.record&&body.context.aircraft?{prefix:{label:'Prefixo completo do catálogo',value:body.context.fields.prefix||body.context.prefix,options:['',...body.context.aircraft.map(a=>a.prefix)]}}:{})}};
+    for(const [key,label] of technicalAssistantFields)if(body.context.fields.technical?.[key]!==undefined)form.fields[`technical_${key}`]={label,value:body.context.fields.technical[key],maxLength:12000};
     const result=await runAssistantAgent({apiKey,model:process.env.OPENAI_MODEL||'gpt-5.4-mini',message:body.message||'Preencha o relato com as informações legíveis dos anexos.',media,history:access.history||[],actor,context:{area:'Relato técnico',screen:{record:body.context.record,prefix:body.context.prefix,model:body.context.model}},verifiedRecord:savedRecord,form,navigationEnabled:request.headers.get('x-assistant-cards')==='1',signal,deps:{query:q=>assistantQuery(access.client,actor,q,signal),search:q=>searchTechnicalLibrary(q,5)}});
     console.info('assistant_context_tools',JSON.stringify(result.trace));
     const values=result.draftPatch?.values;
-    const answer=parseDraftAnswer({reply:result.reply,proposal:{title:values?.title??null,description:values?.description??null,prefix:values?.prefix??null,...(body.context.fields.tc!==undefined?{tc:values?.tc??null}:{})}});
+    const technical=Object.fromEntries(technicalAssistantFields.filter(([key])=>values?.[`technical_${key}`]!==undefined).map(([key])=>[key,values![`technical_${key}`]]));
+    const answer=parseDraftAnswer({reply:result.reply,proposal:{...(Object.keys(technical).length?{technical}:{}),title:values?.title??null,description:values?.description??null,prefix:values?.prefix??null,...(body.context.fields.tc!==undefined?{tc:values?.tc??null}:{})}});
     if(body.context.record){answer.proposal.prefix=null;}
     else if(body.context.aircraft){
       const spoken=resolveDraftAircraft(body.message,body.context.aircraft);

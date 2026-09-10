@@ -1,5 +1,6 @@
-export type DraftFields = { title: string; description: string; prefix?:string;tc?:string };
-export type DraftProposal = { title: string | null; description: string | null; prefix?:string|null;tc?:string|null };
+import {parseTechnicalAssistantValues} from './assistant-technical-fields';
+export type DraftFields = { title: string; description: string; prefix?:string;tc?:string;technical?:Record<string,string> };
+export type DraftProposal = { title: string | null; description: string | null; prefix?:string|null;tc?:string|null;technical?:Record<string,string> };
 export type DraftContext = { kind: "maintenance-draft"; id: string; prefix: string; model: string; fields: DraftFields; aircraft?:{prefix:string;model:string}[]; record?: {id: string; revision: number} };
 export type AssistantAttachment={name:string;data:string};
 export type ContextTurn = { message: string; reply: string };
@@ -24,6 +25,7 @@ export function parseContextRequest(value: unknown) {
   if (!context.id) throw Error("Rascunho não identificado.");
   if(fields.prefix!==undefined)context.fields.prefix=text(fields.prefix,20);
   if(fields.tc!==undefined)context.fields.tc=text(fields.tc,100);
+  if(fields.technical!==undefined)context.fields.technical=parseTechnicalAssistantValues(fields.technical);
   if(raw.aircraft!==undefined){if(!Array.isArray(raw.aircraft)||raw.aircraft.length>300)throw Error('Catálogo inválido.');context.aircraft=raw.aircraft.map(item=>{const a=object(item);return {prefix:text(a.prefix,20),model:text(a.model,80)};});}
   if (raw.record !== undefined) {
     const record = object(raw.record);
@@ -58,10 +60,11 @@ export function resolveDraftAircraft(message:string,aircraft:{prefix:string;mode
 
 export function parseDraftAnswer(value: unknown): {reply: string; proposal: DraftProposal} {
   const answer = object(value), proposed = object(answer.proposal);
-  if (Object.keys(proposed).some(key => !["title", "description","prefix","tc"].includes(key))) throw Error("Proposta contém campos não permitidos.");
+  if (Object.keys(proposed).some(key => !["title", "description","prefix","tc","technical"].includes(key))) throw Error("Proposta contém campos não permitidos.");
   const reply = text(answer.reply, 16000);
   if (!reply.trim()) throw Error("Resposta vazia.");
   return {reply, proposal: {
+    ...(proposed.technical===undefined?{}:{technical:parseTechnicalAssistantValues(proposed.technical)}),
     ...(proposed.prefix===undefined?{}:{prefix:proposed.prefix===null?null:text(proposed.prefix,20)}),
     ...(proposed.tc===undefined?{}:{tc:proposed.tc===null?null:text(proposed.tc,100)}),
     title: proposed.title === null ? null : text(proposed.title, 500),
@@ -70,13 +73,14 @@ export function parseDraftAnswer(value: unknown): {reply: string; proposal: Draf
 }
 
 export function sameDraft(a: DraftFields, b: DraftFields) {
-  return a.title === b.title && a.description === b.description&&a.prefix===b.prefix&&a.tc===b.tc;
+  return a.title === b.title && a.description === b.description&&a.prefix===b.prefix&&a.tc===b.tc&&JSON.stringify(Object.entries(a.technical||{}).sort())===JSON.stringify(Object.entries(b.technical||{}).sort());
 }
 
 /** Reject stale answers and keep missing fields unchanged. Never persists a record. */
 export function applyDraftProposal(current: DraftFields, original: DraftFields, proposal: DraftProposal): DraftFields {
   if (!sameDraft(current, original)) throw Error("O rascunho mudou. Peça uma nova sugestão antes de aplicar.");
-  return {...current,title: proposal.title ?? current.title, description: proposal.description ?? current.description,...(current.prefix===undefined?{}:{prefix:proposal.prefix??current.prefix}),...(current.tc===undefined?{}:{tc:proposal.tc??current.tc})};
+  if(proposal.technical&&Object.keys(proposal.technical).some(key=>!Object.hasOwn(current.technical||{},key)))throw Error('Campo técnico fora deste formulário.');
+  return {...current,...(current.technical?{technical:{...current.technical,...proposal.technical}}:{}),title: proposal.title ?? current.title, description: proposal.description ?? current.description,...(current.prefix===undefined?{}:{prefix:proposal.prefix??current.prefix}),...(current.tc===undefined?{}:{tc:proposal.tc??current.tc})};
 }
 
 export const draftAnswerSchema = {
