@@ -1,0 +1,11 @@
+"use client";
+import {useState} from 'react';
+import type {SupabaseClient} from '@supabase/supabase-js';
+import {ToolboxPicker,ToolboxVisualManager} from '@/components/toolbox-visual';
+import {AssistantWorkspaceProvider,AssistantTarget} from '@/components/assistant-workspace';
+const visual={catalog:{revision:1,drawers:[{id:'drawer',name:'Gaveta 1',photo:'',reviewed:true,tools:[['a','Chave combinada','10 mm',true],['b','Alicate','6 pol',true],['c','Torquímetro','20 Nm',true],['d','Chave sem revisão','8 mm',false]].map(([id,name,measure,reviewed])=>({id,name,measure,reviewed,x:50,y:50}))}]},loans:[{id:'loan',status:'open',employee:'99',tools:[{id:'c'}]}]};
+const history:unknown[]=[];const query={select:()=>query,eq:()=>query,order:async()=>({data:[],error:null})};
+const client={auth:{getSession:async()=>({data:{session:{access_token:'synthetic'}}})},from:()=>query,rpc:async(name:string,args:{p_action:string;p_payload:Record<string,string>})=>{if(name==='refresh_current_device')return {data:{employeeNumber:'42'},error:null};if(name==='get_toolbox_visual')return {data:visual,error:null};if(name!=='personal_assistant')return {data:[],error:null};let data:unknown=[];if(args.p_action==='create_conversation')data={id:args.p_payload.id,title:'Teste',created_at:new Date().toISOString(),updated_at:new Date().toISOString()};if(args.p_action==='list')data=history;if(args.p_action==='append'){data={id:history.length+1,message:args.p_payload.message,reply:args.p_payload.reply,created_at:new Date().toISOString()};history.push(data);}return {data,error:null};}} as unknown as SupabaseClient;
+
+function App(){const [selected,setSelected]=useState<string[]>([]),[catalog,setCatalog]=useState(false);return <main><AssistantTarget id="root" label="Ferramentaria" priority={0} revision="1" content={null}/><button onClick={()=>setCatalog(true)}>Editar catálogo de teste</button><output aria-label="IDs selecionados">{selected.join(',')}</output>{catalog?<ToolboxVisualManager supabase={client} boxId="box" boxName="Caixa de teste" requireSignature={async()=>{throw Error('No save');}} onClose={()=>setCatalog(false)}/>:<ToolboxPicker supabase={client} boxId="box" selected={selected} onChange={setSelected}/>}</main>;}
+export default function Page(){return <AssistantWorkspaceProvider><App/></AssistantWorkspaceProvider>;}

@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     const actor=await assistantActor(access.client,access.employee);
     const signal=AbortSignal.any([request.signal,AbortSignal.timeout(110000)]);
     const form:AssistantFormContext={id:body.context.id,label:`Relato técnico · ${body.context.prefix||'nova ocorrência'}`,mode:'draft',revision:body.context.record?.revision,fields:{...(body.context.fields.tc!==undefined?{tc:{label:'Número da TC informado',value:body.context.fields.tc,maxLength:100}}:{}),title:{label:'Título do relato, fiel e curto',value:body.context.fields.title,maxLength:500},description:{label:'Descrição: somente fatos informados, sem presumir fase, causa, horário, execução ou teste',value:body.context.fields.description,maxLength:12000},...(!body.context.record&&body.context.aircraft?{prefix:{label:'Prefixo completo do catálogo',value:body.context.fields.prefix||body.context.prefix,options:['',...body.context.aircraft.map(a=>a.prefix)]}}:{})}};
-    const result=await runAssistantAgent({apiKey,model:process.env.OPENAI_MODEL||'gpt-5.4-mini',message:body.message||'Preencha o relato com as informações legíveis dos anexos.',media,history:access.history||[],actor,context:{area:'Relato técnico',screen:{record:body.context.record,prefix:body.context.prefix,model:body.context.model}},verifiedRecord:savedRecord,form,navigationEnabled:false,signal,deps:{query:q=>assistantQuery(access.client,actor,q,signal),search:q=>searchTechnicalLibrary(q,5)}});
+    const result=await runAssistantAgent({apiKey,model:process.env.OPENAI_MODEL||'gpt-5.4-mini',message:body.message||'Preencha o relato com as informações legíveis dos anexos.',media,history:access.history||[],actor,context:{area:'Relato técnico',screen:{record:body.context.record,prefix:body.context.prefix,model:body.context.model}},verifiedRecord:savedRecord,form,navigationEnabled:request.headers.get('x-assistant-cards')==='1',signal,deps:{query:q=>assistantQuery(access.client,actor,q,signal),search:q=>searchTechnicalLibrary(q,5)}});
     console.info('assistant_context_tools',JSON.stringify(result.trace));
     const values=result.draftPatch?.values;
     const answer=parseDraftAnswer({reply:result.reply,proposal:{title:values?.title??null,description:values?.description??null,prefix:values?.prefix??null,...(body.context.fields.tc!==undefined?{tc:values?.tc??null}:{})}});
@@ -54,6 +54,6 @@ export async function POST(request: Request) {
       answer.proposal.prefix=drafting&&matches.length===1?matches[0].prefix:null;
       if(drafting&&matches.length>1)answer.reply='Encontrei mais de uma aeronave para esse prefixo. Qual delas você quer usar?';
     }else answer.proposal.prefix=null;
-    return json({...answer, sources:[], contextId: body.context.id});
+    return json({...answer, sources:[],navigation:result.navigation,continuation:result.continuation, contextId: body.context.id});
   } catch(error) { const status=(error as {status?:number})?.status;return json({error:status===429?"Limite da IA atingido. Confira o saldo ou tente mais tarde.":"A consulta foi interrompida ou retornou dados inválidos. Seu rascunho foi preservado."},status===429?429:502); }
 }

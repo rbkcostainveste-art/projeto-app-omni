@@ -1,11 +1,11 @@
-export type AssistantTargetRef={kind:'maintenance'|'drying'|'wall'|'activity'|'flight'|'passage'|'tool'|'cockpit';id:string};
+export type AssistantTargetRef={kind:'maintenance'|'drying'|'wall'|'activity'|'flight'|'passage'|'tool'|'cockpit'|'note';id:string};
 export type AssistantRecordCard=AssistantTargetRef&{title:string;detail:string};
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function parseTarget(value:unknown):AssistantTargetRef|null{
  if(!value||typeof value!=='object')return null;
  const item=value as Record<string,unknown>;
  const textId=item.kind==='wall'||item.kind==='activity'||item.kind==='flight'||item.kind==='passage'||item.kind==='cockpit';
- return (item.kind==='maintenance'||item.kind==='drying'||textId||item.kind==='tool')&&typeof item.id==='string'&&(textId?(item.kind==='cockpit'?/^[a-zA-Z0-9_:-]{1,160}$/:/^[a-zA-Z0-9_-]{1,160}$/).test(item.id):uuid.test(item.id))?{kind:item.kind as AssistantTargetRef['kind'],id:textId?item.id:item.id.toLowerCase()}:null;
+ return (item.kind==='maintenance'||item.kind==='drying'||textId||item.kind==='tool'||item.kind==='note')&&typeof item.id==='string'&&(textId?(item.kind==='cockpit'?/^[a-zA-Z0-9_:-]{1,160}$/:/^[a-zA-Z0-9_-]{1,160}$/).test(item.id):uuid.test(item.id))?{kind:item.kind as AssistantTargetRef['kind'],id:textId?item.id:item.id.toLowerCase()}:null;
 }
 /** The model only chooses identifiers. Labels and destinations come from authorized server results. */
 export function appendTargetLinks(reply:string,chosen:unknown,available:AssistantRecordCard[]){
@@ -18,6 +18,6 @@ export function appendTargetLinks(reply:string,chosen:unknown,available:Assistan
 /** Regular text stays literal; only the app's exact internal-link format becomes a card. */
 export function splitTargetLinks(reply:string){
  const cards:(AssistantTargetRef&{label:string})[]=[];
- const text=reply.replace(/^\[([^\]\n]{1,220})\]\(flight-ia:\/\/(maintenance|drying|wall|activity|flight|passage|tool|cockpit)\/([a-zA-Z0-9_:-]{1,160})\)\s*$/gim,(whole,label,kind,id)=>{const ref=parseTarget({kind:kind.toLowerCase(),id});if(!ref)return whole;if(cards.length<12)cards.push({...ref,label});return '';}).trim();
+ const text=reply.replace(/^\[([^\]\n]{1,220})\]\(flight-ia:\/\/(maintenance|drying|wall|activity|flight|passage|tool|cockpit|note)\/([a-zA-Z0-9_:-]{1,160})\)\s*$/gim,(whole,label,kind,id)=>{const ref=parseTarget({kind:kind.toLowerCase(),id});if(!ref)return whole;if(cards.length<12)cards.push({...ref,label});return '';}).trim();
  return {text,cards};
 }

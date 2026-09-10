@@ -3,12 +3,12 @@
 import {useEffect, useLayoutEffect, useRef, useState} from "react";
 import type {SupabaseClient} from "@supabase/supabase-js";
 import {Bot, Send, ArrowLeft} from "lucide-react";
-import {applyDraftProposal, sameDraft, parseDraftAnswer, type ContextTurn, type DraftContext, type DraftFields, type DraftProposal, type AssistantAttachment} from "@/lib/contextual-assistant";
+import {applyDraftProposal, sameDraft, parseDraftAnswer, type DraftContext, type DraftFields, type DraftProposal, type AssistantAttachment} from "@/lib/contextual-assistant";
 import {TechnicalSourceList, type TechnicalSource} from "./technical-library-search";
 import {AssistantConversations} from './assistant-conversations';
-import {useAssistantHistory} from './assistant-history';
+import {useAssistantHistory,AssistantHistory} from './assistant-history';
 import {ChatCapture} from './chat-capture';
-import {useAssistantContinuation} from './assistant-workspace';
+import {useAssistantContinuation,useAssistantWorkspace} from './assistant-workspace';
 
 type Suggestion = {original: DraftFields; proposal: DraftProposal};
 const fieldClass = "w-full rounded-xl border border-blue-200 bg-white p-3 text-sm text-slate-900";
@@ -27,7 +27,7 @@ function ContextualConversation({open, context, client, user, disabled, onClose,
   const latest=useRef({fields:context.fields,onApply});
   useLayoutEffect(()=>{latest.current={fields:context.fields,onApply};},[context.fields,onApply]);
   const history=useAssistantHistory(client,user,conversationId);
-  const turns:ContextTurn[]=history.entries;
+  const workspace=useAssistantWorkspace();const navigate=workspace?.navigationAvailable()?workspace.navigate:undefined;
   const pending=useRef<{requestId:string;message:string;reply:string}|null>(null);
   const [needsSave,setNeedsSave]=useState(false);
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
@@ -65,7 +65,7 @@ function ContextualConversation({open, context, client, user, disabled, onClose,
       if (controller.signal.aborted) return;
       const response = await fetch("/api/ai/context", {
         method: "POST", signal: controller.signal,
-        headers: {"Content-Type": "application/json", Authorization: `Bearer ${session.data.session.access_token}`, "x-employee": user,"x-conversation-id":conversationId},
+        headers: {"Content-Type": "application/json", Authorization: `Bearer ${session.data.session.access_token}`, "x-employee": user,"x-conversation-id":conversationId,"x-assistant-cards":navigate?"1":"0"},
         body: JSON.stringify({message: prompt, attachments, context: {...context, fields: snapshot}, history: []}),
       });
       const data = await response.json();
@@ -83,6 +83,7 @@ function ContextualConversation({open, context, client, user, disabled, onClose,
         }else setSuggestion({original:snapshot,proposal:answer.proposal});
       }
       await save();
+      if(data.navigation&&navigate)await navigate(data.navigation,{conversationId,title,message:data.continuation?prompt:undefined});
     } catch (reason) {
       if (request.current === controller && !controller.signal.aborted) setError((reason instanceof Error ? reason.message : "A consulta falhou.")+(pending.current?' A resposta está pronta. Tente salvar o histórico.':''));
     } finally {
@@ -130,7 +131,7 @@ function ContextualConversation({open, context, client, user, disabled, onClose,
     <header className="flex items-start justify-between gap-2"><div><h3 className="flex items-center gap-2 font-bold"><Bot size={20}/>IA neste relato</h3><p className="mt-1 text-xs">{context.prefix || "Aeronave ainda não selecionada"}{context.model ? ` · ${context.model}` : ""}</p></div><button type="button" aria-label="Conversas anteriores do relato" onClick={close} className="grid min-h-11 min-w-11 place-items-center rounded-lg hover:bg-blue-100"><ArrowLeft size={18}/></button></header>
     <p className="my-3 text-xs text-slate-600">{title} · Conversa pessoal vinculada a {context.record ? 'este registro' : 'este rascunho'}. O histórico fica disponível na lista do assistente.</p>
     {history.error?<p role="alert">{history.error}</p>:null}{history.loading?<p role="status">Carregando histórico…</p>:null}{history.more?<button type="button" disabled={history.loading} onClick={()=>void history.older()}>Mensagens anteriores</button>:null}
-    <div className="space-y-3" aria-live="polite">{turns.map((turn, index) => <div key={index} className="space-y-2"><p className="whitespace-pre-wrap break-words rounded-xl bg-blue-100 p-3 text-sm"><b>Você: </b>{turn.message}</p><p className="whitespace-pre-wrap break-words rounded-xl bg-white p-3 text-sm"><b>IA: </b>{turn.reply}</p></div>)}</div>
+    <div className="space-y-3" aria-live="polite"><AssistantHistory entries={history.entries} onOpenTarget={navigate?ref=>navigate(ref,{conversationId,title}):undefined}/></div>
     <TechnicalSourceList sources={sources}/>
     {suggestion ? <section className="my-3 rounded-xl bg-white p-3">{stale?<p role="status">Você alterou o formulário durante a resposta. Mantive sua edição. Peça um novo ajuste.</p>:<button type="button" disabled={disabled||busy} onClick={apply}>Aplicar sugestão aos campos</button>}</section>:null}
     {notice ? <p role="status" className="my-3 text-sm text-green-800">{notice}</p> : null}

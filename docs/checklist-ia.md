@@ -15,7 +15,9 @@ Marcar uma etapa concluída somente após atender aos critérios descritos. Não
 
 ## Situação atual — revisão profunda em andamento
 
-Última publicação confirmada: `0a1479d07e9ea3cada32cd5affebb5715958325f`, deployment `dpl_3oZ9Naw3CbrPkyiv867hC2vxNGjA`, READY no domínio principal. Atualizações seguintes em validação são descritas no final.
+[Cobertura por área, campos e limitações](cobertura-ia.md).
+
+Última publicação confirmada: `671f8a3a31f20feb14131e98a1af0689d44b90f2`, deployment `dpl_3XGCZfa7o8ufmQRs64gGzw4TpyVp`, READY no domínio principal. Atualizações seguintes em validação são descritas no final.
 
 - [x] Substituir consultas fixas por ferramentas escolhidas conforme a pergunta. Remover bloco de secagens sem relação com o pedido.
 - [x] Compartilhar regras da timeline e das designações entre a tela e a consulta. Contexto inclui área, filtros, card e fuso; identidade/base vêm do servidor.
@@ -25,9 +27,9 @@ Marcar uma etapa concluída somente após atender aos critérios descritos. Não
 - [x] Até três imagens/PDF de 2 MB somados no assistente geral; áudio transcrito com envio automático ou revisão. Proteção de edição concorrente, desfazer e preservação dos controles existentes de salvar/assinar.
 - [x] Testes reais: timeline, designações pessoais, continuação para PR-CHT, abertura do relato, ferramentaria e rascunho de nova atividade. Sessão de administrador; consultas de mecânico também verificadas como authenticated no banco em transação revertida.
 - [ ] Completar todos os campos e ações ainda sem adaptador: ferramentas catalogadas, demais controles de coordenação/administração, notas e ações encadeadas entre telas.
-- [ ] Continuidade da mesma conversa ao abrir um registro e executar um pedido composto como “abra e preencha X/Y/Z”, sem repetir a solicitação.
-- [x] Captura prospectiva de confirmações autenticadas de lavagem e vínculo ao ciclo de secagem, instalada em 10/09. Consulta em validação de publicação. O histórico anterior permanece incompleto e não será inventado.
-- [ ] Ampliar consultas do Cockpit e demais módulos além dos conjuntos já conectados. Ter preenchimento no formulário não significa ter consulta de todo o módulo.
+- [x] Continuidade da mesma conversa ao abrir relato, passagem ou Cockpit e continuar um pedido composto. Teste real aprovado no relato PR-CHT. Demais destinos ainda exigem expansão individual.
+- [x] Captura prospectiva de confirmações autenticadas de lavagem e vínculo ao ciclo de secagem, instalada em 10/09. Consulta publicada, com aviso de cobertura parcial imposto pelo servidor. O histórico anterior permanece incompleto e não será inventado.
+- [x] Consulta dos registros autorizados do Cockpit e abertura do editor original. Notas pessoais implementadas localmente, em validação; demais conjuntos ainda precisam de inventário. Ter preenchimento no formulário não significa ter consulta de todo o módulo.
 - [ ] Aceite real por todos os cargos/bases, imagens/documentos representativos, voz em ambiente de pista e câmera ao vivo integrada às mesmas ações.
 - [ ] Planilhas, documentos maiores, acervo técnico do operador, acompanhamento de consumo e cobertura integral do inventário.
 
@@ -112,19 +114,19 @@ Esses itens estão pendentes de implementação salvo indicação explícita. As
 | IA-07 | Anexos e extração parcial | Parcial: texto, imagem e PDF na programação, publicados parcialmente | Até 2 MB e 30 voos por análise; tipo/tamanho verificados. XLSX, áudio, anexos no relato e precisão de leitura real pendentes |
 | IA-08 | Coordenação: importar programação | Parcial: revisão e adição aos rascunhos validadas com simulação | Editar/selecionar itens, detectar duplicidade, conferir antes de programar; validação com documentos e gravação reais pendente |
 | IA-09 | Manutenção: elaborar relato no card | Publicado parcialmente: criação e revisão de relato existente, com voz transcrita | Propostas de título/descrição, revisão, desfazer e confirmação existente; anexos à IA, demais campos e aceite do modelo com dados reais pendentes |
-| IA-10 | Piloto: mural, Cockpit e documentos | Pendente | Extrair campos pertinentes, propor relatos e interpretar dados disponíveis; não inventar validade, assinatura ou cálculo regulamentar |
-| IA-11 | Expansão aos demais módulos | Pendente | Cobertura por campo/card inventariada, ações e permissões verificadas; sem atalhos que só abrem chat genérico |
+| IA-10 | Piloto: mural, Cockpit e documentos | Parcial; Cockpit publicado, documentação em validação | Extrair campos pertinentes, propor relatos e interpretar dados disponíveis; não inventar validade, assinatura ou cálculo regulamentar |
+| IA-11 | Expansão aos demais módulos | Parcial; consultar cobertura-ia.md | Cobertura por campo/card inventariada, ações e permissões verificadas; sem atalhos que só abrem chat genérico |
 | IA-12 | Biblioteca administrável e pesquisa técnica | Pendente / dependência externa parcial | Importar acervo autorizado, revisões e efetividade; citar página/seção, conferir fontes e identificar referência ausente; AMM/FIM/IPC reais dependem dos documentos |
 | IA-13 | Segurança, auditoria e consumo | Parcial: autenticação também publicada na rota geral de texto | Rascunho sem escrita no banco; validar sessões reais, revisar escopo dos dados, limites distribuídos de uso, auditoria persistente e consumo |
 | IA-14 | Validação completa e publicação | Pendente | Testes por perfil e base, concorrência/duplicidade, mobile/desktop, regressão, deployment confirmado e aceite dos fluxos reais |
-| IA-15 | Consultas operacionais entre módulos | Publicado parcialmente: fila atual de secagens por botão no assistente | Consulta autenticada no servidor, perfil/base e RLS; interpretação de pergunta livre e lavagem realizada hoje ainda pendentes |
-| IA-16 | Cards acionáveis e navegação na conversa | Publicado parcialmente: secagem abre Trilho filtrado | Reconsulta do ID antes de abrir; validação de navegação integrada em sessão real, destaque do card exato, demais registros e ambiguidades pendentes |
-| IA-17 | Comandos para todos os lançamentos | Pendente | Localizar alvo, propor campos permitidos, revisar, aplicar e salvar pelas regras do módulo; testar comando de preenchimento na Passagem de Pista |
-| IA-18 | Conhecimento do aplicativo e continuidade | Pendente | Explicar funções existentes, conhecer capacidades disponíveis e continuar conversa entre painel/card; informar quando uma ação ainda não é suportada |
+| IA-15 | Consultas operacionais entre módulos | Publicado: ferramentas por pergunta livre, incluindo lavagens e Cockpit | Identidade/base verificadas; cobertura histórica e conjuntos explicitados; notas em validação |
+| IA-16 | Cards acionáveis e navegação na conversa | Publicado para conjuntos conectados | Reconsulta do ID; relato aberto por comando em sessão real; demais alvos conforme inventário |
+| IA-17 | Comandos para todos os lançamentos | Parcial; relato/Passagem/Cockpit, demais adaptadores em expansão | Localizar alvo, propor campos permitidos, revisar, aplicar e salvar pelas regras do módulo; testar comando de preenchimento na Passagem de Pista |
+| IA-18 | Conhecimento do aplicativo e continuidade | Parcial; ferramentas, contexto e continuidade publicada | Explicar funções existentes, conhecer capacidades disponíveis e continuar conversa entre painel/card; informar quando uma ação ainda não é suportada |
 
 IA-13 deve ser construída junto com as primeiras rotas/ações; sua posição na tabela não permite adiá-la até o final.
 
-## Cobertura inicial do aplicativo
+## Cobertura inicial do aplicativo (histórico; inventário atualizado em cobertura-ia.md)
 
 O inventário é inicial: cada linha deve ser desdobrada nos formulários, campos e cards efetivos antes de ser marcada como coberta. A criação de relato técnico e importação da programação são integrações publicadas parciais; os demais alvos ainda exigem integração. Textos estáticos/cards de leitura recebem explicação/consulta; campos editáveis podem receber propostas conforme permissão. Senhas, tokens e ações técnicas formais não serão enviados ou alterados automaticamente.
 
@@ -386,3 +388,16 @@ O inventário é inicial: cada linha deve ser desdobrada nos formulários, campo
 - A continuação só é executada ao registrar o alvo exato, uma vez por transferência. Em rascunho preenche; alterações persistentes mantêm a revisão/assinatura do formulário. Outros destinos abrem normalmente, mas ainda não têm transferência automática de campos.
 - Testes de navegador 390/1366: uma única conversa, abertura do relato original, preenchimento uma única vez e desfazer. APIs/modelo simulados; teste real após publicação pendente.
 - 132 testes aprovados, build aprovado; esta entrega não encerra o inventário de formulários.
+
+
+### 10/09/2026 — continuação real aprovada e ampliação dos formulários
+
+- Publicação `671f8a3` READY. Teste real com OpenAI e administrador: “Abra o relato técnico do CHT e prepare a correção do título para Altímetro intermitente, sem salvar o registro.” abriu PR-CHT, manteve a conversa e preencheu a correção. Desfazer restaurou Altimetro; janela fechada, registro original não alterado.
+- Notas pessoais: consulta pela RPC existente, isolada pelo dono, sem anexos privados. SQL real em transação revertida confirmou isolamento/identidade. Navegação para nota original e preparação de título, texto, prefixo e lembrete implementadas localmente.
+- Coordenação: formulário compartilhado de criação/edição recebe prefixo, data, saída, destino, duração, combustível/unidade, posição, tripulantes elegíveis e repetição semanal. Valida datas/horários, pessoas distintas e elegibilidade do comissário. Salvar/programar permanecem no fluxo original.
+- Outros adaptadores locais: cliente/plataforma, briefing e títulos/links de documentos, contador anterior/equipamento, planejamento de manutenção e metadados de vídeo de ajuda. Não modificam valores derivados, assinaturas nem concessões de acesso.
+- Ferramentaria: seleção múltipla entre ferramentas conferidas e disponíveis; item emprestado/sem revisão não é opção da IA. Cadastro de gaveta/ferramenta permite preparar nomes, medida e posição; alterações retiram a marca de revisão, preservando conferência e assinatura existentes.
+- Painéis locais compartilham a renderização e navegação dos cards com o assistente geral. Notas e demais formulários herdam o navegador autorizado.
+- 135 testes unitários/de rotas passaram. Navegador de notas/coordenação aprovado em 390/1366 px com APIs simuladas; seleção de ferramentas e regressão da navegação ainda em validação. Esta entrada não afirma publicação dos adaptadores novos.
+
+- Regressão final: navegação/continuação em uma conversa e desfazer aprovados em 390/1366 px com build otimizado; seleção múltipla/catálogo aprovada nas duas larguras. Ambiente de desenvolvimento ficou lento; teste final usou build local de produção. Notas/coordenação: restaurar o valor original (inclusive horários) aprovado. Lint sem erros, três avisos preexistentes. Fixtures removidas para o build definitivo.

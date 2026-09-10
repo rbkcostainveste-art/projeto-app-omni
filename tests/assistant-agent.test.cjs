@@ -6,6 +6,27 @@ const actor={employeeNumber:'42',accessProfile:'mechanic',assignedBase:'Macaé',
 const args=(dataset,extra={})=>({dataset,query:null,prefix:null,base:null,from:null,until:null,status:'all',mine:false,offset:0,id:null,...extra});
 const at='2026-09-09T20:00:00Z';
 
+test('multiple-choice form tools accept only catalog entries and survive the server/client round trip',()=>{
+ const helper=load('src/lib/assistant-form.ts'),form=helper.parseAssistantForm({id:'tools',label:'Ferramentas',mode:'draft',fields:{tools:{label:'Seleção',value:'[]',options:['Chave 10','Chave 12'],multiple:true}}});
+ assert.deepEqual(helper.formTool(form).parameters.properties.tools.type,['array','null']);
+ const patch=helper.parseFormPatch(form,{tools:['Chave 10','Chave 12','Chave 10']});assert.equal(patch.tools,'["Chave 10","Chave 12"]');assert.deepEqual(helper.parseFormPatch(form,patch),patch);assert.throws(()=>helper.parseFormPatch(form,{tools:['Chave 99']}));assert.throws(()=>helper.parseFormPatch(form,{tools:'not json'}));assert.equal(helper.parseFormPatch(form,{tools:[]}).tools,'[]');
+});
+
+test('coordination fields resolve named crew, validate recurrence and reject invented assignments',()=>{
+ const helper=load('src/lib/assistant-coordination.ts'),item={id:'f1',prefix:'PR-CHT',date:'2026-09-10',departure:'08:00',destination:'',duration:'01:30',fuelAmount:'0',fuelUnit:'L',commander:'',copilot:'',flightAttendant:'',repeat:false,weekdays:[],weekdayTimes:{}};
+ const planes=[{prefix:'PR-CHT',model:'S92'},{prefix:'PR-ABC',model:'AW139'}],people=[{employeeNumber:'42',name:'Carlos',profile:'commander'},{employeeNumber:'43',name:'Ana',profile:'copilot'}];
+ const patch=helper.coordinationAssistantPatch(item,planes,people,{commander:'Carlos · 42',copilot:'Ana · 43',repeat:'Sim',day1:'08:30',day3:'09:00',fuelAmount:'12,5'});
+ assert.equal(patch.commander,'42');assert.equal(patch.copilot,'43');assert.deepEqual(patch.weekdays,[1,3]);assert.equal(patch.weekdayTimes[3],'09:00');assert.equal(patch.fuelAmount,'12.5');
+ assert.equal(helper.coordinationAssistantPatch(item,planes,people,{departure:''}).departure,'');
+ for(const bad of [{date:'2026-02-30'},{departure:'25:00'},{commander:'Inventado'},{commander:'Carlos · 42',copilot:'Carlos · 42'},{day1:'amanhã'}])assert.throws(()=>helper.coordinationAssistantPatch(item,planes,people,bad));
+});
+
+test('notes use personal identity, keep attachments out of the model and do not substitute denial with empty data',async()=>{
+ let denied=false;const c={rpc:(name,p)=>{assert.equal(name,'personal_note');assert.equal(p.p_payload.employee,'42');return {abortSignal:async()=>({error:denied?Error('denied'):null,data:[{id:'11111111-1111-4111-8111-111111111111',title:'Meu lembrete',body:'Conferir escala',prefix:'PR-CHT',updated_at:at,remind_at:null,attachments:[{url:'private-secret'}]}]})};}};
+ const result=await queries.assistantQuery(c,actor,args('notes'),new AbortController().signal);assert.equal(result.items.length,1);assert.equal(result.cards[0].kind,'note');assert.equal(JSON.stringify(result).includes('private-secret'),false);
+ denied=true;assert.equal((await queries.assistantQuery(c,actor,args('notes'),new AbortController().signal)).complete,false);
+});
+
 test('incomplete washing evidence cannot omit its coverage limitation from the final answer',async()=>{
  let step=0;const result=await agent.runAssistantAgent({apiKey:'test',model:'test',message:'quais foram lavados hoje?',media:[],history:[],actor,context:{},navigationEnabled:false,signal:new AbortController().signal,deps:{query:async()=>({status:'available',items:[],cards:[],complete:false}),search:()=>[],fetcher:async()=>Response.json({status:'completed',output:step++===0?[{type:'function_call',call_id:'wash',name:'consultar_app',arguments:JSON.stringify(args('washing',{status:'open'}))}]:[{type:'message',content:[{type:'output_text',text:JSON.stringify({reply:'Não encontrei registros.',targets:[],openTarget:null})}]}]})}});
  assert.match(result.reply,/não cobre todo esse período/);assert.match(result.reply,/não confirma a lista completa/);
