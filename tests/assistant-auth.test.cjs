@@ -14,7 +14,7 @@ test('general assistant rejects denied sessions before reading content or callin
   '@/lib/assistant-targets':load('src/lib/assistant-targets.ts'),
   '@/lib/assistant-drying-context':{assistantDryingContext:async()=>({status:'available',items:[]})},
   '@/lib/contextual-assistant':load('src/lib/contextual-assistant.ts'),
-  '@/lib/assistant-media':load('src/lib/assistant-media.ts'),
+  '@/lib/assistant-upload-content':load('src/lib/assistant-upload-content.ts'),
   'next/server':{NextResponse:Response},
   '@/lib/assistant-access':{assistantAccess:async request=>{checks++;assert.equal(request.headers.get('x-employee'),'test-user');if(!allowed)throw Error('private database error');return {employee:'test-user',history:[{message:'Tem pane aberta?',reply:'Vamos consultar.'}]};}},
   '@/lib/assistant-records':{assistantRecords:async()=>({status:'available',records:[{prefix:'PR-CHT',title:'Relato existente'}]})},

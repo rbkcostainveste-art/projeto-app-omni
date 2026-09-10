@@ -1,9 +1,9 @@
+import {resolveAssistantMedia} from "@/lib/assistant-upload-content";
 import {parseAssistantForm} from '@/lib/assistant-form';
 import {assistantActor,assistantQuery} from '@/lib/assistant-queries';
 import {runAssistantAgent} from '@/lib/assistant-agent';
 import {calendarDay} from '@/lib/wall-selectors';
 import {parseAssistantAttachments} from "@/lib/contextual-assistant";
-import {assistantMediaContent} from "@/lib/assistant-media";
 import {searchTechnicalLibrary} from "@/lib/technical-library";
 import { NextResponse } from "next/server";
 import {assistantAccess} from "@/lib/assistant-access";
@@ -23,8 +23,8 @@ export async function POST(request: Request) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "A IA ainda precisa da chave OPENAI_API_KEY na Vercel." }, { status: 503 });
 
-  let body:RequestBody,media:ReturnType<typeof assistantMediaContent>;
-  try {const raw=await request.text();if(raw.length>2900000)return NextResponse.json({error:'Pedido acima do limite.'},{status:413});body=JSON.parse(raw);if(body.message!==undefined&&(typeof body.message!=="string"||body.message.length>8000))throw Error("Invalid message");media=assistantMediaContent(parseAssistantAttachments(body.attachments??(body.image?[{name:body.image.startsWith('data:application/pdf')?'documento.pdf':'imagem',data:body.image}]:[])));}catch{return NextResponse.json({error:'Envie texto, imagem ou PDF válido de até 2 MB.'},{status:400});}
+  let body:RequestBody,media:Record<string,unknown>[];
+  try {const raw=await request.text();if(raw.length>2900000)return NextResponse.json({error:'Pedido acima do limite.'},{status:413});body=JSON.parse(raw);if(body.message!==undefined&&(typeof body.message!=="string"||body.message.length>8000))throw Error("Invalid message");media=await resolveAssistantMedia(access.client,parseAssistantAttachments(body.attachments??(body.image?[{name:body.image.startsWith('data:application/pdf')?'documento.pdf':'imagem',data:body.image}]:[])));}catch{return NextResponse.json({error:'Envie texto, imagem ou PDF válido. Confira os anexos e tente novamente.'},{status:400});}
   if (!body.message?.trim() && !media.length) return NextResponse.json({ error: "Envie uma pergunta, comando ou fotografia." }, { status: 400 });
 
   try {

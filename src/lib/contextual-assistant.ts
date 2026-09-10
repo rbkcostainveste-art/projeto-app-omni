@@ -48,13 +48,13 @@ export function parseContextRequest(value: unknown) {
 
 export function parseAssistantAttachments(value:unknown):AssistantAttachment[]{
  if(value===undefined)return [];
- if(!Array.isArray(value)||value.length>3)throw Error('Envie até três anexos.');
- let size=0;return value.map(item=>{const f=object(item),name=text(f.name,180),data=text(f.data,2800000);size+=data.length;if(size>2800000||!/^data:(application\/pdf|image\/(png|jpeg|webp));base64,[A-Za-z0-9+/]+={0,2}$/.test(data))throw Error('Use imagens ou PDF, até 2 MB no total.');return {name,data};});
+ if(!Array.isArray(value)||value.length>10)throw Error('Envie até 10 anexos.');
+ let size=0;return value.map(item=>{const f=object(item),name=text(f.name,180),data=text(f.data,2800000);size+=data.length;if(/^storage:[0-9a-f-]{36}\/[0-9a-f-]{36}\.(pdf|png|jpg|webp)$/.test(data))return {name,data};if(size>2800000||!/^data:(application\/pdf|image\/(png|jpeg|webp));base64,[A-Za-z0-9+/]+={0,2}$/.test(data))throw Error('Use imagens ou PDF, até 2 MB no total.');return {name,data};});
 }
 export function resolveDraftAircraft(message:string,aircraft:{prefix:string;model:string}[]){
  const alphabet:Record<string,string>={ALFA:'A',ALPHA:'A',BRAVO:'B',CHARLIE:'C',DELTA:'D',ECHO:'E',FOXTROT:'F',GOLF:'G',HOTEL:'H',INDIA:'I',JULIET:'J',JULIETT:'J',KILO:'K',LIMA:'L',MIKE:'M',NOVEMBER:'N',OSCAR:'O',PAPA:'P',QUEBEC:'Q',ROMEO:'R',SIERRA:'S',TANGO:'T',UNIFORM:'U',VICTOR:'V',WHISKEY:'W',XRAY:'X',YANKEE:'Y',ZULU:'Z'};
  const words:string[]=message.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/X[ -]RAY/g,'XRAY').match(/[A-Z0-9]+(?:-[A-Z0-9]+)?/g)||[];
- const spoken:string[]=[];let run='';for(const word of [...words,'']){if(alphabet[word])run+=alphabet[word];else{if(run.length>=3)spoken.push(run);run='';}}words.push(...spoken);
+ const spoken:string[]=[];let run='';for(const word of [...words,'']){if(alphabet[word])run+=alphabet[word];else if(word==='E'&&run.length>0){continue;}else{if(run.length>=3)spoken.push(run);run='';}}words.push(...spoken);
  return aircraft.filter(a=>{const compact=a.prefix.toUpperCase().replace(/[^A-Z0-9]/g,'');return words.some(w=>{const token=w.replace(/-/g,'');return token===compact||(token.length===3&&compact.endsWith(token));});});
 }
 

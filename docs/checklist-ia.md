@@ -417,3 +417,15 @@ O inventário é inicial: cada linha deve ser desdobrada nos formulários, campo
 - Publicação dos campos técnicos e foco confirmada: `5b41781db275c0a71380c7ecd5a4ea65989eaea9`, deployment `dpl_9cPnieE1gr2TAHF3qs5eMFwzCTP4`, READY. Ajuste final: botões locais de novo/atual relato indicam o alvo explicitamente, mesmo após foco em outro campo.
 
 - Aceite real desta etapa, administrador e OpenAI no domínio principal: no PR-CHT, pedido preparou Componente=Altímetro e Resultado observado=Intermitente; Medição/Documento permaneceram vazios, conclusão do teste e confirmações formais inalteradas. Desfazer restaurou os campos; relato fechado sem salvar. Não foi criada execução nem alterado registro operacional. A conversa pessoal permanece no histórico.
+
+
+### 10/09/2026 — praticidade, anexos e revisão técnica
+
+Acompanhamento detalhado em [ajustes-2026-09-10.md](ajustes-2026-09-10.md).
+
+- Revisão diferencia redação, completude e evidência documental; consulta fontes pertinentes e preserva a observação original imutável no registro. Não inventa manual/referência e não confunde revisão com autorização.
+- Propostas aguardam botão ou “pode aplicar”. Comentário do mural pode ser publicado com aprovação; assistente geral prepara e salva voos como Programado após aprovação. Datas/horários, catálogo, edição concorrente e duplicidade permanecem verificados.
+- Imagens/arquivos múltiplos e colagem nos chats/assistentes; envio explícito na programação e pedidos de ajuste da lista importada. Arquivos da IA acima de 2 MB passam pelo armazenamento privado (20 MB por arquivo, 40 MB por mensagem).
+- Público de manutenção filtrado, histórico/republicação do quadro, recentes primeiro, texto sem imagem ocupa o card. Painel da coordenação filtra base atual e exclui A definir. Datas seguem hoje por padrão sem substituir consulta histórica.
+- 143 testes unitários/de rotas, navegador 390/1366 e teste SQL real com rollback aprovados. Modelos/respostas controlados nos testes de navegador; isso não certifica toda resposta futura da IA. Compilação definitiva aprovada sem rota de testes; lint sem erros. Publicação em andamento.
+- Usuário optou por manter a integração OpenAI após esclarecimento sobre processamento externo, não treinamento por padrão e retenção distinta de store:false. Avaliação corporativa de privacidade permanece com a empresa.

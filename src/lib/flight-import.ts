@@ -1,31 +1,29 @@
+import {parseAssistantAttachments} from './contextual-assistant';
 export const importFields = ["prefix", "date", "departure", "destination", "duration", "fuelAmount", "fuelUnit"] as const;
 export type ImportField = typeof importFields[number];
-export type ImportedFlight = Record<ImportField, string | null> & {notes: string};
+export type ImportedFlight = Record<ImportField, string | null> & {notes: string;rowId?:string|null};
 export type ImportAttachment = {name: string; data: string};
-export type FlightIdentity = {prefix: string; date: string; departure: string; cancelled?: boolean; deletedAt?: string};
+export type FlightIdentity = {id?:string;prefix: string; date: string; departure: string; cancelled?: boolean; deletedAt?: string};
 export const importLabels: Record<ImportField,string> = {prefix:"Prefixo", date:"Data", departure:"Saída", destination:"Destino", duration:"Duração (HH:MM)", fuelAmount:"Abastecimento", fuelUnit:"Unidade"};
 function obj(value: unknown): Record<string,unknown> {if (!value || typeof value !== "object" || Array.isArray(value)) throw Error("Dados inválidos."); return value as Record<string,unknown>;}
 function str(value: unknown, max: number): string {if (typeof value !== "string" || value.length > max) throw Error("Texto inválido ou acima do limite.");return value;}
 export function parseFlightImportRequest(value: unknown) {
   const body = obj(value), message = str(body.message,16000).trim();
-  let attachment: ImportAttachment | undefined;
-  if (body.attachment !== undefined) {
-    const file=obj(body.attachment), data=str(file.data,2800000), name=str(file.name,180);
-    // No remote URL fetch, SVG, HTML or arbitrary provider file ID.
-    if (!/^data:(application\/pdf|image\/(png|jpeg|webp));base64,[A-Za-z0-9+/]+={0,2}$/.test(data)) throw Error("Use PDF, PNG, JPG ou WebP de até 2 MB.");
-    attachment={name,data};
-  }
-  if (!message && !attachment) throw Error("Envie texto ou um documento da programação.");
-  return {message,attachment};
+  const attachments=parseAssistantAttachments(body.attachments??(body.attachment?[body.attachment]:[]));
+  const previous=body.previous===undefined?[]:parseFlightImportAnswer({reply:'',flights:body.previous}).flights;
+  if(!message&&!attachments.length)throw Error('Envie texto ou documento da programação.');
+  const history=Array.isArray(body.history)?body.history.slice(-4).map(value=>{const turn=obj(value);return {message:str(turn.message,16000),reply:str(turn.reply,6000)};}):[];
+  return {message,attachments,attachment:attachments[0],previous,history};
 }
 export function parseFlightImportAnswer(value: unknown): {reply: string; flights: ImportedFlight[]} {
   const body=obj(value), reply=str(body.reply,6000);
-  if (!Array.isArray(body.flights) || body.flights.length>30) throw Error("Envie no máximo 30 voos por consulta.");
+  if (!Array.isArray(body.flights) || body.flights.length>100) throw Error("Envie no máximo 100 voos por consulta.");
   const flights=body.flights.map(item=>{
     const row=obj(item);
-    if(Object.keys(row).some(key=>![...importFields,"notes"].includes(key))) throw Error("Campo não permitido na importação.");
+    if(Object.keys(row).some(key=>![...importFields,"notes","rowId"].includes(key))) throw Error("Campo não permitido na importação.");
     const fields=Object.fromEntries(importFields.map(key=>[key,row[key]===null?null:str(row[key],key==="destination"?300:80)])) as Record<ImportField,string|null>;
-    return {...fields,prefix:fields.prefix?.trim().toUpperCase()||null,notes:str(row.notes,1200)};
+    if(row.rowId!==undefined&&row.rowId!==null&&(typeof row.rowId!=='string'||!/^[-a-zA-Z0-9_:]{1,100}$/.test(row.rowId)))throw Error('Identificador inválido.');
+    return {...fields,...(row.rowId?{rowId:row.rowId as string}:{}),prefix:fields.prefix?.trim().toUpperCase()||null,notes:str(row.notes,1200)};
   });
   return {reply,flights};
 }
@@ -55,4 +53,4 @@ export function importedDraftFields(row:ImportedFlight,aircraft:{prefix:string;a
     fuelUnit:unit||"L", commander:"",copilot:"",flightAttendant:"",repeat:false,weekdays:[] as number[],weekdayTimes:{} as Record<number,string>,
   };
 }
-export const flightImportSchema={type:"object",additionalProperties:false,properties:{reply:{type:"string"},flights:{type:"array",items:{type:"object",additionalProperties:false,properties:{...Object.fromEntries(importFields.map(key=>[key,{type:["string","null"]}])),notes:{type:"string"}},required:[...importFields,"notes"]}}},required:["reply","flights"]};
+export const flightImportSchema={type:"object",additionalProperties:false,properties:{reply:{type:"string"},flights:{type:"array",items:{type:"object",additionalProperties:false,properties:{...Object.fromEntries(importFields.map(key=>[key,{type:["string","null"]}])),notes:{type:"string"},rowId:{type:["string","null"]}},required:[...importFields,"notes","rowId"]}}},required:["reply","flights"]};

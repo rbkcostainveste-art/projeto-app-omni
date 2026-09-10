@@ -1,4 +1,5 @@
 "use client";
+import {useOperationalDay} from "./use-operational-day";
 import {PassageAssistant} from "./assistant-passage";
 import {AssistantForm} from "./assistant-form";
 import {useAssistantScreen} from "./assistant-workspace";
@@ -9,7 +10,7 @@ import {DesktopControls,DesktopActions} from "./desktop-workspace";
 
 import {visibleWashKeys,type RunwayWashRequest} from "@/lib/maintenance-action-routing";
 import type {SupabaseClient} from "@supabase/supabase-js";
-import { memo,useMemo,useState,useEffect } from "react";
+import { memo,useMemo,useState,useEffect,useRef } from "react";
 import { Activity,AlertTriangle,BookOpen,CalendarDays,Check,ChevronDown,Clock3,Droplets,Filter,Lightbulb,Plane,Plus,Search,Trash2,X } from "lucide-react";
 import { AircraftPicker } from "@/components/aircraft-picker";
 import { UserAvatar,type UserDirectory } from "@/components/user-avatar";
@@ -51,6 +52,8 @@ export function RunwayHandover({ client,openRequest,onOpenHandled,passages,catal
   const [newOpen,setNewOpen]=useState(false);
   const [filtersOpen,setFiltersOpen]=useState(false);
   const [filters,setFilters]=useState({date:localDate(),until:localDate(),base:canFilterBase?assignedBase:"",model:"",prefix:""});
+  const operationalDay=useOperationalDay(),previousOperationalDay=useRef(operationalDay);
+  useEffect(()=>{const before=previousOperationalDay.current;previousOperationalDay.current=operationalDay;if(before!==operationalDay)void Promise.resolve().then(()=>setFilters(current=>current.date===before&&current.until===before?{...current,date:operationalDay,until:operationalDay}:current));},[operationalDay]);
   const [visibleCount,setVisibleCount]=useState(PAGE_SIZE);
   const [statusView,setStatusView]=useState<PassageView>("attention");
   const [statusOpen,setStatusOpen]=useState(false);

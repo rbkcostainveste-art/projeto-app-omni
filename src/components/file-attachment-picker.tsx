@@ -1,0 +1,9 @@
+"use client";
+import {useRef,type ClipboardEvent} from 'react';
+import {Camera,ImagePlus,Paperclip} from 'lucide-react';
+export function pastedFiles(event:ClipboardEvent){return Array.from(event.clipboardData.files);}
+export function FileAttachmentPicker({onFiles,disabled=false,accept='image/*,application/pdf,audio/*,video/*',label='Arquivos'}:{onFiles:(files:File[])=>void;disabled?:boolean;accept?:string;label?:string}){
+ const photos=useRef<HTMLInputElement>(null),files=useRef<HTMLInputElement>(null),camera=useRef<HTMLInputElement>(null);
+ const changed=(input:HTMLInputElement)=>{const selected=Array.from(input.files||[]);input.value='';if(selected.length)onFiles(selected);};
+ return <div className="flex flex-wrap items-center gap-2"><button type="button" disabled={disabled} onClick={()=>photos.current?.click()} className="inline-flex min-h-11 items-center gap-1 rounded-lg border bg-white px-3 text-sm"><ImagePlus size={17}/>Fotos</button><button type="button" disabled={disabled} onClick={()=>files.current?.click()} className="inline-flex min-h-11 items-center gap-1 rounded-lg border bg-white px-3 text-sm"><Paperclip size={17}/>{label}</button><button type="button" disabled={disabled} onClick={()=>camera.current?.click()} className="inline-flex min-h-11 items-center gap-1 rounded-lg border bg-white px-3 text-sm"><Camera size={17}/>Câmera</button><input ref={photos} aria-label="Selecionar fotos da galeria" type="file" multiple accept="image/*" className="sr-only" disabled={disabled} onChange={e=>changed(e.target)}/><input ref={files} aria-label="Selecionar arquivos" type="file" multiple accept={accept} className="sr-only" disabled={disabled} onChange={e=>changed(e.target)}/><input ref={camera} aria-label="Tirar foto" type="file" accept="image/*" capture="environment" className="sr-only" disabled={disabled} onChange={e=>changed(e.target)}/></div>;
+}

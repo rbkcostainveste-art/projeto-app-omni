@@ -29,7 +29,7 @@ export async function queryOperations(client:SupabaseClient,actor:AssistantActor
  const planes=data.catalogs.aircraft as Plane[],flights=data.flights as Flight[];
  const base=crew?crewOperationalBase(actor.employeeNumber,flights,planes,today).base:actor.assignedBase;
  if(crew&&!base&&q.dataset==='fleet')return fail('not_authorized');
- const scope=global?q.base||'':base;
+ const scope=global?q.base||(actor.accessProfile==='coordination'?base:''):base;
  const authorizedPlanes=planes.filter(p=>!scope||p.base===scope);
  let rows:Record<string,unknown>[],cards:AssistantRecordCard[]=[];
  if(q.dataset==='fleet')rows=authorizedPlanes.filter(p=>match(p.prefix,q.prefix)&&match(`${p.prefix} ${p.model}`,q.query)).map(p=>({prefix:p.prefix,model:p.model,base:p.base,available:p.available??null,unavailableReason:p.unavailableReason||null}));

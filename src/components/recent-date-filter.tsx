@@ -1,8 +1,11 @@
 "use client";
-import {useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
+import {useOperationalDay} from './use-operational-day';
 export const localFilterDay=(d=new Date())=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 export function RecentDateFilter({from,until,onChange}:{from:string;until:string;onChange:(from:string,until:string)=>void}){
  const [custom,setCustom]=useState(false);
+ const day=useOperationalDay(),previousDay=useRef(day);
+ useEffect(()=>{const previous=previousDay.current;previousDay.current=day;if(previous!==day&&!custom&&from===previous&&until===previous)onChange(day,day);},[day,custom,from,until,onChange]);
  const days=Array.from({length:7},(_,offset)=>{const d=new Date();d.setDate(d.getDate()-offset);return {value:localFilterDay(d),label:offset===0?'Hoje':offset===1?'Ontem':d.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'})};});
  const recent=from===until&&days.some(d=>d.value===from);const personalized=custom||!recent;
  const field='mt-1 block min-h-11 w-full min-w-0 rounded-xl border border-[#cedbe7] bg-white px-3 text-sm';

@@ -1,3 +1,4 @@
+import {resolveAssistantMedia} from "@/lib/assistant-upload-content";
 import {technicalAssistantFields} from '@/lib/assistant-technical-fields';
 import {assistantAccess} from "@/lib/assistant-access";
 import {parseContextRequest, parseDraftAnswer,resolveDraftAircraft} from "@/lib/contextual-assistant";
@@ -7,7 +8,6 @@ import type {AssistantFormContext} from "@/lib/assistant-form";
 import {searchTechnicalLibrary} from "@/lib/technical-library";
 import {assistantRecordContext} from "@/lib/assistant-record-context";
 
-import {assistantMediaContent} from "@/lib/assistant-media";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     raw += decoder.decode(); body = parseContextRequest(JSON.parse(raw));
   } catch { return json({error: "Pedido inválido. Confira o texto e o rascunho."}, 400); }
   let media;
-  try{media=assistantMediaContent(body.attachments);}catch{return json({error:"Use imagens ou PDF válidos, até 2 MB no total."},400);}
+  try{media=await resolveAssistantMedia(access.client,body.attachments);}catch{return json({error:"Anexo indisponível ou inválido. Use imagens ou PDF, até 20 MB por arquivo e 40 MB por mensagem."},400);}
   let savedRecord;
   try { savedRecord = await assistantRecordContext(access.client, access.employee, body.context, request.signal); }
   catch (error) { return json({error: error instanceof Error ? error.message : "Registro indisponível."}, 409); }
@@ -57,6 +57,6 @@ export async function POST(request: Request) {
       answer.proposal.prefix=drafting&&matches.length===1?matches[0].prefix:null;
       if(drafting&&matches.length>1)answer.reply='Encontrei mais de uma aeronave para esse prefixo. Qual delas você quer usar?';
     }else answer.proposal.prefix=null;
-    return json({...answer, sources:[],navigation:result.navigation,continuation:result.continuation, contextId: body.context.id});
+    return json({...answer, sources:result.sources,navigation:result.navigation,continuation:result.continuation, contextId: body.context.id});
   } catch(error) { const status=(error as {status?:number})?.status;return json({error:status===429?"Limite da IA atingido. Confira o saldo ou tente mais tarde.":"A consulta foi interrompida ou retornou dados inválidos. Seu rascunho foi preservado."},status===429?429:502); }
 }

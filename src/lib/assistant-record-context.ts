@@ -11,7 +11,7 @@ export async function assistantRecordContext(client: SupabaseClient, employee: s
   const global = globalRoles.includes(identity.accessProfile);
   const base = typeof identity.assignedBase === 'string' ? identity.assignedBase.trim() : '';
   if (!global && (!localRoles.includes(identity.accessProfile) || !base)) throw Error('Registro indisponível para seu perfil/base.');
-  let query = client.from('maintenance_records').select('id,revision,prefix,model,base,title,status,description:data->>description').eq('id', context.record.id);
+  let query = client.from('maintenance_records').select('id,revision,prefix,model,base,title,status,description:data->>description,originalObservation:technical_case->originalObservation').eq('id', context.record.id);
   if (!global) query = query.eq('base', base);
   const {data, error} = await query.abortSignal(signal).maybeSingle();
   if (error || !data) throw Error('Registro indisponível para seu perfil/base.');

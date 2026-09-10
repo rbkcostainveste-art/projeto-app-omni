@@ -1,5 +1,5 @@
 export type AssistantFormField={label:string;value:string;options?:string[];maxLength?:number;multiple?:boolean};
-export type AssistantFormContext={id:string;label:string;mode:'draft'|'record';revision?:number;fields:Record<string,AssistantFormField>};
+export type AssistantFormContext={id:string;label:string;mode:'draft'|'record';applyLabel?:string;revision?:number;fields:Record<string,AssistantFormField>};
 export function parseAssistantForm(value:unknown):AssistantFormContext|null{
  if(value===undefined||value===null)return null;
  if(typeof value!=='object'||Array.isArray(value))throw Error('Formulário inválido.');
@@ -14,7 +14,7 @@ export function parseAssistantForm(value:unknown):AssistantFormContext|null{
   fields[key]={label:field.label,value:field.value,maxLength,...(field.options?{options:field.options}:{}),...(field.multiple?{multiple:true}:{})};
  }
  if(f.revision!==undefined&&(!Number.isSafeInteger(f.revision)||f.revision<0))throw Error('Versão inválida.');
- return {id:f.id,label:f.label,mode:f.mode,...(f.revision!==undefined?{revision:f.revision}:{}),fields};
+ return {id:f.id,label:f.label,mode:f.mode,...(typeof f.applyLabel==='string'?{applyLabel:f.applyLabel.slice(0,80)}:{}),...(f.revision!==undefined?{revision:f.revision}:{}),fields};
 }
 export function formTool(form:AssistantFormContext){
  return {type:'function',name:'preparar_campos',description:`Prepara campos de ${form.label}. Não salva nada. Use null para manter um campo, string vazia ou lista vazia para limpar apenas a pedido. Na seleção múltipla retorne a lista final, preservando seleções anteriores salvo remoção solicitada. Extraia só fatos fornecidos. Não invente valores/medições/execuções. Em modo record, o usuário aplica as mudanças depois de revisar.`,strict:true,parameters:{type:'object',properties:Object.fromEntries(Object.entries(form.fields).map(([key,f])=>[key,f.multiple?{type:['array','null'],description:f.label,items:{type:'string',enum:[...new Set(f.options)]},maxItems:100}:{type:['string','null'],description:f.label,...(f.options?{enum:[...new Set(f.options),null]}:{})}])),required:Object.keys(form.fields),additionalProperties:false}};

@@ -1,4 +1,5 @@
 'use client';
+import {useOperationalDay} from "./use-operational-day";
 import {AssistantForm} from './assistant-form';
 import {useAssistantScreen} from './assistant-workspace';
 import {cockpitAssistantForm,cockpitAssistantPatch} from '@/lib/assistant-cockpit';
@@ -34,6 +35,8 @@ export function Cockpit({client,user,profile,flights,aircraft,people,readOnly=fa
  const {rows,error,loading,load}=useCockpit(client);
  const [creating,setCreating]=useState(false),[creationError,setCreationError]=useState('');
  const [tab,setTab]=useState(initialDescription?'occurrence':(initialSection==='new-occurrence'?'occurrence':initialSection)||(initialFlightId?'preparation':'day')),[date,setDate]=useState(()=>flights.find(f=>f.id===initialFlightId)?.date||cockpitDay()),[flightId,setFlightId]=useState(initialFlightId||''),[editing,setEditing]=useState<CockpitEntry|null>(()=>{if(initialSection!=='new-occurrence'||readOnly)return null;const selected=flights.find(f=>f.id===initialFlightId);if(!selected)return null;return {...initialEntry('occurrence',undefined,selected),data:{prefix:selected.prefix,leg:`${selected.base} → ${selected.destination||''}`,crew:people.filter(p=>[selected.commander,selected.copilot,selected.flightAttendant].includes(p.employeeNumber)).map(p=>p.name).join(', '),at:new Date().toISOString(),description:initialDescription||''}};});
+ const currentDay=useOperationalDay(),previousDay=useRef(currentDay);
+ useEffect(()=>{const before=previousDay.current;previousDay.current=currentDay;if(before!==currentDay&&!flightId&&!editing)void Promise.resolve().then(()=>setDate(value=>value===before?currentDay:value));},[currentDay,flightId,editing]);
  const openedEntry=useRef<string|null>(null);
  useEffect(()=>{if(!initialEntryId||loading||openedEntry.current===initialEntryId)return;const entry=rows.find(row=>row.id===initialEntryId);const timer=setTimeout(()=>{openedEntry.current=initialEntryId;if(!entry){setCreationError('Registro indisponível no Cockpit atual.');return;}setEditing(entry);setFlightId(entry.flight_id||'');setTab(entry.kind==='document'||entry.kind==='diary'?'edb':entry.kind==='qualification'||entry.kind==='person'?'qualification':entry.kind==='location'?'ais':entry.kind);},0);return()=>clearTimeout(timer);},[initialEntryId,loading,rows]);
  useAssistantScreen({area:'Cockpit',section:tab,date,flightId,record:editing?{id:editing.id,kind:editing.kind,revision:editing.revision}:null});

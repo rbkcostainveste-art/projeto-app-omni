@@ -6,7 +6,8 @@ import {useEffect,useState} from "react";
 
 import type {SupabaseClient} from "@supabase/supabase-js";
 
-import {Paperclip,X} from "lucide-react";
+import {FileAttachmentPicker,pastedFiles} from "./file-attachment-picker";
+import {X} from "lucide-react";
 
 import {mediaFormat,type RecordMedia} from "@/lib/record-media";
 
@@ -14,7 +15,9 @@ export function MediaPicker({files,onChange,disabled=false,documents=false}:{fil
 
  const [error,setError]=useState("");
 
- return <div className="my-3 space-y-2"><label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold"><Paperclip size={15}/>{documents?"Adicionar imagem, áudio, vídeo ou PDF":"Adicionar imagem, áudio ou vídeo"}<input disabled={disabled} aria-label="Adicionar imagem, áudio ou vídeo" type="file" multiple accept={"image/*,audio/*,video/*,.m4a,.mp3,.mp4,.mov,.wav,.ogg,.opus"+(documents?",.pdf":"")} className="sr-only" onChange={e=>{const next=Array.from(e.target.files||[]);try{if(files.length+next.length>10)throw new Error("Selecione até 10 anexos por envio.");next.forEach(f=>{if(!documents&&mediaFormat(f).type==="document")throw Error("Use documentos no relato técnico.");mediaFormat(f);});onChange([...files,...next]);setError("");}catch(err){setError((err as Error).message);}e.target.value="";}}/></label><p className="text-[11px] text-slate-500">Imagens e áudios: até 10 MB. Vídeos: até 50 MB por arquivo.</p>{files.map((file,i)=><div key={`${file.name}-${i}`} className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 p-2 text-xs"><span className="break-all">{file.name}</span><button type="button" disabled={disabled} aria-label={`Remover ${file.name}`} onClick={()=>onChange(files.filter((_,index)=>index!==i))}><X size={15}/></button></div>)}{error?<p role="alert" className="text-xs text-red-700">{error}</p>:null}</div>;
+ const add=(next:File[])=>{if(disabled)return;try{if(files.length+next.length>10)throw Error("Selecione até 10 anexos por envio.");next.forEach(f=>{if(!documents&&mediaFormat(f).type==="document")throw Error("Este campo aceita imagens, áudios ou vídeos.");mediaFormat(f);});onChange([...files,...next]);setError("");}catch(e){setError((e as Error).message);}};
+ return <div className="my-3 space-y-2" onPaste={e=>{const next=pastedFiles(e);if(next.length){e.preventDefault();add(next);}}}><FileAttachmentPicker disabled={disabled} accept={"image/*,audio/*,video/*"+(documents?",application/pdf":"")} onFiles={add}/>
+ <p className="text-[11px] text-slate-500">Imagens e áudios: até 10 MB. Vídeos: até 50 MB por arquivo.</p>{files.map((file,i)=><div key={`${file.name}-${i}`} className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 p-2 text-xs"><span className="break-all">{file.name}</span><button type="button" disabled={disabled} aria-label={`Remover ${file.name}`} onClick={()=>onChange(files.filter((_,index)=>index!==i))}><X size={15}/></button></div>)}{error?<p role="alert" className="text-xs text-red-700">{error}</p>:null}</div>;
 
 }
 
