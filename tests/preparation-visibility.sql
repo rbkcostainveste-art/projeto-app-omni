@@ -1,0 +1,65 @@
+-- Real database functions, synthetic flights/records, every change rolled back.
+begin;
+do $$
+declare adm uuid;mech uuid;pilot uuid;coord uuid;actor text;employee text;pilot_employee text;
+ fid text:=gen_random_uuid()::text;other_id text:=gen_random_uuid()::text;rid uuid:=gen_random_uuid();
+ prefix text:='QA-'||substr(gen_random_uuid()::text,1,8);v jsonb;f jsonb;denied boolean;k text;
+begin
+ select d.auth_user_id,d.employee_number into adm,actor from public.device_identities d join public.authorized_users u using(employee_number) where d.is_admin and u.active limit 1;
+ select d.auth_user_id,d.employee_number into mech,employee from public.device_identities d join public.authorized_users u using(employee_number) where u.job_role='mechanic' and u.active limit 1;
+ select d.auth_user_id,d.employee_number into pilot,pilot_employee from public.device_identities d join public.authorized_users u using(employee_number) where u.job_role='commander' and u.active limit 1;
+ select d.auth_user_id into coord from public.device_identities d join public.authorized_users u using(employee_number) where u.job_role='coordination' and u.active limit 1;
+ if adm is null or mech is null or pilot is null or coord is null then raise exception 'Required QA identities unavailable';end if;
+ update public.authorized_users set assigned_base='QA-visibility' where employee_number=employee;
+ update public.device_identities set assigned_base='QA-visibility' where employee_number=employee;
+ perform set_config('request.jwt.claim.sub',adm::text,true);
+ f:=jsonb_build_object('id',fid,'prefix',prefix,'model','S92','base','QA-visibility','date',to_char(now() at time zone 'America/Sao_Paulo','YYYY-MM-DD'),'departure','09:00','commander',pilot_employee,'planningStatus','confirmed','fuel','pending','preflight','pending','hums','pending','engineStart','pending','shutdown','pending','revision',1,'acknowledged','{}'::jsonb);
+ perform public.mutate_shared_item('flights',fid,f,'create');
+ perform public.mutate_shared_item('flights',other_id,f||jsonb_build_object('id',other_id,'prefix',prefix||'X','commander','','departure','10:00'),'create');
+ perform set_config('request.jwt.claim.sub',mech::text,true);
+ execute 'set local role authenticated';
+ v:=public.get_flight_operation(fid);
+ if v#>>'{preparation,checklist,approved}'<>'0' or v#>>'{preparation,checklist,total}'<>'4' then raise exception 'Checklist initial count wrong';end if;
+ v:=public.record_flight_operation(fid,gen_random_uuid(),(v->>'revision')::int,'approve','{"key":"drain","result":"ok"}');
+ v:=public.record_flight_operation(fid,gen_random_uuid(),(v->>'revision')::int,'approve','{"key":"fuel","result":"ok"}');
+ v:=public.record_flight_operation(fid,gen_random_uuid(),(v->>'revision')::int,'approve','{"key":"inspection","result":"ok"}');
+ v:=public.record_flight_operation(fid,gen_random_uuid(),(v->>'revision')::int,'approve','{"key":"hums","result":"ok"}');
+ execute 'reset role';
+ perform set_config('request.jwt.claim.sub',adm::text,true);
+ insert into public.maintenance_records(id,record_type,base,model,prefix,priority,status,title,tc,created_by,data)
+ values(rid,'fault','QA-visibility','S92',prefix,'not_logged','open','QA private altimeter title','QA-TC',actor,'{"description":"QA private investigation","entries":[]}');
+ perform set_config('request.jwt.claim.sub',mech::text,true);
+ execute 'set local role authenticated';
+ v:=public.get_flight_operation(fid);
+ if v#>>'{preparation,checklist,approved}'<>'4' or v#>>'{preparation,blockerCount}'<>'1' or v#>>'{preparation,blocked}'<>'true' or v#>>'{preparation,canConfirm}'<>'false' then raise exception 'Complete checklist masked technical blocker';end if;
+ if v#>>'{preparation,blockers,0,title}'<>'QA private altimeter title' or v#>>'{preparation,blockers,0,reasons,0}'<>'evaluation' then raise exception 'Authorized mechanic missing reason/title';end if;
+ denied:=false;begin perform public.record_flight_operation(fid,gen_random_uuid(),(v->>'revision')::int,'confirm_preparation',jsonb_build_object('fingerprint',v#>>'{preparation,fingerprint}'));exception when raise_exception then denied:=true;end;
+ if not denied then raise exception 'Technical blocker bypassed';end if;
+ perform set_config('request.jwt.claim.sub',pilot::text,true);
+ v:=public.get_preparation_statuses(array[fid,other_id]);
+ if v ? other_id or not (v ? fid) then raise exception 'Pilot flight scope wrong';end if;
+ if v#>>array[fid,'blockers','0','reasons','0']<>'evaluation' or v::text like '%QA private%' or v::text like '%'||rid::text||'%' or v#>array[fid,'fingerprint'] is not null then raise exception 'Pilot summary missing or private data leaked';end if;
+ perform set_config('request.jwt.claim.sub',coord::text,true);
+ v:=public.get_preparation_statuses(array[fid]);
+ if v#>>array[fid,'checklist','approved']<>'4' or v#>>array[fid,'blockerCount']<>'1' or v::text like '%QA private%' then raise exception 'Coordination summary wrong';end if;
+ execute 'reset role';
+ perform set_config('request.jwt.claim.sub',adm::text,true);
+ update public.maintenance_records set base='QA-private-other-base' where id=rid;
+ perform set_config('request.jwt.claim.sub',mech::text,true);
+ execute 'set local role authenticated';
+ v:=public.get_preparation_statuses(array[fid]);
+ if v#>>array[fid,'blockerCount']<>'1' or v::text like '%QA private%' then raise exception 'Other-base record title leaked or blocker hidden';end if;
+ -- A separate aircraft tests the clear path without deleting/closing any case.
+ v:=public.get_flight_operation(other_id);
+ foreach k in array array['drain','fuel','inspection','hums'] loop
+  v:=public.record_flight_operation(other_id,gen_random_uuid(),(v->>'revision')::int,'approve',jsonb_build_object('key',k,'result','ok'));
+ end loop;
+ if v#>>'{preparation,blocked}'<>'false' or v#>>'{preparation,canConfirm}'<>'true' or v#>>'{preparation,status}'='ready' then raise exception 'Checklist incorrectly auto-confirmed';end if;
+ v:=public.record_flight_operation(other_id,gen_random_uuid(),(v->>'revision')::int,'confirm_preparation',jsonb_build_object('fingerprint',v#>>'{preparation,fingerprint}'));
+ if v#>>'{preparation,status}'<>'ready' then raise exception 'Final confirmation broken';end if;
+ v:=public.record_flight_operation(other_id,gen_random_uuid(),(v->>'revision')::int,'approve','{"key":"fuel","result":"no"}');
+ if v#>>'{preparation,status}'<>'reconfirm' or v#>>'{preparation,checklist,approved}'<>'3' or v#>>'{preparation,pending,0}'<>'fuel' then raise exception 'Reconfirmation/count regression';end if;
+ execute 'reset role';
+ if has_function_privilege('anon','public.get_preparation_statuses(text[])','execute') or has_function_privilege('authenticated','private.preparation_state(text)','execute') then raise exception 'Helper or anonymous access exposed';end if;
+end $$;
+rollback;
