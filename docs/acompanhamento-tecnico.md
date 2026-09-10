@@ -1,5 +1,21 @@
 # Acompanhamento técnico — implementação e validação
 
+Atualização documental: 09/09/2026. O histórico de implementação e testes abaixo foi preservado; esses testes não foram repetidos nesta revisão. Estado consolidado com as entregas posteriores descritas em [Correções da auditoria técnica](correcoes-auditoria-tecnica.md).
+
+## Checklist atual
+
+- [x] Fluxo técnico, auditoria, recorrência, proteções e integração com a Passagem de Serviço implementados, conforme histórico abaixo.
+- [x] Configuração de mecânicos designados com APRS e ajustes de autorizações registrados nas migrações 045/046 e na documentação de correções.
+- [x] Biblioteca pública pesquisável conectada ao assistente: 17 documentos e 598 páginas.
+- [x] Chave OpenAI configurada; conversa e recuperação de fontes testadas pelo usuário em produção em 09/09/2026.
+- [ ] Conferir fidelidade das citações, páginas e aplicabilidade nos PDFs; o teste de conexão não encerra validação técnica.
+- [x] Ajustada localmente a instrução genérica sobre documentos: agora distingue fontes recuperadas, ausência de evidência e manuais licenciados indisponíveis. Publicação e avaliação de respostas reais ainda pendentes; acompanhamento em [Checklist IA](checklist-ia.md).
+- [ ] Concluir assistência contextual, extração e preenchimento assistido. Primeira integração local na criação de relato: painel de texto, proposta de título/descrição, aplicar/desfazer e proteção contra edição concorrente; demais campos, anexos à IA e publicação pendentes.
+- [ ] Formalizar e conferir designações reais do operador, escopo por base e responsáveis.
+- [ ] Receber MEL/CDL, procedimentos e manuais autorizados, com revisão e aplicabilidade.
+- [ ] Integrar eDB/TC/OS; referências digitadas continuam sem sincronização externa.
+- [ ] Validar retenção, recuperação, alertas e fluxo operacional com a empresa.
+
 ## Finalidade
 
 O Flight A auxilia o operador na organização e rastreabilidade dos processos técnicos. A conformidade final depende dos regulamentos aplicáveis, dos manuais aprovados do operador e das decisões dos profissionais autorizados.
@@ -24,7 +40,7 @@ Casos pendentes e em monitoramento continuam no acompanhamento diário. Os filtr
 
 Em **Cadastros → Autorizações do acompanhamento técnico**, a administração cadastra as matrículas habilitadas para classificar/reclassificar, declarar não aplicabilidade, confirmar diferimento, confirmar APRS, registrar liberação, encerrar/cancelar e analisar alertas críticos.
 
-As listas começam vazias. Ser administrador ou ter um título de cargo não concede automaticamente autorização técnica. Devem ser atribuídas conforme as responsabilidades reais de manutenção, inspeção, MCC/controle técnico e engenharia da empresa, respeitando o acesso ao módulo/base de cada perfil.
+Na versão consolidada após as correções, inspetores, coordenadores, gerentes e diretores de manutenção possuem controles técnicos conforme a determinação registrada do operador; mecânicos ativos explicitamente designados com APRS também. A administração mantém “Mecânicos com APRS — matrículas designadas pelo operador”, com motivo/referência e auditoria. Permissões nominais adicionais devem ser verificadas separadamente. Administrador, isoladamente, não recebe aprovação técnica. A geração de ações continua restrita à liderança, respeitando base e perfil. Essas regras de software não comprovam habilitação ou designação real: a lista efetiva deve ser conferida pela empresa.
 
 Também ficam configuráveis os procedimentos aprovados, a utilização de CDL e os destinatários dos alertas. A configuração é auditada.
 
@@ -48,7 +64,11 @@ Também ficam configuráveis os procedimentos aprovados, a utilização de CDL e
 
 Notas pessoais/administrativas continuam visíveis somente ao autor e exibem aviso para não registrar nelas falhas ou condições técnicas. Converter uma nota em relato mantém autoria, versão original e evento de conversão. O aviso não é uma classificação automática do conteúdo: a pessoa continua responsável por encaminhar uma condição técnica.
 
-A camada de revisão técnica está **preparada**, sem reescrita automática de relatos. Ela apresenta perguntas diferentes para piloto e mecânico, preserva o texto e exige confirmação humana. A IA geral e a conversa ao vivo receberam instruções para não inventar referências, resultados, limites ou liberações.
+A revisão técnica determinística apresenta perguntas diferentes para piloto e mecânico e preserva o texto. A primeira integração contextual local acrescenta, na criação do relato, um painel que solicita propostas de título e descrição à IA e exige aplicação explícita ao rascunho. Não altera registros confirmados nem salva automaticamente; “Criar registro” continua usando o fluxo existente. A IA geral e a conversa ao vivo receberam instruções para não inventar referências, resultados, limites ou liberações.
+
+O assistente geral já consulta um índice textual de fontes públicas e envia os trechos recuperados à OpenAI, retornando resposta e referências. Os PDFs completos permanecem locais; o índice textual foi publicado com o aplicativo. Portanto, essa consulta não é processamento exclusivamente offline. O usuário confirmou o funcionamento com uma pergunta sobre o filtro da MGB. A integração nos campos/cards, importação de documentos para preenchimento e validação sistemática das citações permanecem pendentes. A conversa ao vivo não foi validada por esse teste.
+
+Após a revisão documental, foi criado o [Checklist IA](checklist-ia.md) e ajustada localmente a política em `src/lib/technical-case.ts`. A instrução antiga pedia uma ressalva genérica sobre documentos não confirmados; a nova distingue fontes públicas recuperadas de manuais licenciados ausentes e evita ressalvas documentais em testes de conexão. A correção ainda exige publicação e avaliação de respostas reais; não se declara a fidelidade das citações validada apenas pela alteração do prompt.
 
 Nenhum acervo técnico licenciado foi conectado. Não há consulta confirmada a AMM/FIM, seleção automática de MEL/CDL, emissão de APRS ou modificação automática de registro confirmado. A revisão preparatória não é apresentada como uma geração feita pela IA.
 
@@ -116,6 +136,20 @@ Arquivos centrais:
 5. Acervo técnico licenciado, revisões e efetividade para eventual consulta assistida por IA.
 6. Política de retenção, auditoria, cancelamento e tratamento de alertas, validada pelos responsáveis da empresa.
 7. Validação regulatória e operacional do fluxo antes de utilizá-lo como parte dos procedimentos oficiais.
+
+Critérios para encerrar essas pendências:
+
+| Dependência | Informação necessária | Evidência de conclusão |
+| --- | --- | --- |
+| Autorizações | Matrículas ativas, funções, bases, designações e responsável | Configuração conferida e testes de acesso permitido/negado |
+| MEL/CDL e procedimentos | Documentos autorizados, revisões, efetividade e responsáveis | Cadastro revisado pelo responsável técnico e exemplos aprovados |
+| eDB/TC/OS | Fornecedor, API, ambiente de homologação, permissões e IDs | Testes de leitura/escrita autorizada, correção e prevenção de duplicidade |
+| Manuais | Acervo autorizado e política de processamento/armazenamento | Pesquisa com página/revisão conferida e controle de acesso validado |
+| Retenção e recuperação | Prazos, responsáveis e procedimento de recuperação | Política aprovada e recuperação demonstrada |
+| Alertas | Destinatários, bases, canais e prazos | Testes de entrega e resolução; push técnico externo ainda pendente |
+| Uso operacional | Casos reais anonimizados e responsável pela aprovação | Aceite documentado do fluxo pela empresa |
+
+Jornada, FIRA e modelos de documentação por voo estão detalhados em [Pendências do Cockpit](pendencias-cockpit.md). A atualização destes documentos organiza as dependências; não as declara resolvidas sem os insumos e validações indicados.
 
 Não há declaração de conformidade automática com a ANAC.
 

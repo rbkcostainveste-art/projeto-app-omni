@@ -3,7 +3,7 @@ import {useEffect,useRef,useState} from 'react';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {Video,SwitchCamera,Mic,MicOff,PhoneOff} from 'lucide-react';
 
-export function AssistantLive({client,user,disabled,onActive,onTranscript}:{client:SupabaseClient|null;user:string;disabled:boolean;onActive:(active:boolean)=>void;onTranscript:(message:string,reply:string)=>void}){
+export function AssistantLive({conversationId,client,user,disabled,onActive,onTranscript}:{conversationId?:string;client:SupabaseClient|null;user:string;disabled:boolean;onActive:(active:boolean)=>void;onTranscript:(message:string,reply:string)=>void}){
  const [active,setActive]=useState(false),[ready,setReady]=useState(false),[muted,setMuted]=useState(false),[error,setError]=useState(''),[caption,setCaption]=useState(''),[switching,setSwitching]=useState(false);
  const video=useRef<HTMLVideoElement>(null),audio=useRef<HTMLAudioElement>(null),media=useRef<MediaStream|null>(null),peer=useRef<RTCPeerConnection|null>(null),channel=useRef<RTCDataChannel|null>(null),timer=useRef<ReturnType<typeof setInterval>|null>(null),limit=useRef<ReturnType<typeof setTimeout>|null>(null),timeout=useRef<ReturnType<typeof setTimeout>|null>(null),abort=useRef<AbortController|null>(null);
  const generation=useRef(0),facing=useRef<'user'|'environment'>('environment'),lastImage=useRef(''),lines=useRef<{role:string;text:string}[]>([]),callbacks=useRef({onActive,onTranscript});
@@ -39,7 +39,7 @@ export function AssistantLive({client,user,disabled,onActive,onTranscript}:{clie
    const offer=await pc.createOffer();await pc.setLocalDescription(offer);
    const {data}=await client.auth.getSession();if(!data.session)throw Error('Entre novamente para usar a câmera com IA.');
    if(current!==generation.current)return;abort.current=new AbortController();
-   const response=await fetch('/api/ai/live',{method:'POST',headers:{'Content-Type':'application/sdp',Authorization:`Bearer ${data.session.access_token}`,'x-employee':user},body:offer.sdp,signal:abort.current.signal});
+   const response=await fetch('/api/ai/live',{method:'POST',headers:{'Content-Type':'application/sdp',Authorization:`Bearer ${data.session.access_token}`,'x-employee':user,...(conversationId?{'x-conversation-id':conversationId}:{})},body:offer.sdp,signal:abort.current.signal});
    if(!response.ok){const data=await response.json();throw Error(data.error||'Não foi possível conectar.');}
    const answer=await response.text();if(current!==generation.current)return;await pc.setRemoteDescription({type:'answer',sdp:answer});
    timeout.current=setTimeout(()=>{if(dc.readyState!=='open'){setError('A IA não conectou. Tente novamente.');stop();}},20000);

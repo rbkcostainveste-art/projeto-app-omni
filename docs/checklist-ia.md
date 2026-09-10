@@ -1,0 +1,222 @@
+# Transformação do Flight AI com IA — checklist de implementação
+
+Criado em 09/09/2026, antes da implementação da transformação contextual. Este é o acompanhamento principal solicitado pelo usuário. Atualizar em cada entrega e informar na conversa o que mudou, como foi verificado e o próximo passo.
+
+## Como acompanhar
+
+- **Pendente:** ainda não implementado.
+- **Em andamento:** trabalho iniciado, ainda incompleto.
+- **Implementado localmente:** código pronto, sem afirmar publicação ou teste real.
+- **Validado:** verificações identificadas realizadas; explicitar se houve simulação.
+- **Publicado:** deployment confirmado, distinto de validação pelo usuário.
+- **Dependência externa:** exige acesso, documento ou decisão identificada.
+
+Marcar uma etapa concluída somente após atender aos critérios descritos. Não usar uma porcentagem geral enquanto o inventário de campos/cards não estiver completo. Um botão visível não comprova integração funcional.
+
+## Base já entregue antes desta transformação
+
+- [x] OpenAI configurada; teste de conversa confirmado pelo usuário.
+- [x] Biblioteca pública: 17 documentos, 598 páginas e 1.610 trechos pesquisáveis.
+- [x] Primeira resposta com fontes sobre a MGB confirmada pelo usuário; fidelidade técnica ainda exige conferência.
+- [x] REDEMET e decodificação METAR/TAF entregues anteriormente.
+- [x] Importação de 88 aeronaves registrada na entrega anterior; cadastro operacional ainda depende de conferência.
+- [x] Documentos de pendências anteriores atualizados: [Cockpit](pendencias-cockpit.md) e [Acompanhamento técnico](acompanhamento-tecnico.md).
+
+## Etapas da transformação
+
+### Escopo ampliado aprovado pelo usuário
+
+A importação de voos é um exemplo, não o limite da transformação. A IA deve apoiar **todo tipo de lançamento**, explicar o aplicativo, consultar registros reais autorizados, localizar e abrir os cards originais e propor o preenchimento de seus campos por conversa. Isso vale para o assistente geral e para os pontos contextuais de cada módulo. O objetivo é executar fluxos completos com as regras existentes, não apenas acrescentar botões de chat.
+
+- [x] Incorporar este escopo ao acompanhamento antes de continuar a implementação.
+- [ ] Inventariar cada formulário, card, campo, consulta e ação; registrar cobertura individual.
+- [ ] Catálogo de consultas com dados atuais buscados no servidor e permissões por cargo, base e registro.
+- [ ] Catálogo de navegação com destinos válidos para abrir o card original a partir da conversa.
+- [ ] Catálogo de preenchimento para todos os lançamentos: campos permitidos, validação, revisão e gravação existente.
+- [ ] Resolver referências como “CHT”, “esse card”, “hoje” e “aquelas aeronaves”; solicitar escolha quando houver ambiguidade.
+- [ ] Consultas que cruzam módulos, com período, origem e estados desconhecidos explícitos.
+- [ ] Cards de resultados na conversa, com identificação, situação e botão de acesso.
+- [ ] Aplicar o mesmo contexto entre assistente geral, painel local e card aberto.
+- [ ] Validar cada capacidade com diferentes cargos e bases antes de publicá-la.
+
+Esses itens estão pendentes de implementação salvo indicação explícita. As integrações locais de relato e programação continuam parciais.
+
+| ID | Entrega | Situação | Critério para concluir |
+| --- | --- | --- | --- |
+| IA-01 | Checklist e mapeamento inicial | Concluído | Escopo, módulos, critérios e dependências registrados neste arquivo |
+| IA-02 | Corrigir orientação contraditória sobre fontes | Implementado localmente; verificações estáticas e regressões aprovadas | Política diferencia referências recuperadas, ausência de resultado e manuais indisponíveis; publicação e avaliação de respostas reais pendentes |
+| IA-03 | Contrato de contexto e ações por módulo | Parcial: rascunho técnico implementado localmente | Alvo e campos tipados; rota aceita somente título/descrição e verifica sessão; outros módulos e ações persistentes pendentes |
+| IA-04 | Painel lateral reutilizável e botões locais | Parcial: criação de relato técnico validada com simulação | Painel ao lado em desktop e empilhado no celular; expansão aos demais campos/cards pendente |
+| IA-05 | Conversas pessoais por assunto | Banco aplicado; interface local validada com simulação | Lista, título, criação explícita, histórico por conversa e vínculo ao rascunho; publicação da interface e expansão a registros existentes pendentes |
+| IA-06 | Correção, tradução e proposta de texto | Parcial: revisão/aplicação/desfazer validados com simulação | Comparação original/proposta, edição e bloqueio de resposta obsoleta; qualidade das respostas reais e demais campos pendentes |
+| IA-07 | Anexos e extração parcial | Parcial: texto, imagem e PDF na programação, implementados localmente | Até 2 MB e 30 voos por análise; tipo/tamanho verificados. XLSX, áudio, anexos no relato e precisão de leitura real pendentes |
+| IA-08 | Coordenação: importar programação | Parcial: revisão e adição aos rascunhos validadas com simulação | Editar/selecionar itens, detectar duplicidade, conferir antes de programar; validação com documentos e gravação reais pendente |
+| IA-09 | Manutenção: elaborar relato no card | Parcial: texto na criação do relato implementado localmente | Propostas de título/descrição; anexos à IA, edição de registros existentes e demais campos pendentes |
+| IA-10 | Piloto: mural, Cockpit e documentos | Pendente | Extrair campos pertinentes, propor relatos e interpretar dados disponíveis; não inventar validade, assinatura ou cálculo regulamentar |
+| IA-11 | Expansão aos demais módulos | Pendente | Cobertura por campo/card inventariada, ações e permissões verificadas; sem atalhos que só abrem chat genérico |
+| IA-12 | Biblioteca administrável e pesquisa técnica | Pendente / dependência externa parcial | Importar acervo autorizado, revisões e efetividade; citar página/seção, conferir fontes e identificar referência ausente; AMM/FIM/IPC reais dependem dos documentos |
+| IA-13 | Segurança, auditoria e consumo | Parcial: autenticação também aplicada localmente à rota geral de texto | Rascunho sem escrita no banco; validar sessões reais, revisar escopo dos dados, limites distribuídos de uso, auditoria persistente e consumo |
+| IA-14 | Validação completa e publicação | Pendente | Testes por perfil e base, concorrência/duplicidade, mobile/desktop, regressão, deployment confirmado e aceite dos fluxos reais |
+| IA-15 | Consultas operacionais entre módulos | Parcial local: fila atual de secagens por botão no assistente | Consulta autenticada no servidor, perfil/base e RLS; interpretação de pergunta livre e lavagem realizada hoje ainda pendentes |
+| IA-16 | Cards acionáveis e navegação na conversa | Parcial local: secagem abre Trilho filtrado | Reconsulta do ID antes de abrir; validação de navegação integrada em sessão real, destaque do card exato, demais registros e ambiguidades pendentes |
+| IA-17 | Comandos para todos os lançamentos | Pendente | Localizar alvo, propor campos permitidos, revisar, aplicar e salvar pelas regras do módulo; testar comando de preenchimento na Passagem de Pista |
+| IA-18 | Conhecimento do aplicativo e continuidade | Pendente | Explicar funções existentes, conhecer capacidades disponíveis e continuar conversa entre painel/card; informar quando uma ação ainda não é suportada |
+
+IA-13 deve ser construída junto com as primeiras rotas/ações; sua posição na tabela não permite adiá-la até o final.
+
+## Cobertura inicial do aplicativo
+
+O inventário é inicial: cada linha deve ser desdobrada nos formulários, campos e cards efetivos antes de ser marcada como coberta. A criação de relato técnico é a primeira integração parcial local; as demais linhas continuam pendentes. Textos estáticos/cards de leitura recebem explicação/consulta; campos editáveis podem receber propostas conforme permissão. Senhas, tokens e ações técnicas formais não serão enviados ou alterados automaticamente.
+
+| Área | Arquivos de referência em `src/components` | Uso previsto |
+| --- | --- | --- |
+| Coordenação e programação | `flight-coordination.tsx`, `flight-board.tsx`, `flight-documentation.tsx` | Importar listas de voo, preencher parcialmente, revisar documentos e corrigir rascunhos |
+| Piloto e Cockpit | `cockpit.tsx`, `crew-dashboard.tsx`, `crew-presentation.tsx`, `flight-operations.tsx` | Documentos, relatos, explicação dos campos e dados operacionais disponíveis |
+| Manutenção e investigação | `maintenance-records.tsx`, `technical-case.tsx` | Elaborar relatos, pesquisar fontes, traduzir e solicitar informação ausente |
+| Trilhos e contadores | `maintenance-trail-card.tsx`, `drying-trail-card.tsx`, `flight-counters.tsx`, `flight-position.tsx` | Explicar registros e preparar propostas sem inferir execução ou medição |
+| Mural e atividades | `operational-wall.tsx`, `new-activity-dialog.tsx`, `action-fields.tsx`, `notice-carousel.tsx` | Redação, extração e resumo limitado aos registros autorizados |
+| Passagem de serviço | `runway-handover.tsx` | Resumir pendências com vínculo às fontes e preparar textos |
+| Cadastros e clientes | `client-management.tsx`, `aircraft-registry.tsx`, cadastros em `flight-board.tsx` | Extrair dados e revisar propostas; preservar fonte e resolver divergências |
+| Ferramentaria | `tool-control.tsx`, `toolbox-visual.tsx`, `toolbox-receipts.tsx` | Auxiliar cadastros, recibos e consultas sem inventar identificação ou movimentação |
+| Mensagens e notas | `internal-chat.tsx`, `personal-notes.tsx`, `assistant-history.tsx` | Reutilizar conversa, corrigir/traduzir, preservar privacidade e confirmar envio |
+| Biblioteca e meteorologia | `technical-library-search.tsx`, `weather-results.tsx` | Consulta contextual e explicações com fonte, data e limitações |
+| Ajuda, administração e lixeira | `help-and-pending.tsx`, `help-video-admin.tsx`, `flight-trash.tsx` | Ajuda contextual e redação; restauração/exclusão pelas ações existentes e suas permissões |
+
+## Decisões de arquitetura iniciais
+
+1. Usar um painel comum aberto por alvos explícitos: módulo, registro/rascunho, campo e revisão. Não extrair indiscriminadamente textos de toda a página.
+2. Cada módulo declara contexto mínimo e ações permitidas. As permissões e o estado atual são validados no servidor; informação enviada pelo navegador não concede autoridade.
+3. Conversa produz propostas estruturadas. Aplicar no rascunho é diferente de salvar registro. Preservar campos ausentes e detectar alteração manual posterior à proposta.
+4. Reutilizar os caminhos existentes de gravação para manter regras de negócio; não dar à IA escrita genérica no banco.
+5. Preservar identificação do original, proposta, usuário que aplicou e resultado da gravação. Histórico privado não vira conversa coletiva automaticamente.
+6. Começar pelos fluxos completos de coordenação e relato técnico; expandir o mesmo padrão após validá-los. A primeira entrega de interface deve mostrar o contexto e permitir continuar editando.
+7. A API de texto recebeu localmente a mesma verificação de sessão das novas rotas. Validar sessão real e revisar limites/escopo antes de expandir o acesso às novas ações.
+8. A infraestrutura atual usa diretamente a API OpenAI. A arquitetura do painel não exige substituir SDK ou modelo nesta etapa.
+9. Separar consulta, navegação, proposta e gravação em capacidades explícitas. O modelo escolhe capacidades cadastradas; não recebe SQL livre nem acesso genérico ao banco.
+10. Cargo, bases acessíveis e identidade são resolvidos no servidor. Filtrar antes de enviar dados ao modelo, inclusive contagens, anexos, histórico e títulos dos cards. Revalidar ao abrir e salvar.
+11. Resultados operacionais carregam IDs reais, origem, instante da consulta e intervalo consultado. Falha, paginação incompleta e ausência de registro não equivalem a “nenhuma pendência”.
+12. Cards na conversa são referências ao registro original. Destinos são resolvidos pelo aplicativo, sem executar URLs ou comandos gerados livremente pelo modelo. Registro removido ou acesso revogado deve produzir mensagem adequada.
+13. “Hoje” depende do fuso operacional definido e mostrado na consulta. Não presumir que o estado atual de um checklist prova execução naquele dia; usar eventos/datas de realização disponíveis.
+14. Solicitações de preenchimento geram proposta por campo e revisão do registro. Detectar edição concorrente, preservar campos não solicitados e manter assinaturas/confirmações exigidas pelo fluxo original.
+
+## Cenários obrigatórios de aceite do escopo ampliado
+
+| Pedido | Comportamento esperado | Verificação necessária |
+| --- | --- | --- |
+| “Quais S-92 foram lavados hoje e faltam secar?” | Resolver frota, período e base autorizada; cruzar eventos de lavagem e tarefas de secagem; listar prefixos com cards originais | Diferenciar lavagem CT disk, produto e compressor quando relevante; tarefas concluídas, canceladas, múltiplos eventos, ausência de registro e mudança de dia |
+| “Quais faltam lavar?” | Comparar obrigação/programação explícita com registros de execução | Sem regra ou programação de lavagem, informar que não é possível determinar todos os que faltam apenas pela ausência de registro |
+| “Abra o card do CHT e preencha X, Y e Z” | Localizar aeronave/card autorizado, apresentar escolha se necessário, abrir o original e preparar alterações dos campos existentes | Prefixo parcial ambíguo, múltiplos cards, campo inexistente, somente leitura, edição concorrente e confirmação/assinatura do módulo |
+| Imagem ou documento de qualquer lançamento | Identificar tipo de formulário, extrair campos sustentados pelo documento, mostrar origem e deixar ausências pendentes | Anexo com vários registros, dados contraditórios, instruções maliciosas no documento, limites de tamanho e ausência de permissão |
+| Pergunta sobre funcionamento do app | Explicar a função real e oferecer acesso à área disponível ao usuário | Não prometer funções ainda pendentes nem revelar áreas ou registros restritos |
+
+## Próxima sequência de implementação
+
+1. Validar autenticação unificada do assistente geral com sessão real e levantar as consultas/regras de acesso existentes.
+2. Criar contrato comum de consulta e referência a cards; primeiro fluxo completo: lavagem/secagem autorizada.
+3. Conectar resultados da conversa à navegação real de Passagem de Pista/Trilho.
+4. Adicionar localização e propostas de campos nos cards existentes, começando por Passagem de Pista.
+5. Expandir por inventário a todos os módulos, incluindo anexos, mantendo o status individual. Voos e relatos não encerram essa expansão.
+
+## Dependências que permanecem abertas
+
+- AISWEB: solicitação enviada e chave não recebida. Portal manual já acessível; isso não bloqueia o painel ou os fluxos de rascunho.
+- Jornada/FIRA: modelos, enquadramento e casos validados pelo operador.
+- eDB/TC/OS: acesso e documentação técnica da empresa.
+- Manuais completos: autorização, arquivos, revisão e aplicabilidade. Fontes públicas atuais permitem demonstração limitada.
+- Amostras reais anonimizadas de programação e documentos do piloto ajudam na validação; enquanto indisponíveis, identificar claramente os testes sintéticos.
+
+## Registro de entregas
+
+### 09/09/2026 — publicação solicitada
+
+- Usuário autorizou publicar as entregas prontas: conversas por assunto, opções de áudio, consultas autenticadas de relatos/secagens, painel do rascunho técnico, importação de programação e ajustes de linguagem/fontes.
+- Revisão do pacote: 102 testes de lógica/rotas aprovados, além dos testes de navegador e builds registrados nas entregas anteriores. Capturas, vídeos, apresentações e páginas sintéticas não integram o pacote.
+- Migração local alinhada à versão efetivamente aplicada no Supabase: `20260910001601_personal_assistant_conversations.sql`.
+- Publicação em andamento; registrar abaixo o commit e deployment confirmado. As funcionalidades ainda pendentes de implementação não fazem parte desta entrega.
+
+### 09/09/2026 — áudio transcrito com envio automático ou revisão
+
+- Adicionado seletor “Ao gravar áudio”: “Enviar após transcrever” e “Revisar antes de enviar”. No assistente geral, padrão automático; quando aberto na área de manutenção, padrão revisão. A escolha vale para a conversa aberta e pode ser alterada antes de gravar.
+- Revisão mantém texto editável sem consultar o modelo até o usuário enviar. Envio automático consulta após transcrição bem-sucedida. Texto já digitado ou imagem anexada exigem revisão; transcrição é acrescentada ao texto existente, sem apagá-lo. Acima de 8.000 caracteres, pede divisão antes de enviar.
+- Estados separados: “Transcrevendo…”, “Consultando…” e “Salvando conversa…”. Botão “Tentar transcrever novamente” aparece somente se a transcrição falhar, nunca durante processamento normal. Falha posterior na consulta mantém o texto e não pede outro envio do áudio.
+- Testes de navegador em 390/1366 px com microfone sintético/API simulada: automático, revisão/edição, falha da consulta seguida de reenvio sem nova transcrição, falha da transcrição seguida de retry e preservação do texto digitado. Passaram sem erro de página ou transbordamento horizontal. TypeScript aprovado.
+- Esta alteração cobre o áudio gravado do assistente geral. Não adiciona microfone aos painéis contextuais ainda sem voz. Não houve medição de consumo/velocidade nem chamada real ao serviço de transcrição. Interface ainda local, não publicada.
+- Verificação final: regressão de áudio/câmera ao vivo com histórico passou usando mídia/API simuladas; build de produção, TypeScript e `git diff --check` aprovados. Página sintética removida antes do build.
+
+### 09/09/2026 — conversas pessoais separadas por assunto
+
+- Alterada a decisão anterior de histórico único: abertura do assistente mostra lista e “Nova conversa”. Usuário informa título e cria explicitamente; abrir/retornar não cria conversas vazias.
+- Migração `personal_assistant_conversations` aplicada ao Supabase. Histórico anterior preservado em uma “Conversa anterior” por usuário. Compatibilidade mantida para o cliente ainda publicado, que continua acessando somente o histórico anterior.
+- Mensagens vinculadas por chave composta a conversa e proprietário. RPC verifica identidade ativa, proprietário e tentativa de reutilizar uma resposta em outra conversa. Tabelas sem acesso direto para anon/authenticated, RLS habilitada. Listas paginadas em blocos de 50.
+- Texto e sessão ao vivo enviam identificador da conversa. Servidor recupera somente seu histórico; rotas sem conversa verificam acesso sem importar histórico global. Trocar de conversa remonta o painel, limpando campo, propostas e contexto temporário.
+- Painel de criação do relato também possui lista/criação de conversas, identificadas pelo rascunho e aeronave. Histórico é persistido; propostas de preenchimento não são reaplicadas ao retomar. Rascunhos ainda não têm associação automática ao registro salvo — o vínculo é ao rascunho, com rótulo explícito.
+- Testes reais no banco, em transação revertida: isolamento entre assuntos/proprietários, matrícula forjada, repetição de criação/envio, tentativa de transferir resposta entre conversas e integridade dos históricos migrados. Passaram, sem deixar conversas ou mensagens sintéticas gravadas.
+- Navegador com API simulada em 390/1366 px: criar dois assuntos, enviar, voltar, retomar sem misturar mensagens e sem criar conversas extras. Regressão do painel contextual: histórico persistido simulado, aplicação/desfazer e bloqueio de proposta obsoleta. Sem erros de página/transbordamento.
+- Interface ainda local, não publicada. A migração de banco por si só não faz o novo botão aparecer no site. Páginas sintéticas removidas após os testes.
+- Verificação final: 21 testes de lógica/rotas, lint dos componentes alterados, TypeScript, `git diff --check` e build de produção aprovados. Nenhuma rota sintética na saída do build. Testes de interface usam respostas simuladas; testes SQL de isolamento foram reais.
+- Advisor Supabase: mantém os avisos esperados de [RLS sem políticas](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy) nas tabelas fechadas e [RPC SECURITY DEFINER executável por authenticated](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable). O desenho é intencional: acesso direto revogado e identidade/proprietário conferidos dentro da RPC; testes reais validaram essas restrições. Não foi afirmado que todos os avisos do projeto foram resolvidos.
+
+### 09/09/2026 — correção da conversa e consulta de relatos existentes
+
+- Requisito reforçado pelo usuário: conversa natural por área/cargo; sem referências bibliográficas automáticas; “E relato técnico?” após consulta de panes deve continuar a pesquisa, não abrir roteiro de criação.
+- Assistente geral passa a receber as últimas seis trocas do histórico autenticado como mensagens sequenciais, em vez de depender do histórico enviado pelo navegador. A área de origem é enviada como contexto de interface, sem conceder acesso.
+- Nova consulta interna de relatos abertos, com JWT/RLS e perfil/base resolvidos no servidor. Envia somente identificação, tipo, prefixo, modelo, base, título, status e atualização; até 100 registros. Resultado indisponível, não autorizado, parcial e vazio têm estados distintos. Cadastro/voos não são evidência de inexistência de pane.
+- Política diferencia relato aberto de pane confirmada, pede esclarecimento para prefixo/fala ambíguos e orienta respostas breves, sem listas automáticas de campos ou avisos documentais fora de contexto.
+- Fontes continuam sendo usadas na fundamentação, mas o chat geral não retorna lista bibliográfica automática. Nos painéis que usam a lista compartilhada, as fontes ficam recolhidas em “Ver fontes consultadas”. A biblioteca continua disponível para pesquisa explícita.
+- Testes de rota verificam histórico sequencial e inclusão de relato sintético do PR-CHT. Não houve consulta ao registro real do usuário nem avaliação da resposta do modelo em produção; esses testes não comprovam qualidade conversacional real.
+- Verificação desta rodada: 20 testes de lógica/rotas aprovados com dependências simuladas; TypeScript, lint dos novos arquivos e da lista de fontes, `git diff --check` e build de produção aprovados.
+- Esta entrega ainda é local e parcial. A consulta é de relatos abertos, não inclui todos os módulos nem pesquisa livre paginada. Voz contextual, painéis em registros existentes, ferramentas por profissão e publicação continuam pendentes. Não marcar cobertura global como concluída.
+
+### 09/09/2026 — primeira consulta operacional e referências à secagem
+
+- Adicionada seção “Secagens pendentes” no assistente geral. Consulta S-92/S-92A ou todas as frotas autorizadas por botão; retorna prefixo, modelo, base, motivo e abertura da pendência. Esta etapa não interpreta livremente perguntas operacionais.
+- Nova rota GET `/api/ai/drying`: autentica, resolve identidade/cargo/base via RPC do servidor e consulta a tabela com o JWT do usuário, mantendo RLS. Perfis de base recebem filtro adicional; tripulação depende da política existente de base operacional dinâmica. Perfis não habilitados e base obrigatória ausente são recusados.
+- Não usa chave de serviço, não grava dados e não envia a fila ao modelo. Mostra instante/escopo da consulta, resultados parciais acima de 100 registros e mensagem de falha diferente de resultado vazio.
+- “Abrir card no Trilho” reconsulta o ID sob as mesmas permissões e permite que um registro já concluído seja encontrado. A integração abre o Trilho filtrado por data/prefixo, com todos os estados; se o card não estiver carregado, informa indisponibilidade. Destaque e foco no card exato ainda pendentes.
+- Descoberto que a fila agrega lavagens novas a uma pendência existente, sem atualizar necessariamente `triggered_at`. Por isso não foi usado esse campo como data de lavagem. A resposta “lavadas hoje e faltam secar” ainda exige consulta dos eventos de realização.
+- Verificação: 19 testes de lógica/rotas passaram, com casos de identidade divergente, cargo, base ausente, filtro forjado, ID indisponível, resultado parcial e falha do banco. Interface isolada passou em 390/1366 px: consulta, revalidação ao abrir, erro de acesso e ausência de transbordamento/erros de página. Dependências e dados simulados; não valida políticas reais do Supabase nem navegação completa do aplicativo.
+- TypeScript, lint dos novos arquivos, `git diff --check` e build de produção aprovados. A saída inclui `/api/ai/drying` e não contém a fixture de teste, removida após a verificação. Alterações locais, sem publicação.
+
+### 09/09/2026 — escopo global e autenticação do assistente geral
+
+- Incorporado o pedido de todos os tipos de lançamento, consultas operacionais entre módulos, cards clicáveis e comandos de localização/preenchimento. Criadas etapas IA-15 a IA-18 e cenários de aceite de lavagem/secagem e card CHT.
+- Inspeção do código encontrou tipos distintos de lavagem na Passagem de Pista e tarefas próprias de secagem. A consulta deverá respeitar essas diferenças; um estado marcado no card não comprova, sozinho, execução no dia solicitado.
+- `/api/ai` agora verifica `assistantAccess` antes de ler o corpo ou chamar o provedor. O assistente geral envia o token da sessão e identificação do funcionário, conforme as rotas existentes. Erro de autorização retorna mensagem genérica, sem detalhes internos.
+- Verificação: 18 testes de lógica/rotas passaram com dependências simuladas, incluindo rejeição de sessão antes de consultar fontes/provedor. TypeScript e `git diff --check` aprovados.
+- Esta correção autentica a conversa; não implementa autorização por base para novas consultas. O contexto operacional atual ainda vem do navegador e não constitui fonte autoritativa. Consultas no servidor, cards acionáveis e preenchimento global permanecem pendentes.
+- Alterações locais, sem publicação, teste pago do modelo ou validação de sessão real nesta rodada. Próximo trabalho: catálogo de consultas autorizadas e primeiro fluxo de lavagem/secagem.
+
+### 09/09/2026 — início
+
+- Criado este checklist antes de alterar a IA.
+- Mapeados componentes principais e caminhos atuais de consulta e gravação.
+- Identificada contradição na política técnica que gerava a ressalva confusa mesmo com fontes disponíveis.
+- Corrigida a política compartilhada de texto/ao vivo para usar apenas fontes fornecidas, evitar a ressalva em pedidos não técnicos e não tratar instruções dos documentos como ordens. Ao vivo continua sem nova validação real.
+- Verificação: 7 testes existentes de `technical-case.test.cjs` passaram; lint do arquivo sem erros (um aviso preexistente `_priority`); build de produção e TypeScript concluídos. Não foram realizadas chamadas pagas à OpenAI nesta etapa.
+- Alterações locais, ainda sem commit/push/deployment desta entrega. O teste real anterior pertence à versão já publicada, não valida automaticamente o novo prompt.
+- Próxima implementação de interface: contrato de contexto e painel lateral; ainda não há novos botões publicados.
+
+### 09/09/2026 — primeira integração contextual local
+
+- Adicionado botão “Conversar com IA neste relato” na criação de registro técnico. Abre painel lateral em desktop e seção empilhada no celular, preservando formulário.
+- Criado contrato `maintenance-draft`, limitado a título/descrição e contexto do rascunho. Propostas com campos adicionais ou tipos inválidos são rejeitadas.
+- Nova rota `/api/ai/context` verifica sessão pelo mecanismo existente `assistantAccess`, não consulta registros privados por ID e não grava no banco. Limites de entrada, histórico e saída, timeout, tratamento de resposta incompleta e `store: false` no provedor.
+- Proposta pode ser editada antes da aplicação. Campos null são preservados. Uma edição manual posterior impede aplicar resposta antiga. Última aplicação pode ser desfeita enquanto os campos não forem novamente alterados.
+- Conversa limitada às últimas 8 trocas, em memória, isolada por usuário/rascunho/aeronave. Fechar o painel cancela a consulta em curso; encerrar formulário ou trocar aeronave descarta a conversa.
+- 12 testes unitários/de rota passaram com provedores simulados. Interface passou em 390/1366 px: contexto enviado, aplicar, desfazer, bloquear proposta obsoleta e reabrir painel. Sem erro de página e sem transbordamento horizontal. Lint sem erros, avisos preexistentes no componente de manutenção.
+- Fixture removida da árvore de rotas após o teste; reprodução em `tests/contextual-assistant-README.md`.
+- Build de produção e TypeScript aprovados; nova rota incluída e página sintética ausente da saída. Sem gravação real, sem teste pago de OpenAI ou nova validação de autenticação no banco nesta rodada. Ainda não publicado.
+- Próximo: autenticação da rota antiga e controle de consumo; ampliar entradas/anexos e fluxo de coordenação. Esta entrega não conclui IA-03 a IA-14.
+
+### 09/09/2026 — importação da programação de voos
+
+- Botão “Importar programação com IA” na coordenação, com texto e um anexo PDF/PNG/JPG/WebP de até 2 MB. Até 30 voos por consulta; a interface informa o envio do documento à OpenAI.
+- Nova rota `/api/ai/flight-import` autentica pelo mecanismo existente, limita corpo da requisição, valida MIME/base64 e assinatura do arquivo, usa saída estruturada, timeout e `store: false`. Não lê registros privados nem grava voos.
+- Extrai prefixo, data, saída, destino, duração, abastecimento/unidade e observações de origem. Dados de tripulação permanecem nas observações para associação manual; recorrência não é inferida.
+- Revisão editável por linha e seleção explícita. Adição ao formulário preserva rascunhos existentes; campos ausentes/ inválidos ficam vazios e dados recebidos ficam disponíveis para conferência. Quando há quantidade de combustível sem unidade válida, a quantidade fica pendente nas observações/dados recebidos, sem conversão presumida.
+- Bloqueio de possíveis duplicidades por prefixo/data/saída contra programação e rascunhos, incluindo itens aceitos no mesmo lote. Duplicidade é conferida novamente antes de programar os importados. Essa verificação de interface não constitui garantia transacional entre usuários simultâneos.
+- Voos importados exigem a marcação “Conferi os dados deste voo importado”. Edições dos campos principais retiram a conferência. A gravação segue o fluxo existente, com estado planejado e confirmação posterior para o Trilho; histórico inclui fonte, observações e dados importados. O combustível ausente continua seguindo a representação numérica preexistente ao salvar; a fonte importada preserva a ausência para conferência.
+- Testes: 17 testes de lógica/rotas aprovados com provedores simulados. Browser 390/1366 px: envio de imagem sintética, bloqueio de duplicidade, rascunho incompleto, conferência obrigatória e programação com callback em memória. Sem erros de página/transbordamento. Lint dos quatro arquivos sem erros ou avisos após correção de conflito de nome.
+- Fixture de teste removida da árvore de rotas. Reprodução documentada em `tests/contextual-assistant-README.md`.
+- Não houve teste pago de leitura real pela OpenAI, gravação no banco de produção ou publicação nesta etapa. IA-07 e IA-08 continuam parciais.
+- Verificação final: build de produção e TypeScript aprovados, sem rota sintética na saída. Mais 30 regressões de coordenação aprovadas (47 testes de lógica/rotas no total desta rodada, além dos testes de navegador).
