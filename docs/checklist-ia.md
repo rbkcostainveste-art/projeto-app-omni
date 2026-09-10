@@ -13,6 +13,13 @@ Criado em 09/09/2026, antes da implementação da transformação contextual. Es
 
 Marcar uma etapa concluída somente após atender aos critérios descritos. Não usar uma porcentagem geral enquanto o inventário de campos/cards não estiver completo. Um botão visível não comprova integração funcional.
 
+## Situação atual — assistente da tela
+
+- Publicado e conferido no site: botão flutuante por área/janela, conversa direta e preenchimento de prefixo/título/descrição no relato novo; título/descrição na revisão de relato existente.
+- Texto, imagens/PDF e voz; título automático e histórico por contexto; desfazer e proteção de edições concorrentes. 107 testes e verificações de navegador em celular/desktop aprovados.
+- Teste com OpenAI real: CHT selecionou PR-CHT e preencheu o rascunho. Teste desfeito sem salvar relato. Ajuste adicional de linguagem e nomes legíveis das áreas enviado para publicação.
+- **Ainda parcial:** ações de escrita dos demais módulos, consultas completas, navegação por qualquer card, continuidade entre rascunho e registro salvo e administração do acervo. O botão global não comprova cobertura desses fluxos.
+
 ## Base já entregue antes desta transformação
 
 - [x] OpenAI configurada; teste de conversa confirmado pelo usuário.
