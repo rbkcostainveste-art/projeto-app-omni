@@ -17,7 +17,7 @@ Marcar uma etapa concluída somente após atender aos critérios descritos. Não
 
 [Cobertura por área, campos e limitações](cobertura-ia.md).
 
-Última publicação confirmada: `680cc8fe11a8d77a9109218b20a360a09cc0207f`, deployment `dpl_HCVH5JcfhtpDLtwLVy1TowV6ytx9`, READY no domínio principal. Atualizações seguintes em validação são descritas no final.
+Última publicação confirmada: `5b41781db275c0a71380c7ecd5a4ea65989eaea9`, deployment `dpl_9cPnieE1gr2TAHF3qs5eMFwzCTP4`, READY no domínio principal. Atualizações seguintes em validação são descritas no final.
 
 - [x] Substituir consultas fixas por ferramentas escolhidas conforme a pergunta. Remover bloco de secagens sem relação com o pedido.
 - [x] Compartilhar regras da timeline e das designações entre a tela e a consulta. Contexto inclui área, filtros, card e fuso; identidade/base vêm do servidor.
@@ -26,10 +26,10 @@ Marcar uma etapa concluída somente após atender aos critérios descritos. Não
 - [x] Preenchimento dos campos conectados em nova atividade, publicação, relato, execução/comentário/geração de ação técnica, observações de passagem, empréstimo/retirada de ferramentas e formulários declarados do Cockpit. Campos exatos e limitações constam nas entregas abaixo.
 - [x] Até três imagens/PDF de 2 MB somados no assistente geral; áudio transcrito com envio automático ou revisão. Proteção de edição concorrente, desfazer e preservação dos controles existentes de salvar/assinar.
 - [x] Testes reais: timeline, designações pessoais, continuação para PR-CHT, abertura do relato, ferramentaria e rascunho de nova atividade. Sessão de administrador; consultas de mecânico também verificadas como authenticated no banco em transação revertida.
-- [ ] Completar todos os campos e ações ainda sem adaptador: ferramentas catalogadas, demais controles de coordenação/administração, notas e ações encadeadas entre telas.
+- [ ] Completar os campos e ações restantes do inventário: cadastros administrativos, seleções múltiplas de atividades e encadeamento nos destinos ainda não adaptados. Coordenação, notas, catálogo de ferramentas e evidências técnicas já tiveram ampliação publicada.
 - [x] Continuidade da mesma conversa ao abrir relato, passagem ou Cockpit e continuar um pedido composto. Teste real aprovado no relato PR-CHT. Demais destinos ainda exigem expansão individual.
 - [x] Captura prospectiva de confirmações autenticadas de lavagem e vínculo ao ciclo de secagem, instalada em 10/09. Consulta publicada, com aviso de cobertura parcial imposto pelo servidor. O histórico anterior permanece incompleto e não será inventado.
-- [x] Consulta dos registros autorizados do Cockpit e abertura do editor original. Notas pessoais implementadas localmente, em validação; demais conjuntos ainda precisam de inventário. Ter preenchimento no formulário não significa ter consulta de todo o módulo.
+- [x] Consulta dos registros autorizados do Cockpit e abertura do editor original. Notas pessoais publicadas; demais conjuntos ainda precisam de inventário. Ter preenchimento no formulário não significa ter consulta de todo o módulo.
 - [ ] Aceite real por todos os cargos/bases, imagens/documentos representativos, voz em ambiente de pista e câmera ao vivo integrada às mesmas ações.
 - [ ] Planilhas, documentos maiores, acervo técnico do operador, acompanhamento de consumo e cobertura integral do inventário.
 
@@ -413,3 +413,7 @@ O inventário é inicial: cada linha deve ser desdobrada nos formulários, campo
 - 136 testes de lógica/rotas aprovados. Testes de navegador 390/1366 aprovados para foco/seção fechada; evidências técnicas em validação final. Publicação desta etapa pendente.
 
 - Evidências técnicas: navegador 390/1366 aprovado, incluindo aplicação/desfazer no componente real, sem salvar nem assinar. Lint sem erros ou avisos nos arquivos desta etapa. Fixtures removidas antes do build.
+
+- Publicação dos campos técnicos e foco confirmada: `5b41781db275c0a71380c7ecd5a4ea65989eaea9`, deployment `dpl_9cPnieE1gr2TAHF3qs5eMFwzCTP4`, READY. Ajuste final: botões locais de novo/atual relato indicam o alvo explicitamente, mesmo após foco em outro campo.
+
+- Aceite real desta etapa, administrador e OpenAI no domínio principal: no PR-CHT, pedido preparou Componente=Altímetro e Resultado observado=Intermitente; Medição/Documento permaneceram vazios, conclusão do teste e confirmações formais inalteradas. Desfazer restaurou os campos; relato fechado sem salvar. Não foi criada execução nem alterado registro operacional. A conversa pessoal permanece no histórico.
