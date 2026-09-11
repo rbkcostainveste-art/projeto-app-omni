@@ -9,3 +9,5 @@ Ciência persiste por matrícula e revisão, compartilhada entre dispositivos da
 Filtro Base disponível somente para perfis globais; demais limitados à base atual. Modelo e prefixo usam a mesma base.
 
 Verificação: testes unitários de visibilidade e pendências; SQL transacional com rollback para ciência, versão obsoleta, preservação do registro e autenticação; navegador 390/1366, sem overflow, card desktop abaixo de 165 px, tom suave e ciência em lote.
+
+Encerrados com OK deixam automaticamente a Passagem atual 24 horas após a publicação (entrada na passagem para casos técnicos, criação para programadas). Encerramento ou edição não reiniciam o prazo. Pendências, resultados não conformes e registros sem comprovação de OK não expiram por tempo. Histórico preservado; atualização automática a cada minuto e ao retornar à tela.
