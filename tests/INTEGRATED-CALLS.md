@@ -12,6 +12,12 @@ module path if it is not available as a local dependency. The script uses Edge,
 synthetic camera/microphone and a mocked RPC service; it does not contact employees.
 Remove the temporary app route before building or publishing.
 
+`CALLS_ONLY=1` skips the separate message recorder checks. `SYNTHETIC_MEDIA=1`
+uses canvas video and an audio oscillator when the browser's fake capture device
+is unavailable; WebRTC transport, screen sharing and call recording remain real.
+The call suite also checks manual focus, grid, fullscreen/restore and responsive
+layouts at 390 and 1366 pixels. Screenshots are saved under `tmp/calls-layout-*`.
+
 Verified scenarios: direct audio/video send, cancel, three-way WebRTC video,
 incoming/accept, actual received audio packets, mute, camera toggle, screen sharing
 in a video call, no camera controls in audio calls, recording notice and camera switch, media track cleanup, and denied permission. Calls stay in

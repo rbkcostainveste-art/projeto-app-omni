@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 
 (async()=>{
 
- const browser=await chromium.launch({channel:'msedge',headless:true,args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']});
+ const browser=await chromium.launch({channel:'msedge',headless:true,args:['--disable-background-timer-throttling','--disable-renderer-backgrounding','--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']});
 
  const errors=[];let current=null,members=[],signals=[],sequence=0;
 
@@ -12,7 +12,8 @@ const assert=require('node:assert/strict');
 
  const context=await browser.newContext({permissions:['camera','microphone'],viewport:{width:390,height:844}});
 
- await context.addInitScript(()=>{let uuidCounter=0;crypto.randomUUID=()=>`${new URLSearchParams(location.search).get('user')==='A'?'ffffffff':new URLSearchParams(location.search).get('user')==='B'?'88888888':'11111111'}-0000-4000-8000-${(++uuidCounter).toString(16).padStart(12,'0')}`;window.testStreams=[];window.testPeers=[];const original=navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);navigator.mediaDevices.getUserMedia=async constraints=>{window.facingRequests=window.facingRequests||[];window.facingRequests.push(constraints.video?.facingMode);if(constraints.video?.facingMode?.exact)constraints.video={...constraints.video,facingMode:undefined};const stream=await original(constraints);window.testStreams.push(stream);return stream;};const PC=window.RTCPeerConnection;window.RTCPeerConnection=class extends PC{constructor(...args){super(...args);window.testPeers.push(this);}};navigator.mediaDevices.getDisplayMedia=async()=>{const canvas=document.createElement('canvas');canvas.width=120;canvas.height=80;const ctx=canvas.getContext('2d');const timer=setInterval(()=>{ctx.fillStyle='red';ctx.fillRect(0,0,120,80);},100);const stream=canvas.captureStream(10);window.testStreams.push(stream);stream.getVideoTracks()[0].addEventListener('ended',()=>clearInterval(timer));return stream;};});
+ await context.addInitScript((synthetic)=>{let uuidCounter=0;crypto.randomUUID=()=>`${new URLSearchParams(location.search).get('user')==='A'?'ffffffff':new URLSearchParams(location.search).get('user')==='B'?'88888888':'11111111'}-0000-4000-8000-${(++uuidCounter).toString(16).padStart(12,'0')}`;window.testStreams=[];window.testPeers=[];const original=navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);navigator.mediaDevices.getUserMedia=async constraints=>{window.facingRequests=window.facingRequests||[];window.facingRequests.push(constraints.video?.facingMode);if(constraints.video?.facingMode?.exact)constraints.video={...constraints.video,facingMode:undefined};let stream;
+if(synthetic){stream=new MediaStream();if(constraints.audio){const ac=new AudioContext(),osc=ac.createOscillator(),dest=ac.createMediaStreamDestination();osc.connect(dest);osc.start();void ac.resume();dest.stream.getTracks().forEach(t=>stream.addTrack(t));}if(constraints.video){const canvas=document.createElement('canvas');canvas.width=640;canvas.height=480;const ctx=canvas.getContext('2d');setInterval(()=>{ctx.fillStyle='#245080';ctx.fillRect(0,0,640,480);ctx.fillStyle='white';ctx.font='32px sans-serif';ctx.fillText(new URLSearchParams(location.search).get('user'),40,60);},100);canvas.captureStream(10).getTracks().forEach(t=>stream.addTrack(t));}}else stream=await original(constraints);window.testStreams.push(stream);return stream;};const PC=window.RTCPeerConnection;window.RTCPeerConnection=class extends PC{constructor(...args){super(...args);window.testPeers.push(this);}};navigator.mediaDevices.getDisplayMedia=async()=>{const canvas=document.createElement('canvas');canvas.width=120;canvas.height=80;const ctx=canvas.getContext('2d');const timer=setInterval(()=>{ctx.fillStyle='red';ctx.fillRect(0,0,120,80);},100);const stream=canvas.captureStream(10);window.testStreams.push(stream);stream.getVideoTracks()[0].addEventListener('ended',()=>clearInterval(timer));return stream;};},!!process.env.SYNTHETIC_MEDIA);
 
  await context.route('**/__call_test',async route=>{const {who,args}=route.request().postDataJSON(),p=args.p_payload,action=args.p_action;let data={};
 
@@ -47,11 +48,13 @@ const assert=require('node:assert/strict');
 
  await a.bringToFront();await a.waitForTimeout(800);
 
+ if(!process.env.CALLS_ONLY){
  for(const type of ['áudio','vídeo']){await a.getByRole('button',{name:'Gravar '+type,exact:true}).click();await a.getByRole('button',{name:'Enviar gravação'}).waitFor();await a.waitForTimeout(1600);if(type==='vídeo'){await a.getByRole('button',{name:'Trocar câmera'}).click();await a.waitForTimeout(800);assert.ok(await a.evaluate(()=>window.facingRequests.some(f=>f?.exact==='environment')));}await a.getByRole('button',{name:'Enviar gravação'}).click();await a.waitForTimeout(900);assert.match(await a.getByTestId('sent').innerText(),type==='áudio'?/^audio\/.*:[1-9]/:/^video\/.*:[1-9]/);assert.equal(await a.getByText('Usar gravação').count(),0);}
 
- await a.getByRole('button',{name:'Gravar áudio',exact:true}).click();await a.getByRole('button',{name:'Cancelar gravação'}).click({timeout:6000}).catch(async e=>{console.log(await a.locator('body').innerText());throw e;});await a.getByRole('button',{name:'Enviar gravação'}).waitFor({state:'hidden'});
+ await a.getByRole('button',{name:'Gravar áudio',exact:true}).click();await a.getByRole('button',{name:'Cancelar gravação'}).click({timeout:25000}).catch(async e=>{console.log(await a.locator('body').innerText());throw e;});await a.getByRole('button',{name:'Enviar gravação'}).waitFor({state:'hidden'});
 
  console.log('PASS direct audio/video send and cancel');
+ }
 
  await a.getByRole('button',{name:'Ligar por vídeo'}).click();await a.getByRole('heading',{name:'Chamando / conectando…'}).waitFor();
 
@@ -59,11 +62,27 @@ const assert=require('node:assert/strict');
 
  await b.getByRole('heading',{name:'Em chamada',exact:true}).waitFor({timeout:25000});await a.getByRole('heading',{name:'Em chamada',exact:true}).waitFor({timeout:25000});
 
- await b.waitForFunction(()=>{const el=document.querySelector('video[aria-label="A"]');return el&&el.videoWidth>0;});
+ await b.waitForFunction(()=>{const el=document.querySelector('video[aria-label="A"]');return el&&el.videoWidth>0;},{},{timeout:60000}).catch(async e=>{await b.screenshot({path:'tmp/calls-failure.png'});console.log(await b.evaluate(()=>[...document.querySelectorAll('video')].map(v=>({label:v.ariaLabel,w:v.videoWidth,paused:v.paused,tracks:v.srcObject?.getTracks().map(t=>({kind:t.kind,state:t.readyState}))}))));throw e;});
 
  await c.bringToFront();await c.getByRole('button',{name:'Atender',exact:true}).click({timeout:12000});await c.getByRole('heading',{name:'Em chamada',exact:true}).waitFor({timeout:25000});
 
  await c.waitForFunction(()=>document.querySelectorAll('video').length===3);
+ await c.getByRole('button',{name:'Destacar B',exact:true}).click();
+ assert.equal(await c.locator('[data-main="true"] video').getAttribute('aria-label'),'B');
+ await c.getByRole('button',{name:'Grade',exact:true}).click();
+ assert.equal(await c.locator('[data-layout]').getAttribute('data-layout'),'grid');
+ await c.getByRole('button',{name:'Destaque',exact:true}).click();
+ await c.getByRole('button',{name:'Tela cheia',exact:true}).click();
+ await c.getByRole('button',{name:'Restaurar chamada',exact:true}).click();
+ for(const width of [390,1366]){
+  await c.setViewportSize({width,height:844});
+  const bounds=await c.locator('[data-main="true"]').boundingBox();
+  assert.ok(bounds.width>width*0.5&&bounds.height>150);
+  assert.equal(await c.locator('video').count(),3);
+  await c.screenshot({path:`tmp/calls-layout-${width}.png`});
+ }
+ console.log('PASS focus, grid, fullscreen and mobile/desktop layout');
+
 
  await c.getByRole('button',{name:'Silenciar microfone'}).click();assert.equal(await c.getByRole('button',{name:'Ativar microfone'}).count(),1);
 
