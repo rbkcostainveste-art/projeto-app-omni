@@ -1,0 +1,4 @@
+export function canEditPlannedTimes(role:string,user:string,flight:{commander?:string;copilot?:string;base:string},base:string,isAdmin=false){return isAdmin||['admin','app_manager'].includes(role)||role==='coordination'&&base===flight.base||['commander','copilot'].includes(role)&&!!user&&[flight.commander,flight.copilot].includes(user);}
+export function timeMinutes(value:string){if(!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(value))return NaN;const [h,m]=value.split(':').map(Number);return h*60+m;}
+export function minutesClock(value:number){const minutes=((Math.round(value)%1440)+1440)%1440;return `${String(Math.floor(minutes/60)).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`;}
+export function durationFromArrival(start:string,arrival:string){return ((timeMinutes(arrival)-timeMinutes(start)+1440)%1440)/60;}
