@@ -30,3 +30,13 @@ O vínculo afetado do PR-OHG foi recuperado. Como não possuía eventos operacio
 - Advisors de segurança: nenhuma diferença em relação à situação anterior (143 apontamentos existentes). Nenhuma ampliação de acesso público.
 
 Os testes de navegador usam dados simulados; permissões e persistência foram verificadas separadamente no banco real, com os dados sintéticos revertidos ao final.
+
+## Correção da lista de tripulação
+
+O catálogo compartilhado de contatos tem apenas nome e matrícula. O card filtrava esse catálogo por função, portanto não mostrava ninguém, embora o cadastro operacional já tivesse comandante e copiloto ativos para S92.
+
+O seletor agora consulta `get_operational_assignments` ao abrir a programação, com função, frota e situação ativa. Tripulantes sem base fixa são aceitos conforme a frota cadastrada. Falha na consulta exibe uma mensagem e “Tentar novamente”; nunca é confundida com ausência de cadastro. A lista e a aplicação pela IA usam as mesmas opções.
+
+A resposta real dessa consulta, sob acesso da coordenação de Jacarepaguá, foi verificada com o seletor: os dois tripulantes do S92 foram encontrados. Nenhuma escala real foi alterada pelo teste.
+
+A fixture de navegador foi corrigida para representar a origem real: contatos sem função e consulta operacional separada, com nomes de campos do RPC. O fluxo passou em 390 e 1366 px, incluindo filtro de frota, exclusão de inativos e outras funções, seleção, gravação e recuperação após falha de consulta. Os 165 testes automatizados e a regressão transacional do fluxo no banco passaram.
