@@ -19,6 +19,9 @@ export function assignedToEmployee(assignedTo:string, employee:string, fleets:st
 /** Same event inclusion and date rules for the Mural and the assistant. */
 export function wallTimeline(scoped:WallPost[], from:string, until=from, timeZone?:string) {
  return scoped.flatMap(post=>{
+  // The live wall informs supervision of field results, not their own case closures.
+  // Keep execution cards even when their linked source report has been closed.
+  if(post.maintenanceRecordId && !post.actions.length && post.technicalCase?.investigation==='closed')return [];
   if(post.technicalCase && (post.technicalCase.priority||post.priority)!=='urgent' && !post.technicalCase.critical)return [];
   const context=`${post.category} ${post.title} ${post.body}`.toLowerCase();
   if(post.category==='Procedimentos'||isWallNotice(post))return [];
