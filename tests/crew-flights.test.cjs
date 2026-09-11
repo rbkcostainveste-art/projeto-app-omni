@@ -34,3 +34,24 @@ test('deleted, reassigned and unassigned flights never leak into the mural', () 
   assert.equal(groupCrewFlights([{ commander: '', copilot: '' }], '').visible.length, 0);
   assert.equal(groupCrewFlights([flight], ' ').visible.length, 0);
 });
+
+test('operational outcome wins over confirmation and maintenance category', () => {
+  const rows = [
+    {id:'finished', actualShutdown:'11:20'},
+    {id:'legacy-finished', shutdown:'ok'},
+    {id:'maintenance-finished', maintenancePostId:'post', shutdown:'ok'},
+    {id:'return', returned:true, shutdown:'ok'},
+    {id:'return-in-progress', returned:true},
+    {id:'cancelled', cancelled:true, planningStatus:'planned'},
+    {id:'maintenance', maintenancePostId:'post'},
+    {id:'confirmed'},
+  ].map(f=>({commander:'P1',planningStatus:'confirmed',...f}));
+  const groups=groupCrewFlights(rows,'P1');
+  assert.deepEqual(groups.finished.map(f=>f.id), ['finished','legacy-finished','maintenance-finished']);
+  assert.deepEqual(groups.returned.map(f=>f.id), ['return','return-in-progress']);
+  assert.deepEqual(groups.confirmed.map(f=>f.id), ['confirmed']);
+  assert.deepEqual(groups.maintenance.map(f=>f.id), ['maintenance']);
+  const ids=['maintenance','confirmed','planned','cancelled','returned','finished'].flatMap(k=>groups[k].map(f=>f.id));
+  assert.equal(new Set(ids).size,rows.length);
+  assert.equal(ids.length,rows.length);
+});
