@@ -2,6 +2,8 @@
 import {useEffect,useState,useId} from "react";
 import type {SupabaseClient} from "@supabase/supabase-js";
 import {PowerCheckResult,type CrewFlight,type CrewMaintenanceAction} from "./crew-dashboard";
+import {ModalLayer} from "./modal-layer";
+import {Clock3,Wrench,X} from "lucide-react";
 import {uploadRecordMedia} from "@/lib/record-media";
 
 type Props={client:SupabaseClient|null;flight:CrewFlight;flights:CrewFlight[];user:string;isCrew:boolean;readOnly:boolean;requireSignature:(action:()=>void|Promise<void>,label?:string)=>Promise<boolean>;onError:(message:string)=>void};
@@ -49,4 +51,11 @@ export function PowerCheckFlightPanel({client,flight,flights,user,isCrew,readOnl
   },"Confirmar resultado do Power Check");
   return saved;
  }}/>)}</section>;
+}
+
+export function PowerCheckTrailCard(props:Props){
+ const[open,setOpen]=useState(false);
+ const{flight}=props;
+ const returned=Boolean(flight.actualShutdown||flight.shutdown==="ok"||flight.operationEndedAt);
+ return <><button type="button" onClick={()=>setOpen(true)} aria-label={`Abrir Power Check · ${flight.prefix}`} className="animate-rise w-full self-start rounded-2xl border border-l-[5px] border-violet-400 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><div className="flex items-start justify-between gap-3"><div><div className="flex items-center gap-2"><Wrench size={17} className="text-violet-600"/><h3 className="font-mono text-xl font-extrabold text-[#17324d]">{flight.prefix}</h3></div><p className="mt-1 text-xs font-semibold text-[#526b82]">{flight.model} · {flight.destination||flight.base}</p><p className="mt-2 text-xs font-bold text-[#17324d]">Power Check</p></div><span className="rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-extrabold text-violet-700">Pendente</span></div><div className="mt-4 grid grid-cols-2 gap-2 text-sm"><div><span className="block text-[#7d8da0]">Voo vinculado</span><strong className="mt-1 flex items-center gap-1"><Clock3 size={13}/>{flight.departure}</strong></div><div><span className="block text-[#7d8da0]">Resultado</span><strong className="mt-1 block text-xs">{returned?"A confirmar":"Após o retorno"}</strong></div></div><div className="mt-3 flex items-center justify-between border-t border-[#e6edf4] pt-3 text-[10px] font-semibold text-[#718197]"><span>{flight.date.split("-").reverse().join("/")}</span><span>Não bloqueia o voo</span></div></button>{open?<ModalLayer><div className="fixed inset-0 z-50 grid place-items-end bg-[#071a30]/60 backdrop-blur-sm sm:place-items-center sm:p-4" onMouseDown={e=>{if(e.target===e.currentTarget)setOpen(false);}}><section role="dialog" aria-modal="true" aria-label={`Power Check · ${flight.prefix}`} className="max-h-[94dvh] w-full overflow-y-auto rounded-t-2xl bg-white shadow-2xl sm:max-w-2xl sm:rounded-2xl"><header className="flex items-center justify-between border-b p-4"><h2 className="font-bold">{flight.prefix} · Power Check</h2><button type="button" aria-label="Fechar Power Check" onClick={()=>setOpen(false)} className="rounded-full border p-2"><X size={19}/></button></header><PowerCheckFlightPanel {...props}/></section></div></ModalLayer>:null}</>;
 }
