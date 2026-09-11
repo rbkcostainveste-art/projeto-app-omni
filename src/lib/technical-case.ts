@@ -29,11 +29,12 @@ export function technicalDeadline(c:TechnicalCase, now=Date.now()) {
  return "";
 }
 export function technicalCardBorder(c:TechnicalCase, now=Date.now()) {
+ if(c.investigation==="closed"&&!c.critical&&c.aircraft==="released"&&!technicalDeadline(c,now))return "border-emerald-500";
  if(isUrgentTechnical(c)||c.aircraft==="unavailable"||c.investigation==="test_failed"||technicalDeadline(c,now))return "border-red-500";
  if(c.investigation==="closed")return "border-slate-400";
  return "border-amber-400";
 }
-export function technicalTone(c:TechnicalCase){if(technicalCardBorder(c)==="border-red-500")return "bg-red-50 text-red-800 border-red-200";return c.investigation==="closed"?"bg-slate-50 text-slate-700 border-slate-200":"bg-amber-50 text-amber-900 border-amber-200";}
+export function technicalTone(c:TechnicalCase){if(technicalCardBorder(c)==="border-emerald-500")return "bg-emerald-50 text-emerald-800 border-emerald-200";if(technicalCardBorder(c)==="border-red-500")return "bg-red-50 text-red-800 border-red-200";return c.investigation==="closed"?"bg-slate-50 text-slate-700 border-slate-200":"bg-amber-50 text-amber-900 border-amber-200";}
 export function serviceCasePending(c?:TechnicalCase){return !!c&&c.investigation!=="closed"&&(!!c.serviceEnteredAt||isUrgentTechnical(c)||["discrepancy","recurrence"].includes(c.report)||c.official==="pending"||["monitoring","condition_watch"].includes(c.investigation)||["unavailable","maintenance"].includes(c.aircraft));}
 export function criticalTechnicalText(text:string){return /falha presente.{0,40}vai voar|liberado somente para cumprir o voo|teste n[aã]o realizado|colocado ok para produzir/i.test(text);}
 /** Preparation layer: no document corpus is connected and no technical facts are generated. */

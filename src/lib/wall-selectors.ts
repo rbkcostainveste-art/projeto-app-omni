@@ -1,3 +1,4 @@
+import {latestWallUpdate} from './comment-attention';
 import type {WallPost} from '@/components/operational-wall';
 
 export function calendarDay(value: string | Date = new Date(), timeZone?: string) {
@@ -26,7 +27,9 @@ export function wallTimeline(scoped:WallPost[], from:string, until=from, timeZon
   if(post.maintenanceRecordId&&post.actions.length>0&&!executions.length)return [];
   const history=post.history.filter(entry=>['criou','resolveu','reabriu','relato técnico','discrep','giro','manutenção','registrou ação'].some(word=>entry.event.toLowerCase().includes(word))).map(entry=>({at:entry.at,actor:entry.employeeNumber,prefix:post.actions[0]?.prefix||'',title:entry.event,summary:entry.event.toLowerCase().includes('registrou ação')?`${entry.event}: ${post.maintenanceResultDescription??post.body}`:post.body}));
   const latest=[...(post.actions.length?[]:history),...executions].sort((a,b)=>Date.parse(b.at)-Date.parse(a.at))[0];
+  const update=latestWallUpdate(post);
+  const contentAt=update.kind==='Nova atualização'?undefined:update.at;
   const commentAt=post.comments.map(c=>c.at).sort().at(-1);
-  return latest?[{id:post.id,post,...latest,activityAt:commentAt&&Date.parse(commentAt)>Date.parse(latest.at)?commentAt:latest.at}]:[];
+  return latest?[{id:post.id,post,...latest,activityAt:[latest.at,contentAt,commentAt].filter((at):at is string=>!!at).sort((a,b)=>Date.parse(b)-Date.parse(a))[0]}]:[];
  }).filter(item=>{const day=calendarDay(item.activityAt,timeZone);return (!from||day>=from)&&(!until||day<=until);}).sort((a,b)=>Date.parse(b.activityAt)-Date.parse(a.activityAt));
 }

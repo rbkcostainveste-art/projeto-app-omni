@@ -1,0 +1,47 @@
+begin;
+do $test$
+declare uid uuid; emp text; b text; r uuid:=gen_random_uuid(); w text; a text; rev bigint; rr bigint; row_data jsonb; caught boolean; role_name text; c jsonb;
+begin
+ select d.auth_user_id,d.employee_number,d.assigned_base into uid,emp,b from public.device_identities d join public.authorized_users u using(employee_number) where u.active and u.job_role='maintenance_coordinator' and d.assigned_base is not null limit 1;
+ if uid is null then raise exception 'Missing fixture identity';end if;
+ perform set_config('request.jwt.claim.sub',uid::text,true);
+ update public.device_identities set signature_verified_at=now() where auth_user_id=uid;
+ update public.shared_app_state set catalogs=jsonb_set(catalogs,'{aircraft}',catalogs->'aircraft'||jsonb_build_array(jsonb_build_object('prefix','PR-QCL','model','S92','base',b))) where id='main';
+ insert into public.maintenance_records(id,record_type,base,model,prefix,priority,status,title,created_by,data,technical_case) values(r,'fault',b,'S92','PR-QCL','urgent','open','QA closure',emp,'{"description":"QA only","entries":[],"technicalCase":true}','{"priority":"urgent","report":"report","official":"evaluation","aircraft":"evaluation","investigation":"triage"}');
+ foreach role_name in array array['maintenance_inspector','maintenance_leader','maintenance_coordinator','maintenance_manager','maintenance_director','admin','app_manager'] loop
+  update public.authorized_users set job_role='maintenance_coordinator',access_profile='leader_inspector' where employee_number=emp;
+  execute 'set local role authenticated';
+  w:=public.create_maintenance_request(r,'Voo de manutenção','QA closure',array[]::text[],'','{}');
+  perform public.record_maintenance_task_result(w,'Conferido em teste sintético','satisfactory',gen_random_uuid(),'[]');
+  execute 'reset role';
+  select revision,data#>>'{actions,0,id}' into rev,a from public.operational_wall_posts where id=w;
+  update public.authorized_users set job_role='mechanic' where employee_number=emp;
+  caught:=false;begin perform public.close_maintenance_task(w,a,rev,'QA');exception when others then caught:=sqlerrm like '%Somente inspetor%';end;if not caught then raise exception 'Mechanic closure not blocked';end if;
+  update public.authorized_users set job_role=role_name,access_profile=case when role_name in('admin','app_manager') then 'admin' else 'leader_inspector' end where employee_number=emp;
+  caught:=false;begin perform public.close_maintenance_task(w,a,rev-1,'QA');exception when others then caught:=sqlerrm like '%atualizada%';if not caught then raise exception 'Unexpected stale error for %: %',role_name,sqlerrm;end if;end;if not caught then raise exception 'Stale task not blocked';end if;
+  execute 'set local role authenticated';
+  row_data:=public.close_maintenance_task(w,a,rev,'QA action reviewed');
+  execute 'reset role';
+  if row_data#>>'{data,actions,0,status}'<>'resolved' or row_data#>>'{data,actions,0,closedBy}'<>emp then raise exception 'Closure failed for %',role_name;end if;
+  if (select technical_case->>'investigation' from public.maintenance_records where id=r)='closed' then raise exception 'Action-only closure closed source';end if;
+ end loop;
+ update public.authorized_users set job_role='maintenance_inspector',access_profile='leader_inspector' where employee_number=emp;
+ w:=public.create_maintenance_request(r,'Voo de manutenção','QA final action',array[]::text[],'','{}');
+ select revision,data#>>'{actions,0,id}' into rev,a from public.operational_wall_posts where id=w;
+ caught:=false;begin perform public.close_maintenance_task(w,a,rev,'QA');exception when others then caught:=sqlerrm like '%satisfatório%';end;if not caught then raise exception 'Pending task closed';end if;
+ perform public.record_maintenance_task_result(w,'OK','satisfactory',gen_random_uuid(),'[]');
+ select revision into rev from public.operational_wall_posts where id=w;
+ select revision into rr from public.maintenance_records where id=r;
+ caught:=false;begin perform public.close_maintenance_task(w,a,rev,'QA',jsonb_build_object('revision',rr,'confirmed',true));exception when others then caught:=sqlerrm like '%APRS%';end;if not caught then raise exception 'Release without APRS not blocked';end if;
+ if (select data#>>'{actions,0,status}' from public.operational_wall_posts where id=w)<>'satisfactory' then raise exception 'Partial closure leaked on error';end if;
+ execute 'set local role authenticated';
+ row_data:=public.close_maintenance_task(w,a,rev,'QA reviewed and released',jsonb_build_object('revision',rr,'confirmed',true,'aprsRef','QA-ONLY-APRS'));
+ execute 'reset role';
+ select technical_case into c from public.maintenance_records where id=r;
+ if c->>'investigation'<>'closed' or c->>'aircraft'<>'released' then raise exception 'Source not closed/released';end if;
+ if not exists(select 1 from public.operational_wall_posts p,jsonb_array_elements(p.data->'history')h where p.data->>'maintenanceRecordId'=r::text and jsonb_array_length(p.data->'actions')=0 and h->>'event'='Encerrou relato técnico') then raise exception 'Closure missing in timeline';end if;
+ if not exists(select 1 from public.technical_case_audit where record_id=r and employee_number=emp) then raise exception 'Missing audit';end if;
+end $test$;
+select 'PASS: 7 leadership roles, mechanic denied, stale denied, pending denied, atomic failed release, action-only separation, signed source closure, audit, timeline' result;
+rollback;
+
