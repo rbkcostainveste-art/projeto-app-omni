@@ -1,0 +1,33 @@
+begin;
+do $test$
+declare rid uuid:=gen_random_uuid(); co uuid; m uuid; pilot uuid; emp text; pe text; b text; w text; f jsonb; caught boolean;
+begin
+ select d.auth_user_id,d.employee_number,d.assigned_base into m,emp,b from public.device_identities d join public.authorized_users u using(employee_number) where u.active and u.job_role='maintenance_coordinator' and d.assigned_base is not null limit 1;
+ select d.auth_user_id,d.employee_number into pilot,pe from public.device_identities d join public.authorized_users u using(employee_number) where u.active and u.job_role='commander' limit 1;
+ select d.auth_user_id into co from public.device_identities d join public.authorized_users u using(employee_number) where u.active and u.job_role='coordination' and d.assigned_base=b limit 1;
+ perform set_config('request.jwt.claim.sub',m::text,true);
+ update public.authorized_users set assigned_base=b,fleets=array['S92'] where employee_number=pe;
+ update public.shared_app_state set catalogs=jsonb_set(catalogs,'{aircraft}',catalogs->'aircraft'||jsonb_build_array(jsonb_build_object('prefix','PR-QPC','base',b,'model','S92'))) where id='main';
+ insert into public.maintenance_records(id,record_type,base,model,prefix,priority,status,title,created_by,data,technical_case) values(rid,'fault',b,'S92','PR-QPC','urgent','open','QA Power Check',emp,'{"description":"QA","entries":[],"technicalCase":true}','{"priority":"urgent","report":"report","official":"evaluation","aircraft":"evaluation","investigation":"triage"}');
+ w:=public.create_scoped_activity(gen_random_uuid()::text,b,'prefix','PR-QPC','',rid,'Power Check','','','{}','routine','{}','[]');
+ f:=jsonb_build_object('id','qa-power-flight','prefix','PR-QPC','base',b,'model','S92','date',to_char(now() at time zone 'America/Sao_Paulo','YYYY-MM-DD'),'departure','08:00','planningStatus','planned','commander','');
+ update public.shared_app_state set flights=flights||jsonb_build_array(f) where id='main';
+ perform set_config('request.jwt.claim.sub',pilot::text,true);
+ if exists(select 1 from public.list_crew_maintenance_actions() c where c->>'postId'=w) then raise exception 'Unassigned pilot sees check';end if;
+ perform set_config('request.jwt.claim.sub',co::text,true);
+ update public.shared_app_state set flights=(select jsonb_agg(case when v->>'id'='qa-power-flight' then v||jsonb_build_object('commander',pe) else v end) from jsonb_array_elements(flights) v) where id='main';
+ perform set_config('request.jwt.claim.sub',pilot::text,true);
+ if not exists(select 1 from public.list_crew_maintenance_actions() c where c->>'postId'=w) then raise exception 'Planned assigned check missing';end if;
+ update public.device_identities set signature_verified_at=now() where auth_user_id=pilot;
+ caught:=false;begin perform public.record_maintenance_task_result(w,'Power Check OK','satisfactory',gen_random_uuid(),'[]');exception when others then caught:=sqlerrm like '%após o retorno%';end;if not caught then raise exception 'Before return accepted';end if;
+ update public.shared_app_state set flights=(select jsonb_agg(case when v->>'id'='qa-power-flight' then v||jsonb_build_object('shutdown','ok','actualShutdown','12:00','operationEndedAt',clock_timestamp()) else v end) from jsonb_array_elements(flights) v) where id='main';
+ if not exists(select 1 from public.list_crew_maintenance_actions() c where c->>'postId'=w) then raise exception 'Check disappeared at return';end if;
+ if (select data#>>'{actions,0,status}' from public.operational_wall_posts where id=w)<>'pending' then raise exception 'Flight auto-completed check';end if;
+ execute 'set local role authenticated';
+ perform public.record_maintenance_task_result(w,'Power Check OK','satisfactory',gen_random_uuid(),'[]');
+ execute 'reset role';
+ if exists(select 1 from public.list_crew_maintenance_actions() c where c->>'postId'=w) then raise exception 'Completed check still listed';end if;
+ if not exists(select 1 from public.operational_wall_posts where id=w and data#>>'{actions,0,status}'='satisfactory' and data#>>'{actions,0,executions,-1,employeeNumber}'=pe) then raise exception 'Wall result missing';end if;
+end $test$;
+select 'PASS unassigned hidden, assigned planned visible, return does not complete, explicit pilot result persists and clears alert' result;
+rollback;
