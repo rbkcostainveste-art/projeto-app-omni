@@ -9,9 +9,9 @@ import {operationalDay} from '@/lib/coordination-day';
 // The real shared catalog contains contacts only, without operational roles/fleets.
 const people=[{employeeNumber:'P1',name:'Piloto QA'},{employeeNumber:'P2',name:'Copiloto QA'}];
 const roster=[
- {employee_number:'P1',display_name:'Piloto QA',access_profile:'commander',fleets:['AW139','S92'],active:true,assigned_base:null},
- {employee_number:'P2',display_name:'Copiloto QA',access_profile:'copilot',fleets:['S92'],active:true,assigned_base:null},
- {employee_number:'P3',display_name:'Outra frota',access_profile:'commander',fleets:['AW139'],active:true},
+ {employee_number:'P1',display_name:'Piloto QA',access_profile:'commander',fleets:['AW139','S92'],active:true,assigned_base:'QA'},
+ {employee_number:'P2',display_name:'Copiloto QA',access_profile:'copilot',fleets:['S92'],active:true,assigned_base:'QA'},
+ {employee_number:'P3',assigned_base:'QA',display_name:'Outra frota',access_profile:'commander',fleets:['AW139'],active:true},
  {employee_number:'P4',display_name:'Inativo',access_profile:'commander',fleets:['S92'],active:false},
  {employee_number:'M1',display_name:'Mecânico QA',access_profile:'mechanic',fleets:['S92'],active:true},
 ];
