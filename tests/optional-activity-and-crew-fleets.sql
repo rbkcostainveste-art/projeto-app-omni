@@ -1,0 +1,57 @@
+begin;
+do $test$
+declare uid uuid; emp text; b text; w text; r uuid:=gen_random_uuid(); cat text; aid text; n int; fs text[]; role_name text; task_id uuid; denied boolean;
+begin
+ select d.auth_user_id,d.employee_number into uid,emp from public.device_identities d join public.authorized_users u using(employee_number) where u.active and u.job_role='commander' limit 1;
+ perform set_config('request.jwt.claim.sub',uid::text,true);
+ execute 'set local role authenticated';
+ select count(*),max(fleets) into n,fs from public.get_operational_assignments();
+ if n<>1 then raise exception 'Pilot must see only own profile';end if;
+ if not exists(select 1 from public.get_operational_assignments() x where x.employee_number=emp) then raise exception 'Own profile missing';end if;
+ execute 'reset role';
+ select d.auth_user_id,d.employee_number,d.assigned_base into uid,emp,b from public.device_identities d join public.authorized_users u using(employee_number) where u.active and u.job_role='maintenance_coordinator' and d.assigned_base is not null limit 1;
+ perform set_config('request.jwt.claim.sub',uid::text,true);
+ update public.device_identities set signature_verified_at=now() where auth_user_id=uid;
+ update public.shared_app_state set catalogs=jsonb_set(catalogs,'{aircraft}',catalogs->'aircraft'||jsonb_build_array(jsonb_build_object('prefix','PR-QOP','model','S92','base',b))) where id='main';
+ insert into public.maintenance_records(id,record_type,base,model,prefix,priority,status,title,created_by,data,technical_case) values(r,'fault',b,'S92','PR-QOP','urgent','open','QA optional description',emp,'{"description":"QA only","entries":[],"technicalCase":true}','{"priority":"urgent","report":"report","official":"evaluation","aircraft":"evaluation","investigation":"triage"}');
+ foreach cat in array array['Power Check','Lavagem com produto','Giro em baixa','Procedimentos'] loop
+  execute 'set local role authenticated';
+  w:=public.create_scoped_activity(gen_random_uuid()::text,b,'prefix','PR-QOP','',null,cat,'  ','','{}','routine','{}','[]');
+  execute 'reset role';
+  if not exists(select 1 from public.operational_wall_posts where id=w and data->>'title'=cat and data#>>'{actions,0,title}'=cat) then raise exception 'Missing category default';end if;
+  if cat='Lavagem com produto' then
+   select data#>>'{actions,0,id}' into aid from public.operational_wall_posts where id=w;
+   if exists(select 1 from public.compressor_drying_tasks where source_id=aid) then raise exception 'Unperformed wash already drying';end if;
+   execute 'set local role authenticated';
+   insert into public.runway_handovers(id,prefix,model,base,date,opened_at,updated_at,created_by,checks) values('qa-optional-wash','PR-QOP','S92',b,current_date,now(),now(),emp,'{"productWash":"yes"}');
+   execute 'reset role';
+   if not exists(select 1 from public.compressor_drying_tasks where prefix='PR-QOP' and status='pending') then raise exception 'Performed wash missing drying';end if;
+  end if;
+  execute 'set local role authenticated';
+  w:=public.create_maintenance_request(r,cat,'','{}','','{}');
+  execute 'reset role';
+  if not exists(select 1 from public.operational_wall_posts where id=w and data->>'title'=cat) then raise exception 'Linked category default missing';end if;
+ end loop;
+ select id into task_id from public.compressor_drying_tasks where prefix='PR-QOP' and status='pending' limit 1;
+ select d.auth_user_id,d.employee_number into uid,emp from public.device_identities d join public.authorized_users u using(employee_number) where u.active and u.job_role='commander' and 'S92'=any(u.fleets) limit 1;
+ perform set_config('request.jwt.claim.sub',uid::text,true);
+ update public.shared_app_state set flights=jsonb_build_array(jsonb_build_object('id','qa-drying-completed','prefix','PR-QOP','date',to_char(now() at time zone 'America/Sao_Paulo','YYYY-MM-DD'),'departure','08:00','commander',emp,'shutdown','ok')) where id='main';
+ if private.current_crew_base() is not null then raise exception 'Completed flight still active';end if;
+ if private.current_crew_drying_base() is distinct from b then raise exception 'Completed flight drying base missing';end if;
+ execute 'set local role authenticated';
+ if not exists(select 1 from public.compressor_drying_tasks where id=task_id) then raise exception 'Pilot cannot see drying after completed flight';end if;
+ execute 'reset role';
+ update public.compressor_drying_tasks set model='UNQUALIFIED' where id=task_id;
+ execute 'set local role authenticated';
+ if exists(select 1 from public.compressor_drying_tasks where id=task_id) then raise exception 'Unqualified fleet exposed';end if;
+ denied:=false;begin perform public.complete_compressor_drying(task_id);exception when others then denied:=sqlerrm like '%Frota não habilitada%';end;
+ if not denied then raise exception 'Unqualified completion allowed';end if;
+ execute 'reset role';
+ update public.compressor_drying_tasks set model='S92' where id=task_id;
+ execute 'set local role authenticated';
+ perform public.complete_compressor_drying(task_id);
+ if not exists(select 1 from public.compressor_drying_tasks where id=task_id and status='completed') then raise exception 'Drying completion missing';end if;
+ execute 'reset role';
+end $test$;
+select 'PASS own pilot profile, category-only standalone and linked creation, performed washing to drying' as result;
+rollback;
