@@ -8,6 +8,7 @@ import {useMaintenanceEditReads} from "@/components/use-maintenance-edit-reads";
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { authorizedDryingFleets, savedDryingFleets } from "@/lib/drying-fleets";
 import { dryingDay, dryingDayStart, dryingVisibleToday } from "@/lib/drying-visibility";
 import { crewFlightGroup, groupCrewFlights, type CrewFlightGroup } from "@/lib/crew-flights";
 import { CalendarClock, Clock3, Fuel, Gauge, MapPin, Wind, Wrench, X } from "lucide-react";
@@ -27,7 +28,7 @@ const duration=(hours:number)=>{const minutes=Math.round(hours*60);return `${Str
 const normalized=(value:string)=>value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/gi,"").toLowerCase();
 const fleetMatches=(model:string,fleet:string)=>normalized(model).includes(normalized(fleet))||normalized(fleet).includes(normalized(model));
 
-export function CrewDashboard({readOnly=false,people=[],supabase,user,base,aircraft,fleets,dryingFleetOptions=[],flights,requireSignature,onOpenTrail,onError}:{readOnly?:boolean;people?:{employeeNumber:string;name:string}[];supabase:SupabaseClient|null;user:string;base:string;aircraft:{prefix:string;base:string;model:string}[];fleets:string[];dryingFleetOptions?:string[];flights:CrewFlight[];requireSignature:(action:()=>void|Promise<void>,label?:string)=>Promise<boolean>;onOpenTrail:(flight:CrewFlight)=>void;onError:(message:string)=>void}){
+export function CrewDashboard({readOnly=false,people=[],supabase,user,base,aircraft,fleets,flights,requireSignature,onOpenTrail,onError}:{readOnly?:boolean;people?:{employeeNumber:string;name:string}[];supabase:SupabaseClient|null;user:string;base:string;aircraft:{prefix:string;base:string;model:string}[];fleets:string[];flights:CrewFlight[];requireSignature:(action:()=>void|Promise<void>,label?:string)=>Promise<boolean>;onOpenTrail:(flight:CrewFlight)=>void;onError:(message:string)=>void}){
   const {unreadEdit,markEditRead}=useMaintenanceEditReads(supabase,user,onError);
   const [activeGroup,setActiveGroup]=useState<CrewFlightGroup|null>(null);
   const [actions,setActions]=useState<Action[]>([]);
@@ -38,9 +39,9 @@ export function CrewDashboard({readOnly=false,people=[],supabase,user,base,aircr
   useEffect(()=>{let timer:ReturnType<typeof setTimeout>;const schedule=()=>{clearTimeout(timer);const day=dryingDay();timer=setTimeout(()=>{setCurrentDryingDay(dryingDay());schedule();},Math.max(1,Date.parse(dryingDayStart(day))+86400000-Date.now()));};const refresh=()=>{setCurrentDryingDay(dryingDay());schedule();};schedule();window.addEventListener("focus",refresh);document.addEventListener("visibilitychange",refresh);return()=>{clearTimeout(timer);window.removeEventListener("focus",refresh);document.removeEventListener("visibilitychange",refresh);};},[]);
   const dryingStorageKey=`flight-ia-drying-fleets-${user}`;
   const storedDryingSelection=useSyncExternalStore((listener)=>{window.addEventListener("drying-fleet-selection",listener);window.addEventListener("storage",listener);return()=>{window.removeEventListener("drying-fleet-selection",listener);window.removeEventListener("storage",listener);};},()=>{try{return localStorage.getItem(dryingStorageKey)??"";}catch{return "";}},()=>"");
-  const dryingFleets=useMemo(()=>{try{const saved:unknown=JSON.parse(storedDryingSelection||"[]");return Array.isArray(saved)?saved.filter((item):item is string=>typeof item==="string"&&Boolean(item.trim())):[];}catch{return [];}},[storedDryingSelection]);
-  const dryingOptions=useMemo(()=>{const options=new Map<string,string>();[...dryingFleetOptions,...fleets,...dryingTasks.filter(task=>aircraft.some(a=>a.prefix===task.prefix&&normalized(a.base)===normalized(base))).map(task=>task.model),...dryingFleets].forEach(model=>{if(model.trim()&&!options.has(normalized(model)))options.set(normalized(model),model);});return [...options.values()].sort((a,b)=>a.localeCompare(b));},[dryingFleetOptions,fleets,dryingTasks,base,dryingFleets,aircraft]);
-  function toggleDryingFleet(fleet:string){const next=dryingFleets.some(item=>normalized(item)===normalized(fleet))?dryingFleets.filter(item=>normalized(item)!==normalized(fleet)):[...dryingFleets,fleet];try{localStorage.setItem(dryingStorageKey,JSON.stringify(next));window.dispatchEvent(new Event("drying-fleet-selection"));}catch{onError("Não foi possível salvar o filtro de secagens neste navegador.");}}
+  const dryingOptions=useMemo(()=>authorizedDryingFleets(fleets),[fleets]);
+  const dryingFleets=useMemo(()=>savedDryingFleets(storedDryingSelection,dryingOptions),[storedDryingSelection,dryingOptions]);
+  function toggleDryingFleet(fleet:string){if(!dryingOptions.includes(fleet))return;const next=dryingFleets.some(item=>normalized(item)===normalized(fleet))?dryingFleets.filter(item=>normalized(item)!==normalized(fleet)):[...dryingFleets,fleet];try{localStorage.setItem(dryingStorageKey,JSON.stringify(next));window.dispatchEvent(new Event("drying-fleet-selection"));}catch{onError("Não foi possível salvar o filtro de secagens neste navegador.");}}
   const fleetStorageKey=`flight-ia-crew-fleets-${user}`;
   const storedFleetSelection=useSyncExternalStore((listener)=>{window.addEventListener("crew-fleet-selection",listener);window.addEventListener("storage",listener);return()=>{window.removeEventListener("crew-fleet-selection",listener);window.removeEventListener("storage",listener);};},()=>localStorage.getItem(fleetStorageKey)??"",()=>"");
   const effectiveSelectedFleets=useMemo(()=>{try{const saved=JSON.parse(storedFleetSelection||"[]") as string[];const active=saved.filter((item)=>fleets.includes(item));return active.length?active:fleets;}catch{return fleets;}},[storedFleetSelection,fleets]);

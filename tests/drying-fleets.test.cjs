@@ -1,0 +1,4 @@
+const {test}=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const ts=require('typescript');const lib={};new Function('exports',ts.transpileModule(fs.readFileSync('src/lib/drying-fleets.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(lib);
+test('drying options use only authorized fleets with normalized duplicates removed',()=>{assert.deepEqual(lib.authorizedDryingFleets(['S92','AW139','S-92',' ']),['AW139','S92']);});
+test('saved choices exclude removed qualifications without selecting newly available fleets',()=>{assert.deepEqual(lib.savedDryingFleets('["S-92","H175"]',['AW139','S92']),['S92']);assert.deepEqual(lib.savedDryingFleets('["S92"]',['AW139']),[]);});
+test('empty and malformed preferences do not select every fleet',()=>{for(const raw of ['', '[]','null','{}','broken'])assert.deepEqual(lib.savedDryingFleets(raw,['S92','AW139']),[]);});
