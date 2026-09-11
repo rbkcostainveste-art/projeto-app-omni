@@ -3,3 +3,12 @@ test('coordination uses Brazilian day, including after UTC midnight',()=>{assert
 test('past and future operational dates are excluded',()=>{const day='2026-09-06';assert.equal(lib.isOnOperationalDay('2026-09-05',day),false);assert.equal(lib.isOnOperationalDay('2026-09-07',day),false);assert.equal(lib.isOnOperationalDay('2026-09-06',day),true);});
 test('return and wash timestamps share the same daily boundary',()=>{assert.equal(lib.isOnOperationalDay('2026-09-07T02:59:59Z','2026-09-06'),true);assert.equal(lib.isOnOperationalDay('2026-09-07T03:00:00Z','2026-09-06'),false);assert.equal(lib.isOnOperationalDay('2026-09-06T02:59:59Z','2026-09-06'),false);assert.equal(lib.isOnOperationalDay(null,'2026-09-06'),false);assert.equal(lib.isOnOperationalDay('invalid','2026-09-06'),false);});
 test('automatic refresh is scheduled at local midnight',()=>{assert.equal(lib.millisecondsUntilNextOperationalDay(new Date('2026-09-07T02:59:59Z')),1000);assert.equal(lib.millisecondsUntilNextOperationalDay(new Date('2026-09-07T03:00:00Z')),86400000);});
+
+test('maintenance queue keeps unscheduled and overdue work while excluding completed and future scheduled operations',()=>{
+ const day='2026-09-10';
+ assert.equal(lib.pendingMaintenanceOnDay({date:'2026-09-09',status:'pending'},day),true);
+ assert.equal(lib.pendingMaintenanceOnDay({date:'2026-09-11',planningStatus:'planned'},day),true);
+ assert.equal(lib.pendingMaintenanceOnDay({date:'2026-09-11',planningStatus:'confirmed'},day),false);
+ assert.equal(lib.pendingMaintenanceOnDay({date:day,status:'completed'},day),false);
+ assert.equal(lib.pendingMaintenanceOnDay({date:day},day),true);
+});
