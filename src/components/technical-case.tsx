@@ -1,5 +1,5 @@
 "use client";
-import {technicalCorrectionPayload} from '@/lib/assistant-technical-correction';
+import {technicalCorrectionPayload,technicalCorrectionChanges,verifyTechnicalCorrectionSaved} from '@/lib/assistant-technical-correction';
 import type {AssistantApplyOptions,AssistantApplyResult} from '@/lib/assistant-application';
 import {MelCountdown,MelDeadlineFields} from "./mel-deadline";
 import {useEffect,useRef,useState} from "react";
@@ -39,6 +39,8 @@ export function TechnicalCasePanel({user,prefix,model,client,id,revision,value,t
    if(tracking.current)tracking.current.open=true;if(correction.current)correction.current.open=true;if(evidence.current)evidence.current.open=true;
    return {status:'draft',message:'Preenchi a revisão, sem salvar, como solicitado. O texto do registro ainda é o anterior.'};
   }
+  const changes=technicalCorrectionChanges({title,description,tc,technical:technicalAssistantValues(value||initialTechnicalCase())},fields);
+  if(!changes.text&&!changes.details)return {status:'unchanged',message:'O relato já está com esse conteúdo. Não havia novas alterações para salvar.'};
   setBusy(true);setError('');
   try{
    let saved=false;
@@ -46,11 +48,12 @@ export function TechnicalCasePanel({user,prefix,model,client,id,revision,value,t
     const {data,error}=await client.rpc('technical_case_action',{p_action:'update',p_id:id,p_payload:payload});
     if(error)throw Error(error.message);
     if(!data||data.id!==id||data.revision<=revision)throw Error('O servidor não confirmou a atualização do relato.');
+    verifyTechnicalCorrectionSaved(fields,data);
     setDraft(data.technical_case);setTitle(data.title);setText(data.data?.description||'');setOrder(data.tc||'');
     saved=true;await onSaved(data);
    },'Confirmar correção do relato e autoria');
    if(!authorized||!saved)throw Error('A alteração não foi confirmada. O relato não foi atualizado.');
-   return {status:'saved',message:'Atualizei e salvei o relato. O novo texto já aparece no card; a observação original foi preservada.'};
+   return {status:'saved',message:changes.text?'Atualizei e salvei o texto principal do relato. A redação original foi preservada no histórico.':'Atualizei os dados complementares do relato. O título e a descrição não foram alterados.'};
   }catch(reason){const message=reason instanceof Error?reason.message:'Não foi possível salvar o relato.';setError(message);throw Error(message);}
   finally{setBusy(false);}
  }

@@ -85,3 +85,16 @@ test('technical review fetches evidence before answering; operational chat does 
  await runAssistantAgent(options);assert.equal(searches,1);assert.match(payload.instructions,/completude da observação/);assert.match(payload.instructions,/jamais preencha AMM/);assert.equal(payload.store,false);
  await runAssistantAgent({...options,form:null,message:'Bom dia'});assert.equal(searches,1);
 });
+
+
+test('report correction distinguishes primary text, metadata and reason-only changes',()=>{
+ const {technicalCorrectionChanges,verifyTechnicalCorrectionSaved}=load('src/lib/assistant-technical-correction.ts');
+ const before={title:'HSI miscompare',description:'HSI miscompare',tc:'',technical:{ata:'34',reason:'Anterior'}};
+ assert.deepEqual(technicalCorrectionChanges(before,{...before,technical:{ata:'34',reason:'Nova justificativa'}}),{text:false,details:false});
+ assert.deepEqual(technicalCorrectionChanges(before,{...before,description:'HSI miscompare observed. ATA 34 — Navigation.'}),{text:true,details:false});
+ assert.deepEqual(technicalCorrectionChanges(before,{...before,technical:{ata:'34',document:'Documento informado'}}),{text:false,details:true});
+ const saved={title:before.title,data:{description:before.description},tc:'',technical_case:{document:{ata:'34'}}};
+ assert.doesNotThrow(()=>verifyTechnicalCorrectionSaved(before,saved));
+ assert.throws(()=>verifyTechnicalCorrectionSaved({...before,description:'HSI miscompare observed.'},saved),/não confirmou o conteúdo/);
+ assert.throws(()=>verifyTechnicalCorrectionSaved({...before,technical:{ata:'22'}},saved),/não confirmou o conteúdo/);
+});
