@@ -9,6 +9,8 @@ type AssignedFlight = {
   shutdown?: string;
   actualShutdown?: string | null;
   maintenancePostId?: string;
+  compressorDryingTaskId?: string;
+  operationEndedAt?: string;
 };
 
 export type CrewFlightGroup = "maintenance" | "confirmed" | "planned" | "cancelled" | "returned" | "finished";
@@ -23,7 +25,7 @@ export function crewFlightGroup(flight: AssignedFlight): CrewFlightGroup {
 
 // Cancellation changes the status, never who can see the flight.
 export function groupCrewFlights<T extends AssignedFlight>(flights: T[], user: string) {
-  const visible = user.trim() ? flights.filter((flight) => !flight.deletedAt
+  const visible = user.trim() ? flights.filter((flight) => !flight.deletedAt && !flight.compressorDryingTaskId
     && [flight.commander, flight.copilot, flight.flightAttendant].includes(user)) : [];
   return {
     visible,

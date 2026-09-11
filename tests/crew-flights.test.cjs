@@ -55,3 +55,15 @@ test('operational outcome wins over confirmation and maintenance category', () =
   assert.equal(new Set(ids).size,rows.length);
   assert.equal(ids.length,rows.length);
 });
+
+ test('completed maintenance remains in finished flights while drying stays separate',()=>{
+ const flights=[{id:'dry',commander:'P1',compressorDryingTaskId:'dry',operationEndedAt:'2026-09-11T12:00:00Z'},{id:'giro',commander:'P1',maintenancePostId:'post',actualShutdown:'12:00'},{id:'normal',commander:'P1',shutdown:'ok'}];
+ assert.deepEqual(groupCrewFlights(flights,'P1').finished.map(f=>f.id),['giro','normal']);
+ assert.equal(flights.length,3);
+ });
+
+test('drying tasks stay out of flight groups even while pending',()=>{
+ const flights=[{id:'dry-pending',commander:'P1',compressorDryingTaskId:'dry',shutdown:'pending'},{id:'flight',commander:'P1',planningStatus:'confirmed'}];
+ assert.deepEqual(groupCrewFlights(flights,'P1').visible.map(f=>f.id),['flight']);
+ assert.equal(flights.length,2);
+});
