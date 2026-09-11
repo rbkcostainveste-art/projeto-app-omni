@@ -1,4 +1,6 @@
 "use client";
+import {technicalCorrectionPayload} from '@/lib/assistant-technical-correction';
+import type {AssistantApplyOptions,AssistantApplyResult} from '@/lib/assistant-application';
 import {MelCountdown,MelDeadlineFields} from "./mel-deadline";
 import {useEffect,useRef,useState} from "react";
 import type {SupabaseClient} from "@supabase/supabase-js";
@@ -14,18 +16,45 @@ export function TechnicalAxes({value}:{value?:TechnicalCase}){const c=value||ini
 const input="mt-1 w-full rounded-lg border bg-white p-2 text-sm font-normal disabled:bg-slate-100";
 function TextField({label,value,onChange,type="text"}:{label:string;value?:string;onChange:(value:string)=>void;type?:string}){return <label className="block text-xs font-semibold">{label}<input aria-label={label} type={type} className={input} value={value||""} onChange={e=>onChange(e.target.value)}/></label>}
 function AxisSelect({label,value,options,onChange,disabled=false}:{label:string;value:string;options:Record<string,string>;onChange:(value:string)=>void;disabled?:boolean}){return <label className="block text-xs font-semibold">{label}<select aria-label={label} disabled={disabled} className={input} value={value} onChange={e=>onChange(e.target.value)}>{Object.entries(options).map(([key,text])=><option key={key} value={key}>{text}</option>)}</select></label>}
-export function TechnicalCasePanel({user,prefix,model,client,id,revision,value,tc,title,description,onSaved,requireSignature}:{user:string;prefix:string;model:string;client:SupabaseClient|null;id:string;revision:number;value?:TechnicalCase;tc:string;title:string;description:string;onSaved:()=>void;requireSignature:(action:()=>void|Promise<void>,label?:string)=>Promise<boolean>}){
+export function TechnicalCasePanel({user,prefix,model,client,id,revision,value,tc,title,description,onSaved,requireSignature}:{user:string;prefix:string;model:string;client:SupabaseClient|null;id:string;revision:number;value?:TechnicalCase;tc:string;title:string;description:string;onSaved:(record?:unknown)=>void|Promise<void>;requireSignature:(action:()=>void|Promise<void>,label?:string)=>Promise<boolean>}){
  const assistantWorkspace=useAssistantWorkspace();const [aiOpen,setAiOpen]=useState(false);
  const correction=useRef<HTMLDetailsElement>(null),tracking=useRef<HTMLDetailsElement>(null),evidence=useRef<HTMLDetailsElement>(null);
  const [draft,setDraft]=useState<TechnicalCase>(value||initialTechnicalCase()),[cfg,setCfg]=useState<Config|null>(null),[error,setError]=useState(""),[busy,setBusy]=useState(false),[history,setHistory]=useState<Array<{id:number;event:string;at:string;employee_number:string;actor_role:string;reason:string;old_value:unknown;new_value:unknown}>|null>(null),[recordTitle,setTitle]=useState(title),[recordText,setText]=useState(description),[order,setOrder]=useState(tc),[recurrence,setRecurrence]=useState("");
  useEffect(()=>{let active=true;if(client)void client.rpc("technical_case_action",{p_action:"config"}).then(({data,error})=>{if(active){if(error)setError(error.message);else setCfg(data);}});return()=>{active=false;};},[client]);
+ const [seenRevision,setSeenRevision]=useState(revision);
+ if(seenRevision!==revision){setSeenRevision(revision);setDraft(value||initialTechnicalCase());setTitle(title);setText(description);setOrder(tc);}
  const field=(key:string,text:string)=>setDraft(c=>({...c,[key]:text}));
  const nested=(key:"disposition"|"document"|"action"|"conditionWatch",name:string,text:string)=>setDraft(c=>({...c,[key]:{...c[key],[name]:text}}));
- async function save(action="update"){if(!client||busy)return;setBusy(true);setError("");try{await requireSignature(async()=>{const payload=action==="recurrence"?{revision,description:recurrence}:{revision,case:draft,tc:order,title:recordTitle,description:recordText};const {data,error}=await client.rpc("technical_case_action",{p_action:action,p_id:id,p_payload:payload});if(error)throw Error(error.message);if(action==="update")setDraft(current=>data?.technical_case||({...current,confirmOfficial:false,confirmAprs:false,confirmDisposition:false,confirmCondition:false}));if(action==="recurrence"){setRecurrence("");setError(`Recorrência criada: ${data.id}. O caso original foi preservado.`);}onSaved();},"Confirmar registro técnico e autoria");}catch(err){setError((err as Error).message);}finally{setBusy(false);}}
+ async function save(action="update"){if(!client||busy)return;setBusy(true);setError("");try{await requireSignature(async()=>{const payload=action==="recurrence"?{revision,description:recurrence}:{revision,case:draft,tc:order,title:recordTitle,description:recordText};const {data,error}=await client.rpc("technical_case_action",{p_action:action,p_id:id,p_payload:payload});if(error)throw Error(error.message);if(action==="update")setDraft(current=>data?.technical_case||({...current,confirmOfficial:false,confirmAprs:false,confirmDisposition:false,confirmCondition:false}));if(action==="recurrence"){setRecurrence("");setError(`Recorrência criada: ${data.id}. O caso original foi preservado.`);}await onSaved(action==="update"?data:undefined);},"Confirmar registro técnico e autoria");}catch(err){setError((err as Error).message);}finally{setBusy(false);}}
  const observation=draft.originalObservation&&typeof draft.originalObservation==='object'?draft.originalObservation as {title?:string;description?:string;spoken?:string}:null;
  const d=draft.disposition||{},doc=draft.document||{},act=draft.action||{};
  const assistantFields:DraftFields={title:recordTitle,description:recordText,tc:order,technical:technicalAssistantValues(draft)};
- function applyAssistantFields(fields:DraftFields,original?:{title:string;description:string;spoken:string}){if(fields.technical)applyTechnicalAssistantValues(draft,fields.technical);setTitle(fields.title);setText(fields.description);if(fields.tc!==undefined)setOrder(fields.tc);setDraft(current=>({... (fields.technical?applyTechnicalAssistantValues(current,fields.technical):current),originalObservation:current.originalObservation||{title,description,spoken:original?.spoken||"",at:new Date().toISOString()}}));if(tracking.current)tracking.current.open=true;if(correction.current&&(fields.title!==recordTitle||fields.description!==recordText))correction.current.open=true;if(evidence.current&&JSON.stringify(fields.technical)!==JSON.stringify(assistantFields.technical))evidence.current.open=true;}
+ async function applyAssistantFields(fields:DraftFields,original?:{title:string;description:string;spoken:string},options:AssistantApplyOptions={persist:true}):Promise<AssistantApplyResult>{
+  if(!client||!cfg)throw Error('O registro ainda não está disponível para alteração.');
+  if(busy)throw Error('Aguarde a alteração em andamento.');
+  const payload=technicalCorrectionPayload({revision,title,description,value},fields,original?.spoken);
+  if(!options.persist){
+   setTitle(fields.title);setText(fields.description);if(fields.tc!==undefined)setOrder(fields.tc);
+   setDraft(current=>({...applyTechnicalAssistantValues(current,fields.technical||{}),originalObservation:payload.case.originalObservation}));
+   if(tracking.current)tracking.current.open=true;if(correction.current)correction.current.open=true;if(evidence.current)evidence.current.open=true;
+   return {status:'draft',message:'Preenchi a revisão, sem salvar, como solicitado. O texto do registro ainda é o anterior.'};
+  }
+  setBusy(true);setError('');
+  try{
+   let saved=false;
+   const authorized=await requireSignature(async()=>{
+    const {data,error}=await client.rpc('technical_case_action',{p_action:'update',p_id:id,p_payload:payload});
+    if(error)throw Error(error.message);
+    if(!data||data.id!==id||data.revision<=revision)throw Error('O servidor não confirmou a atualização do relato.');
+    setDraft(data.technical_case);setTitle(data.title);setText(data.data?.description||'');setOrder(data.tc||'');
+    saved=true;await onSaved(data);
+   },'Confirmar correção do relato e autoria');
+   if(!authorized||!saved)throw Error('A alteração não foi confirmada. O relato não foi atualizado.');
+   return {status:'saved',message:'Atualizei e salvei o relato. O novo texto já aparece no card; a observação original foi preservada.'};
+  }catch(reason){const message=reason instanceof Error?reason.message:'Não foi possível salvar o relato.';setError(message);throw Error(message);}
+  finally{setBusy(false);}
+ }
+
 
  return <section className="space-y-3 rounded-xl border border-slate-200 p-3"><TechnicalAxes value={value}/><button type="button" aria-expanded={aiOpen} disabled={busy||!cfg} onClick={()=>assistantWorkspace?assistantWorkspace.open(`record:${id}`):setAiOpen(v=>!v)} className="min-h-11 rounded-xl border border-blue-200 px-3 text-sm font-bold text-blue-800">Conversar com IA neste relato</button>{assistantWorkspace?<AssistantTarget id={`record:${id}`} label={`Relato ${prefix}`} revision={JSON.stringify([assistantFields,revision,busy,cfg])} content={<ContextualAssistant open={true} context={{kind:"maintenance-draft",id:`record:${id}`,record:{id,revision},prefix,model,fields:assistantFields}} client={client} user={user} disabled={busy||!cfg} onClose={()=>assistantWorkspace.close()} onApply={applyAssistantFields}/>}/>:aiOpen?<ContextualAssistant open={true} context={{kind:"maintenance-draft",id:`record:${id}`,record:{id,revision},prefix,model,fields:assistantFields}} client={client} user={user} disabled={busy||!cfg} onClose={()=>setAiOpen(false)} onApply={applyAssistantFields}/>:null}{value?.notApplicableBy?<p className="text-xs">Não aplicável confirmado por {String(value.notApplicableName||value.notApplicableBy)} · {new Date(value.notApplicableAt||"").toLocaleString("pt-BR")}</p>:null}{value?.aprsBy?<p className="text-xs">Referência APRS conferida: {value.aprsRef} · {String(value.aprsName||value.aprsBy)} · {new Date(value.aprsAt||"").toLocaleString("pt-BR")}</p>:null}<details ref={tracking}><summary className="cursor-pointer font-bold">Acompanhamento técnico · atualizar</summary><p className="my-2 text-xs text-slate-600">Registra decisões dos profissionais autorizados. Não emite APRS, não autoriza voo e não substitui eDB, TC/OS ou MEL.</p><div className="grid gap-3 sm:grid-cols-2">
  <AxisSelect label="Prioridade" value={draft.priority||"routine"} options={technicalPriorities} onChange={v=>field("priority",v)}/><AxisSelect label="Tipo do Relato" value={draft.report} options={reportTypes} disabled={!cfg?.permissions.classify} onChange={v=>field("report",v)}/><AxisSelect label="Vínculo Oficial" value={draft.official} options={officialStates} onChange={v=>field("official",v)}/><AxisSelect label="Situação da Aeronave" value={draft.aircraft} options={aircraftStates} onChange={v=>field("aircraft",v)}/><AxisSelect label="Estágio da Investigação" value={draft.investigation} options={investigationStates} onChange={v=>field("investigation",v)}/>

@@ -1,10 +1,11 @@
 "use client";
+import {applicationResult,type AssistantApplyOptions,type AssistantApplyResult} from '@/lib/assistant-application';
 
 import {sendOnEnter} from "@/lib/composer-keyboard";
 import {useAssistantUploadCleanup} from "./use-assistant-upload-cleanup";
 import {FileAttachmentPicker,pastedFiles} from "./file-attachment-picker";
 import {prepareAssistantFiles,removeAssistantFiles} from "@/lib/assistant-uploads";
-import {approvesAssistantProposal,requestsAssistantFieldApplication,pendingAssistantProposalReply} from "@/lib/assistant-approval";
+import {approvesAssistantProposal,requestsAssistantFieldApplication,assistantApplicationMayPersist,pendingAssistantProposalReply} from "@/lib/assistant-approval";
 import {technicalAssistantFields} from "@/lib/assistant-technical-fields";
 import {useEffect, useLayoutEffect, useRef, useState} from "react";
 import type {SupabaseClient} from "@supabase/supabase-js";
@@ -22,7 +23,7 @@ const fieldClass = "w-full rounded-xl border border-blue-200 bg-white p-3 text-s
 /** Keep mounted while hidden; parent keys by draft/aircraft/user to isolate conversations. */
 type Props={
   open: boolean; context: DraftContext; client: SupabaseClient | null; user: string; disabled: boolean;
-  onClose: () => void; onApply: (fields: DraftFields,original?:{title:string;description:string;spoken:string}) => void;
+  onClose: () => void; onApply: (fields: DraftFields,original?:{title:string;description:string;spoken:string},options?:AssistantApplyOptions) => void|AssistantApplyResult|Promise<void|AssistantApplyResult>;
 };
 export function ContextualAssistant(props:Props){
  return <div hidden={!props.open} className="min-w-0"><AssistantConversations direct={props.open} key={`${props.user}:${props.context.id}`} client={props.client} user={props.user} context={{id:props.context.id,label:`Relato ${props.context.prefix||'sem aeronave'} · ${props.context.record?'registro existente':'rascunho'}`}} onClose={props.onClose} renderConversation={(conversationId,onBack,title)=><ContextualConversation key={conversationId} {...props} onClose={onBack} conversationId={conversationId} title={title}/>}/></div>;
@@ -50,6 +51,7 @@ function ContextualConversation({open, context, client, user, disabled, onClose,
   const [audioRetry, setAudioRetry] = useState<File|null>(null);
   const audioRequest = useRef<AbortController|null>(null);
   useEffect(() => () => audioRequest.current?.abort(), []);
+  const applying=useRef(false);
   const request = useRef<AbortController | null>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   useAssistantContinuation(context.id,conversationId,!history.loading&&!disabled,text=>{setMessage(text);void send(text);});
@@ -69,7 +71,7 @@ function ContextualConversation({open, context, client, user, disabled, onClose,
     setBusy(true); setError(""); setNotice("");
     try {
       if(pending.current){await save();return;}
-      if(suggestion&&approvesAssistantProposal(prompt)){const next=applyDraftProposal(latest.current.fields,suggestion.original,suggestion.proposal);setUndo({before:suggestion.original,after:next});latest.current.onApply(next,{title:suggestion.original.title,description:suggestion.original.description,spoken:suggestion.spoken});setSuggestion(null);setNotice('Sugestão aplicada aos campos.');pending.current={requestId:crypto.randomUUID(),message:prompt,reply:'Apliquei a sugestão aos campos do formulário.'};setNeedsSave(true);await save();return;}
+      if(suggestion&&approvesAssistantProposal(prompt)){const result=await applyProposal(suggestion,prompt);pending.current={requestId:crypto.randomUUID(),message:prompt,reply:result.message};setNeedsSave(true);await save();return;}
       const session = await client?.auth.getSession();
       if (!session?.data.session) throw Error("Entre novamente para usar a IA.");
       if (controller.signal.aborted) return;
@@ -87,8 +89,9 @@ function ContextualConversation({open, context, client, user, disabled, onClose,
       setSources(data.sources ?? []);
       if (answer.proposal.title !== null || answer.proposal.description !== null || answer.proposal.prefix || answer.proposal.tc!==undefined&&answer.proposal.tc!==null || Object.keys(answer.proposal.technical||{}).length) {
         if((approvesAssistantProposal(prompt)||requestsAssistantFieldApplication(prompt))&&sameDraft(latest.current.fields,snapshot)){
-          const next=applyDraftProposal(latest.current.fields,snapshot,answer.proposal);setUndo({before:snapshot,after:next});latest.current.onApply(next,{title:snapshot.title,description:snapshot.description,spoken:prompt});setSuggestion(null);setNotice('Sugestão aplicada aos campos.');
-          reply='Apliquei a sugestão aos campos. O registro ainda não foi salvo.';
+          setSuggestion({original:snapshot,proposal:answer.proposal,spoken:prompt});
+          const result=await applyProposal({original:snapshot,proposal:answer.proposal,spoken:prompt},prompt);
+          reply=result.message;
         }else {setSuggestion({original:snapshot,proposal:answer.proposal,spoken:prompt});reply=pendingAssistantProposalReply(reply);}
       }
       pending.current={requestId:crypto.randomUUID(),message:[prompt,...attachments.map(a=>`Anexo: ${a.name}`)].filter(Boolean).join('\n'),reply};setNeedsSave(true);
@@ -128,13 +131,33 @@ function ContextualConversation({open, context, client, user, disabled, onClose,
     if (audioMode === 'review' || message.trim()) {setNotice('Transcrição pronta. Confira o texto e toque em enviar.'); return;}
     await send(combined);
   }
-  function apply() {
-    if (!suggestion || disabled) return;
-    try {
-      const next = applyDraftProposal(context.fields, suggestion.original, suggestion.proposal);
-      setUndo({before: {...context.fields}, after: next}); onApply(next,{title:suggestion.original.title,description:suggestion.original.description,spoken:suggestion.spoken}); setSuggestion(null);
-      setNotice(context.record ? "Sugestão aplicada à revisão. Confira os campos, informe a justificativa e use Confirmar atualização para salvar." : "Sugestão aplicada ao rascunho. Confira os campos e use Criar registro para salvar.");
-    } catch (reason) {setError((reason as Error).message);}
+  async function applyProposal(proposed:Suggestion,authorization:string):Promise<AssistantApplyResult>{
+    if(applying.current)throw Error('Aguarde a aplicação em andamento.');
+    const current=latest.current;
+    const next=applyDraftProposal(current.fields,proposed.original,proposed.proposal);
+    if(!context.record&&sameDraft(current.fields,next)){setSuggestion(null);const result={status:'unchanged' as const,message:'Os campos já estão com esse conteúdo.'};setNotice(result.message);return result;}
+    applying.current=true;
+    try{
+      const persist=Boolean(context.record)&&assistantApplicationMayPersist(authorization);
+      const result=applicationResult(await current.onApply(next,{title:proposed.original.title,description:proposed.original.description,spoken:proposed.spoken},{persist}),persist?'record':'draft');
+      setUndo(result.status==='draft'?{before:proposed.original,after:next}:null);
+      setSuggestion(null);setNotice(result.message);return result;
+    }finally{applying.current=false;}
+  }
+  async function apply() {
+    if(!suggestion||disabled||busy||applying.current)return;
+    setBusy(true);setError('');
+    try{
+      const result=await applyProposal(suggestion,'pode aplicar');
+      pending.current={requestId:crypto.randomUUID(),message:'Aplicar sugestão',reply:result.message};setNeedsSave(true);await save();
+    }catch(reason){setError((reason as Error).message);}
+    finally{setBusy(false);}
+  }
+  async function undoApplication(){
+    if(!undo||disabled||busy||!sameDraft(latest.current.fields,undo.after))return;
+    setBusy(true);setError('');
+    try{await latest.current.onApply(undo.before,undefined,{persist:false});setUndo(null);setNotice('Aplicação desfeita no rascunho.');}
+    catch(reason){setError((reason as Error).message);}finally{setBusy(false);}
   }
   const stale = suggestion && !sameDraft(context.fields, suggestion.original);
   return <aside hidden={!open} aria-label="IA do relato técnico" className="min-w-0 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-slate-900 ">
@@ -143,9 +166,9 @@ function ContextualConversation({open, context, client, user, disabled, onClose,
     {history.error?<p role="alert">{history.error}</p>:null}{history.loading?<p role="status">Carregando histórico…</p>:null}{history.more?<button type="button" disabled={history.loading} onClick={()=>void history.older()}>Mensagens anteriores</button>:null}
     <div className="space-y-3" aria-live="polite"><AssistantHistory entries={history.entries} onOpenTarget={navigate?ref=>navigate(ref,{conversationId,title}):undefined}/></div>
     <TechnicalSourceList sources={sources}/>
-    {suggestion ? <section className="my-3 rounded-xl bg-white p-3">{stale?<p role="status">Você alterou o formulário durante a resposta. Mantive sua edição. Peça um novo ajuste.</p>:<><p className="text-sm font-bold">Sugestão para o relato</p>{Object.entries({...suggestion.proposal,...suggestion.proposal.technical}).filter(([,value])=>typeof value==="string").map(([key,value])=><p key={key} className="my-2 whitespace-pre-wrap text-sm"><strong>{key==="title"?"Título":key==="description"?"Descrição":key==="prefix"?"Aeronave":key==="tc"?"TC":technicalAssistantFields.find(field=>field[0]===key)?.[1]||key}: </strong>{value as string}</p>)}<p className="text-xs">Diga “pode aplicar” ou use o botão.</p><button type="button" className="min-h-11 text-blue-700 font-bold" disabled={disabled||busy} onClick={apply}>Aplicar sugestão aos campos</button></>}</section>:null}
+    {suggestion ? <section className="my-3 rounded-xl bg-white p-3">{stale?<p role="status">Você alterou o formulário durante a resposta. Mantive sua edição. Peça um novo ajuste.</p>:<><p className="text-sm font-bold">Sugestão para o relato</p>{Object.entries({...suggestion.proposal,...suggestion.proposal.technical}).filter(([,value])=>typeof value==="string").map(([key,value])=><p key={key} className="my-2 whitespace-pre-wrap text-sm"><strong>{key==="title"?"Título":key==="description"?"Descrição":key==="prefix"?"Aeronave":key==="tc"?"TC":technicalAssistantFields.find(field=>field[0]===key)?.[1]||key}: </strong>{value as string}</p>)}<p className="text-xs">Diga “pode aplicar” ou use o botão.</p><button type="button" className="min-h-11 text-blue-700 font-bold" disabled={disabled||busy} onClick={()=>void apply()}>{context.record?"Aplicar e salvar no relato":"Aplicar sugestão aos campos"}</button></>}</section>:null}
     {notice ? <p role="status" className="my-3 text-sm text-green-800">{notice}</p> : null}
-    {undo ? <button type="button" disabled={disabled || busy || !sameDraft(context.fields, undo.after)} onClick={() => {if (sameDraft(context.fields, undo.after)) {onApply(undo.before); setUndo(null); setNotice("Aplicação desfeita no rascunho.");}}} className="my-2 min-h-11 text-sm font-bold text-blue-800 disabled:opacity-40">Desfazer última aplicação</button> : null}
+    {undo ? <button type="button" disabled={disabled || busy || !sameDraft(context.fields, undo.after)} onClick={()=>void undoApplication()} className="my-2 min-h-11 text-sm font-bold text-blue-800 disabled:opacity-40">Desfazer última aplicação</button> : null}
     <label className="mt-3 block text-sm font-semibold">Pedido à IA<textarea onKeyDown={e=>sendOnEnter(e,()=>send(),busy||readingFiles||disabled||needsSave||recording||transcribing||history.loading||!client||(!message.trim()&&!attachments.length))} onPaste={e=>{const files=pastedFiles(e);if(files.length){e.preventDefault();void attachFiles(files);}}} aria-label="Pedido à IA" enterKeyHint="send" title="Enter envia · Shift+Enter cria uma nova linha" ref={input} maxLength={4000} rows={3} disabled={busy || disabled||needsSave||recording||transcribing} value={message} onChange={event => setMessage(event.target.value)} placeholder="Fale, escreva ou anexe. Ex.: CHT com vazamento na MGB" className={fieldClass}/></label>
     <FileAttachmentPicker disabled={busy||disabled||needsSave||transcribing||recording||readingFiles} onFiles={files=>void attachFiles(files)}/>
     {attachments.map((file,index)=><div key={index} className="flex items-center gap-2 text-xs"><span className="min-w-0 break-all">{file.name}</span><button type="button" disabled={busy||needsSave} aria-label={`Remover ${file.name}`} onClick={()=>{void removeAssistantFiles(client,[file]);setAttachments(files=>files.filter((_,i)=>i!==index));}}>Remover</button></div>)}

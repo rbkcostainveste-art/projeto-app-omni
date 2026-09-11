@@ -1,4 +1,5 @@
 "use client";
+import type {AssistantFormApply} from '@/lib/assistant-application';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {useEffect,useState} from 'react';
 import type {AssistantFormContext} from '@/lib/assistant-form';
@@ -7,7 +8,7 @@ import {AssistantConversations} from './assistant-conversations';
 import {AiAssistant} from './flight-board';
 
 /** Explicit adapter: only the owner of a form can apply its validated fields. */
-export function AssistantForm({form,client,user:providedUser,onApply,disabled=false}:{form:AssistantFormContext;client:SupabaseClient|null;user?:string;onApply:(values:Record<string,string>)=>void|Promise<void>;disabled?:boolean}){
+export function AssistantForm({form,client,user:providedUser,onApply,disabled=false}:{form:AssistantFormContext;client:SupabaseClient|null;user?:string;onApply:AssistantFormApply;disabled?:boolean}){
  const workspace=useAssistantWorkspace();
  const [identity,setIdentity]=useState('');
  useEffect(()=>{if(providedUser||!client)return;let live=true;void Promise.resolve(client.rpc('refresh_current_device')).then(({data,error})=>{if(live)setIdentity(!error&&typeof data?.employeeNumber==='string'?data.employeeNumber:'');}).catch(()=>{if(live)setIdentity('');});return()=>{live=false;};},[client,providedUser]);

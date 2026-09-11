@@ -16,6 +16,32 @@ test('extended form approval preserves qualifiers for a fresh proposal and repor
  assert.match(approval.pendingAssistantProposalReply('Pronto, deixei a redação ajustada nos campos.'),/ainda não foi aplicada/);
  assert.equal(approval.pendingAssistantProposalReply('Como a intermitência se manifesta?'),'Como a intermitência se manifesta?');
 });
+test('compound natural-language authorization applies a fresh correction, never an older proposal',()=>{
+ for(const text of ['coloque em ingles e aplique, procure no conhecimento geral a referencia da ata e coloqe também e ja pode escrever novo texto com correções','Traduza para inglês e aplique','Corrija a descrição. Agora pode aplicar','Pode atualizar o texto, sem salvar o registro.']){
+  assert.equal(approval.requestsAssistantFieldApplication(text),true,text);
+  assert.equal(approval.approvesAssistantProposal(text),false,text);
+ }
+ for(const text of ['Traduza, mas não aplique','se estiver correto, aplique','Ele disse "pode aplicar"','Eu pedi para aplicar ontem','Pode aplicar quando eu terminar?','melhore o relato','e a referência técnica'])assert.equal(approval.requestsAssistantFieldApplication(text),false,text);
+ assert.equal(approval.assistantApplicationMayPersist('aplique sem salvar'),false);
+ assert.equal(approval.assistantApplicationMayPersist('pode aplicar'),true);
+});
+test('technical correction preserves raw observation and authority state, and includes an audit reason',()=>{
+ const {technicalCorrectionPayload}=load('src/lib/assistant-technical-correction.ts');
+ const original={title:'hsi miscompaire',description:'hsi miscompaire',spoken:'original',at:'2026-09-10'};
+ const value={report:'report',official:'evaluation',aircraft:'evaluation',investigation:'triage',originalObservation:original};
+ const fields={title:'HSI miscompare',description:'HSI miscompare observed.',tc:'',technical:{ata:'34'}};
+ const payload=technicalCorrectionPayload({revision:3,title:original.title,description:original.description,value},fields,'traduza e aplique');
+ assert.equal(payload.revision,3);assert.equal(payload.case.document.ata,'34');assert.equal(payload.case.originalObservation,original);
+ assert.equal(payload.case.aircraft,'evaluation');assert.equal(payload.case.report,'report');assert.ok(payload.case.reason);
+ assert.throws(()=>technicalCorrectionPayload({revision:3,title:'x',description:'x',value},{...fields,technical:{confirmAprs:'true'}}));
+ assert.equal(value.document,undefined);
+});
+test('application receipts never infer persistence from a void callback',()=>{
+ const {applicationResult}=load('src/lib/assistant-application.ts');
+ assert.equal(applicationResult(undefined,'record').status,'pending');
+ assert.equal(applicationResult(undefined,'draft').status,'draft');
+ assert.equal(applicationResult({status:'saved',message:'Confirmado pelo servidor'},'record').status,'saved');
+});
 test('partial plan is allowed, but missing operational fields prevent confirmation',()=>{
  const flight={prefix:'PR-QAT',date:'2026-09-10',departure:'',destination:'',duration:'',fuelAmount:''};
  assert.deepEqual(planning.planningErrors(flight,[{prefix:'PR-QAT'}]),[]);

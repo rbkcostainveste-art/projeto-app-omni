@@ -1,4 +1,5 @@
 "use client";
+import {applicationResult,type AssistantFormApply} from '@/lib/assistant-application';
 import {canOpenDirectFault,type MaintenanceEntry,type MaintenanceSeed} from "@/lib/maintenance-entry";
 import {useAssistantUploadCleanup} from "./use-assistant-upload-cleanup";
 import {formSnapshot,parseFormPatch,type AssistantFormContext} from "@/lib/assistant-form";
@@ -239,7 +240,7 @@ export function FlightBoard() {
   const lastRemoteState = useRef("");
   const lastRemoteCatalogs = useRef("");
   const pendingMutations = useRef(0);
-  const passageSaveTimers = useRef(new Map<string, { timer: number; patch: Partial<Passage> }>());
+  const passageSaveTimers = useRef(new Map<string, { timer: number; patch: Partial<Passage>; resolve: ((saved:boolean)=>void)[] }>());
   const localSnapshot = useRef({ flights, catalogs });
   const passagesSnapshot = useRef(passages);
 
@@ -481,7 +482,30 @@ export function FlightBoard() {
       { field: fields.includes("deletedAt") ? "deletedAt" : fields.includes("cancelled") ? "cancelled" : "configuration", value: fields.includes("deletedAt") ? at : fields.includes("cancelled") ? flight.cancellationReason || "Voo cancelado pela Coordenação" : "Configuração do voo atualizada pela Coordenação", employeeNumber: user, at });
   }
   function confirmPlannedFlight(id: string) { const current = localSnapshot.current.flights.find((flight) => flight.id === id); if(!current || current.cancelled || current.deletedAt || current.shutdown==="ok" || current.actualShutdown || current.operationEndedAt || current.planningStatus!=="planned") return; const missing=confirmationMissing(current);if(missing.length){setSyncError(`Complete ${missing.join(", ")} antes de confirmar. O voo continua programado.`);return;} const at = new Date().toISOString(); changeFlight(id, ["planningStatus"], { field: "planningStatus", value: "confirmed", employeeNumber: user, at }, (flight) => ({ ...flight, planningStatus: "confirmed" })); }
-  const changePassage = useCallback((id: string, change: (item: Passage) => Passage) => { const current = passagesSnapshot.current.find((item) => item.id === id); if(!current) return; const next = change(current); const updated = passagesSnapshot.current.map((item) => item.id === id ? next : item); passagesSnapshot.current = updated; setPassages(updated); const patch = changedPatch(current, next); const scheduled = passageSaveTimers.current.get(id); if(scheduled) window.clearTimeout(scheduled.timer); const combined = { ...(scheduled?.patch ?? {}), ...patch }; const timer = window.setTimeout(async () => { passageSaveTimers.current.delete(id); if(!supabase) return; const { data, error } = await supabase.from("runway_handovers").update(passagePatchToRow(combined)).eq("id", id).select().single(); if(error) { setSyncError(`Alteração não sincronizada: ${error.message}`); return; } const saved = rowToPassage(data as PassageRow); setPassages((items) => items.map((item) => item.id === id ? saved : item)); }, 450); passageSaveTimers.current.set(id, { timer, patch: combined }); }, [setPassages]);
+  const changePassage = useCallback((id: string, change: (item: Passage) => Passage):Promise<boolean> => {
+    const current=passagesSnapshot.current.find(item=>item.id===id);
+    if(!current)return Promise.resolve(false);
+    const next=change(current),updated=passagesSnapshot.current.map(item=>item.id===id?next:item);
+    passagesSnapshot.current=updated;setPassages(updated);
+    const scheduled=passageSaveTimers.current.get(id);if(scheduled)window.clearTimeout(scheduled.timer);
+    const patch={...(scheduled?.patch??{}),...changedPatch(current,next)};
+    return new Promise(resolve=>{
+      const resolvers=[...(scheduled?.resolve||[]),resolve];
+      const timer=window.setTimeout(async()=>{
+        passageSaveTimers.current.delete(id);let confirmed=false;
+        try{
+          if(!supabase)throw Error('Sem conexão com o banco.');
+          const {data,error}=await supabase.from('runway_handovers').update(passagePatchToRow(patch)).eq('id',id).select().single();
+          if(error||!data)throw Error(error?.message||'O servidor não confirmou a alteração.');
+          const saved=rowToPassage(data as PassageRow);
+          if(!passageSaveTimers.current.has(id)){passagesSnapshot.current=passagesSnapshot.current.map(item=>item.id===id?saved:item);setPassages(items=>items.map(item=>item.id===id?saved:item));}
+          confirmed=true;
+        }catch(error){setSyncError(`Alteração não sincronizada: ${(error as Error).message}`);}
+        finally{resolvers.forEach(finish=>finish(confirmed));}
+      },450);
+      passageSaveTimers.current.set(id,{timer,patch,resolve:resolvers});
+    });
+  },[setPassages]);
   const createPassage = useCallback((item: Passage) => { passagesSnapshot.current = [item, ...passagesSnapshot.current]; setPassages(passagesSnapshot.current); void (async () => { if(!supabase) return; const { data, error } = await supabase.from("runway_handovers").insert(passageToRow(item)).select().single(); if(error) { setPassages((items) => items.filter((current) => current.id !== item.id)); setSyncError(`Passagem não criada: ${error.message}`); return; } const saved = rowToPassage(data as PassageRow); setPassages((items) => items.map((current) => current.id === item.id ? saved : current)); })(); }, [setPassages]);
   const deletePassage = useCallback((id: string) => { if(!isAdmin || !window.confirm("Excluir definitivamente esta passagem?")) return; setPassages((items) => items.filter((item) => item.id !== id)); void (async () => { if(!supabase) return; const { error } = await supabase.from("runway_handovers").delete().eq("id", id); if(error) { setSyncError(`Passagem não excluída: ${error.message}`); } })(); }, [isAdmin,setPassages]);
 
@@ -772,7 +796,7 @@ function AircraftAvailability({ aircraft, onChange }: { aircraft: Catalogs["airc
 
 const assistantWelcome = "Olá! O que você precisa fazer ou consultar? Pode escrever, falar ou anexar um documento.";
 type AiProposal = { destination?:string|null;prefix: string | null; base: string | null; date: string | null; departure: string | null; duration: number | null; fuelAmount: number | null; fuelUnit: FuelUnit | null };
-export function AiAssistant({ form,onApplyForm,disabled=false,conversationId, conversationTitle, area="messages", allowFlightCreation=true, onOpenTarget, onOpenDrying, helpArea, flights, catalogs, user, onClose, onCreate, client=supabase }: { form?:AssistantFormContext;onApplyForm?:(values:Record<string,string>)=>void|Promise<void>;disabled?:boolean;conversationId:string; conversationTitle:string; area?:string; onOpenTarget?:(ref:AssistantTargetRef,conversation?:{conversationId:string;title:string;message?:string})=>Promise<void>; allowFlightCreation?:boolean; onOpenDrying?:(id:string)=>void; helpArea?:string; client?: ReturnType<typeof createSupabaseClient>; flights: Flight[]; catalogs: Catalogs; user: string; onClose: () => void; onCreate: (flights: Flight[]) => void|Promise<boolean> }) {
+export function AiAssistant({ form,onApplyForm,disabled=false,conversationId, conversationTitle, area="messages", allowFlightCreation=true, onOpenTarget, onOpenDrying, helpArea, flights, catalogs, user, onClose, onCreate, client=supabase }: { form?:AssistantFormContext;onApplyForm?:AssistantFormApply;disabled?:boolean;conversationId:string; conversationTitle:string; area?:string; onOpenTarget?:(ref:AssistantTargetRef,conversation?:{conversationId:string;title:string;message?:string})=>Promise<void>; allowFlightCreation?:boolean; onOpenDrying?:(id:string)=>void; helpArea?:string; client?: ReturnType<typeof createSupabaseClient>; flights: Flight[]; catalogs: Catalogs; user: string; onClose: () => void; onCreate: (flights: Flight[]) => void|Promise<boolean> }) {
   const assistantWorkspace=useAssistantWorkspace();const screenContext=assistantWorkspace?.screen;
   const navigate=onOpenTarget||(assistantWorkspace?.navigationAvailable()?assistantWorkspace.navigate:undefined);
   const latestForm=useRef({form,onApplyForm,disabled});
@@ -780,7 +804,34 @@ export function AiAssistant({ form,onApplyForm,disabled=false,conversationId, co
   const [formNotice,setFormNotice]=useState('');
   const [formUndo,setFormUndo]=useState<{before:Record<string,string>;after:string}|null>(null);
   const [recordPatch,setRecordPatch]=useState<{values:Record<string,string>;snapshot:string}|null>(null);
-  async function applyForm(values:Record<string,string>,snapshot:string){const current=latestForm.current;if(!current.form||current.disabled||formSnapshot(current.form)!==snapshot)throw Error('O formulário mudou. Envie o pedido novamente para preservar suas edições.');const before=Object.fromEntries(Object.entries(current.form.fields).map(([k,f])=>[k,f.value]));await current.onApplyForm?.(parseFormPatch(current.form,values));if(current.form.mode==='draft'){const next={...current.form,fields:Object.fromEntries(Object.entries(current.form.fields).map(([k,f])=>[k,{...f,value:values[k]??f.value}]))};setFormUndo({before,after:formSnapshot(next)});}setRecordPatch(null);setFormNotice(current.form.mode==='draft'?'Campos preenchidos. Confira no formulário.':'Alterações enviadas pelo formulário. Confira a sincronização do registro.');}
+  const applyingForm=useRef(false);
+  async function applyForm(values:Record<string,string>,snapshot:string){
+    if(applyingForm.current)throw Error('Aguarde a aplicação em andamento.');
+    const current=latestForm.current;
+    if(!current.form||current.disabled||formSnapshot(current.form)!==snapshot)throw Error('O formulário mudou. Envie o pedido novamente para preservar suas edições.');
+    if(!current.onApplyForm)throw Error('Este formulário não está conectado para receber alterações.');
+    const patch=parseFormPatch(current.form,values);
+    const changed=Object.keys(patch).filter(k=>patch[k]!==current.form!.fields[k].value);
+    if(!changed.length){setRecordPatch(null);const result={status:'unchanged' as const,message:'Os campos já estão com esse conteúdo.'};setFormNotice(result.message);return result;}
+    const before=Object.fromEntries(Object.entries(current.form.fields).map(([k,f])=>[k,f.value]));
+    applyingForm.current=true;
+    try{
+      const result=applicationResult(await current.onApplyForm(patch),current.form.mode);
+      if(current.form.mode==='draft'){
+        // A contextual form re-registers after its owner renders. Wait for that
+        // render instead of mistaking the previous frame for a failed write.
+        for(let frame=0;frame<12;frame++){
+          const rendered=latestForm.current.form;
+          if(rendered?.id===current.form.id&&changed.some(k=>rendered.fields[k]?.value!==before[k]))break;
+          await new Promise<void>(resolve=>requestAnimationFrame(()=>resolve()));
+        }
+        const applied=latestForm.current.form;
+        if(!applied||applied.id!==current.form.id||changed.every(k=>applied.fields[k]?.value===before[k]))throw Error('Os campos não foram atualizados. A sugestão foi preservada para tentar novamente.');
+        setFormUndo({before,after:formSnapshot(applied)});
+      }
+      setRecordPatch(null);setFormNotice(result.message);return result;
+    }finally{applyingForm.current=false;}
+  }
 
   const [message, setMessage] = useState(""); const [attachments,setAttachments]=useState<{name:string;data:string}[]>([]); const [readingFiles,setReadingFiles]=useState(false); const [reply, setReply] = useState(assistantWelcome); const [proposals, setProposals] = useState<AiProposal[]>([]); const [sources,setSources]=useState<TechnicalSource[]>([]); const [libraryOpen,setLibraryOpen]=useState(false); const [loading, setLoading] = useState(false); const [recordingAudio,setRecordingAudio]=useState(false); const [transcribing,setTranscribing]=useState(false); const [live,setLive]=useState(false); const [audioRetry,setAudioRetry]=useState<File|null>(null);
   useAssistantUploadCleanup(client,attachments);
@@ -815,7 +866,7 @@ export function AiAssistant({ form,onApplyForm,disabled=false,conversationId, co
     setAudioNotice('Áudio transcrito.');await send(transcript);
   }
   async function attachFiles(files:File[]){if(readingFiles||loading||needsSave||!files.length)return;setReadingFiles(true);try{const audio=files.filter(f=>f.type.startsWith('audio/'));if(audio.length){if(files.length!==1)throw Error('Envie um áudio por vez.');await sendAudio(audio[0]);return;}setAttachments(await prepareAssistantFiles(client,files,attachments));}catch(e){setReply((e as Error).message);}finally{setReadingFiles(false);}}
-  async function send(text=message) { if(loading||disabled||readingFiles)return;const snapshot=form?formSnapshot(form):null;setFormNotice('');if(text.length>8000){setReply("Divida o texto em mensagens de até 8.000 caracteres.");return;}setLoading(true);setReply("");setSources([]);try {if(pendingHistory.current){await saveExchange();return;}if(proposals.length&&approvesAssistantProposal(text)){await confirm();setMessage('');return;}if(recordPatch&&approvesAssistantProposal(text)){await applyForm(recordPatch.values,recordPatch.snapshot);pendingHistory.current={requestId:crypto.randomUUID(),message:text,reply:'Apliquei a sugestão aos campos.'};setNeedsSave(true);await saveExchange();return;}if(!client)throw Error("Sem conexão com o assistente.");const{data:sessionData}=await client.auth.getSession();if(!sessionData.session)throw Error("Entre novamente para usar o assistente.");const response=await fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${sessionData.session.access_token}`,"x-employee":user,"x-conversation-id":conversationId,"x-assistant-cards":navigate?"1":"0"},body:JSON.stringify({message:text,attachments,context:{area,form,screen:screenContext,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,capabilities:{createFlights:allowFlightCreation,editCurrentForm:false},conversationTitle,appHelp:helpArea?{area:helpArea,purpose:'Dúvidas, sugestões e reclamações sobre o aplicativo. Esta conversa é pessoal; não há encaminhamento automático para administrador nem abertura de protocolo.',features:'Notas em Mensagens são privadas, aceitam título, texto, imagem, vídeo e aeronave opcional. Agenda lista notas futuras por data. A nota pode virar relato técnico ou caso técnico após revisão. Atividades inicia em Hoje e tem filtros recolhíveis de data, aeronave, tipo e situação. Ajuda mostra vídeos por área quando disponíveis. Pendências Qpulse e treinamentos são demonstrações. Notificações exigem permissão neste aparelho.'}:undefined,today:todayLocal(),aircraft:catalogs.aircraft,bases:catalogs.bases,models:catalogs.models,flights}})});const data=await response.json();if(!response.ok)throw Error(data.error);preparedFlights.current=null;setProposals(allowFlightCreation?(data.proposedFlights??[]):[]);setSources(data.sources??[]);if(data.draftPatch&&form&&snapshot){if(data.draftPatch.id!==form.id)throw Error('Resposta de outro formulário.');const values=parseFormPatch(form,data.draftPatch.values);if(approvesAssistantProposal(text)||form.mode==='draft'&&requestsAssistantFieldApplication(text)){try{await applyForm(values,snapshot);data.reply=form.mode==='draft'?'Apliquei a sugestão aos campos. Confira no formulário.':'A alteração autorizada foi enviada pelo formulário.';}catch(e){setFormNotice((e as Error).message);data.reply='Não apliquei a sugestão: '+(e as Error).message;}}else {setRecordPatch({values,snapshot});data.reply=pendingAssistantProposalReply(data.reply);}}pendingHistory.current={requestId:crypto.randomUUID(),message:[text.trim(),...attachments.map(a=>`Anexo: ${a.name}`)].filter(Boolean).join("\n"),reply:data.reply};setNeedsSave(true);await saveExchange();if(data.navigation&&navigate)await navigate(data.navigation,{conversationId,title:conversationTitle,message:typeof data.continuation==='string'?text:undefined});}catch(error){setReply((error instanceof Error?error.message:"Falha ao consultar a IA.")+(pendingHistory.current?" A resposta está pronta. Tente salvar o histórico novamente.":""));}finally{setLoading(false);} }
+  async function send(text=message) { if(loading||disabled||readingFiles)return;const snapshot=form?formSnapshot(form):null;setFormNotice('');if(text.length>8000){setReply("Divida o texto em mensagens de até 8.000 caracteres.");return;}setLoading(true);setReply("");setSources([]);try {if(pendingHistory.current){await saveExchange();return;}if(proposals.length&&approvesAssistantProposal(text)){await confirm();setMessage('');return;}if(recordPatch&&approvesAssistantProposal(text)){const applied=await applyForm(recordPatch.values,recordPatch.snapshot);pendingHistory.current={requestId:crypto.randomUUID(),message:text,reply:applied.message};setNeedsSave(true);await saveExchange();return;}if(!client)throw Error("Sem conexão com o assistente.");const{data:sessionData}=await client.auth.getSession();if(!sessionData.session)throw Error("Entre novamente para usar o assistente.");const response=await fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${sessionData.session.access_token}`,"x-employee":user,"x-conversation-id":conversationId,"x-assistant-cards":navigate?"1":"0"},body:JSON.stringify({message:text,attachments,context:{area,form,screen:screenContext,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,capabilities:{createFlights:allowFlightCreation,editCurrentForm:false},conversationTitle,appHelp:helpArea?{area:helpArea,purpose:'Dúvidas, sugestões e reclamações sobre o aplicativo. Esta conversa é pessoal; não há encaminhamento automático para administrador nem abertura de protocolo.',features:'Notas em Mensagens são privadas, aceitam título, texto, imagem, vídeo e aeronave opcional. Agenda lista notas futuras por data. A nota pode virar relato técnico ou caso técnico após revisão. Atividades inicia em Hoje e tem filtros recolhíveis de data, aeronave, tipo e situação. Ajuda mostra vídeos por área quando disponíveis. Pendências Qpulse e treinamentos são demonstrações. Notificações exigem permissão neste aparelho.'}:undefined,today:todayLocal(),aircraft:catalogs.aircraft,bases:catalogs.bases,models:catalogs.models,flights}})});const data=await response.json();if(!response.ok)throw Error(data.error);preparedFlights.current=null;setProposals(allowFlightCreation?(data.proposedFlights??[]):[]);setSources(data.sources??[]);if(data.draftPatch&&form&&snapshot){if(data.draftPatch.id!==form.id)throw Error('Resposta de outro formulário.');const values=parseFormPatch(form,data.draftPatch.values);if(approvesAssistantProposal(text)||requestsAssistantFieldApplication(text)){try{setRecordPatch({values,snapshot});const applied=await applyForm(values,snapshot);data.reply=applied.message;}catch(e){setFormNotice((e as Error).message);data.reply='Não apliquei a sugestão: '+(e as Error).message;}}else {setRecordPatch({values,snapshot});data.reply=pendingAssistantProposalReply(data.reply);}}pendingHistory.current={requestId:crypto.randomUUID(),message:[text.trim(),...attachments.map(a=>`Anexo: ${a.name}`)].filter(Boolean).join("\n"),reply:data.reply};setNeedsSave(true);await saveExchange();if(data.navigation&&navigate)await navigate(data.navigation,{conversationId,title:conversationTitle,message:typeof data.continuation==='string'?text:undefined});}catch(error){setReply((error instanceof Error?error.message:"Falha ao consultar a IA.")+(pendingHistory.current?" A resposta está pronta. Tente salvar o histórico novamente.":""));}finally{setLoading(false);} }
 
   useAssistantContinuation(form?.id,conversationId,!history.loading&&!disabled,text=>{setMessage(text);void send(text);});
   const preparedFlights=useRef<Flight[]|null>(null);

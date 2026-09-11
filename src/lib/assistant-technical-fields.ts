@@ -13,7 +13,7 @@ export const technicalAssistantFields = [
  ['documentModel','Modelo informado do documento consultado','document','model'],
  ['registration','Matrícula informada para a referência consultada','document','registration'],
  ['serial','Número de série informado','document','serial'],
- ['ata','ATA informado','document','ata'],
+ ['ata','ATA informado ou classificação geral do sistema solicitada; não é referência AMM/FIM','document','ata'],
  ['document','Nome do documento informado como consultado','document','document'],
  ['task','Capítulo ou tarefa explicitamente informado','document','task'],
  ['documentRevision','Revisão explicitamente informada do documento','document','revision'],
