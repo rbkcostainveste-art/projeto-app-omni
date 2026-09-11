@@ -20,9 +20,10 @@ O registro real PR-OHG tinha resultado satisfactory gravado; a aparência usava 
 - Atualizações técnicas geram eventos de conteúdo no mural e os seletores compartilhados com a IA os consideram na ordenação.
 
 ## Verificação
-- 170 testes unitários aprovados.
+- 171 testes unitários aprovados.
 - Browser 390 e 1366: verde de resultado, vermelho do relato ainda aberto, confirmação humana, payload, tratamento de erro sem perda do texto, encerramento conjunto e ausência de overflow/erros JS.
 - SQL com rollback: 7 perfis de liderança, negativa para mecânico, concorrência, tarefa sem resultado, falta de APRS, atomicidade, encerramento separado/conjunto, autoria e timeline.
 - Regressão SQL de roteamento aprovada: 4 categorias, escala, tripulação, Power Check, procedimentos, lavagens e base.
 - Advisor: acréscimo esperado de um RPC SECURITY DEFINER acessível a authenticated. Função valida autorização, assinatura e base; PUBLIC/anon revogados; search_path vazio. Sem novos tipos de alerta.
 - Nenhuma ação/relato real foi encerrado pelos testes. O resultado existente passa a ser mostrado corretamente; a revisão real continua com o responsável.
+
