@@ -29,7 +29,7 @@ const duration=(hours:number)=>{const minutes=Math.round(hours*60);return `${Str
 const normalized=(value:string)=>value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/gi,"").toLowerCase();
 const fleetMatches=(model:string,fleet:string)=>normalized(model).includes(normalized(fleet))||normalized(fleet).includes(normalized(model));
 
-export function CrewDashboard({readOnly=false,people=[],supabase,user,base,aircraft,fleets,flights,requireSignature,onOpenTrail,onError}:{readOnly?:boolean;people?:{employeeNumber:string;name:string}[];supabase:SupabaseClient|null;user:string;base:string;aircraft:{prefix:string;base:string;model:string}[];fleets:string[];flights:CrewFlight[];requireSignature:(action:()=>void|Promise<void>,label?:string)=>Promise<boolean>;onOpenTrail:(flight:CrewFlight)=>void;onError:(message:string)=>void}){
+export function CrewDashboard({currentBase="",readOnly=false,people=[],supabase,user,base,aircraft,fleets,flights,requireSignature,onOpenTrail,onError}:{currentBase?:string;readOnly?:boolean;people?:{employeeNumber:string;name:string}[];supabase:SupabaseClient|null;user:string;base:string;aircraft:{prefix:string;base:string;model:string}[];fleets:string[];flights:CrewFlight[];requireSignature:(action:()=>void|Promise<void>,label?:string)=>Promise<boolean>;onOpenTrail:(flight:CrewFlight)=>void;onError:(message:string)=>void}){
   const {unreadEdit,markEditRead}=useMaintenanceEditReads(supabase,user,onError);
   const [activeGroup,setActiveGroup]=useState<CrewFlightGroup|null>(null);
   const [actions,setActions]=useState<Action[]>([]);
@@ -38,7 +38,7 @@ export function CrewDashboard({readOnly=false,people=[],supabase,user,base,aircr
   const [dryingTasks,setDryingTasks]=useState<DryingTask[]>([]);
   const [currentDryingDay,setCurrentDryingDay]=useState(()=>dryingDay());
   useEffect(()=>{let timer:ReturnType<typeof setTimeout>;const schedule=()=>{clearTimeout(timer);const day=dryingDay();timer=setTimeout(()=>{setCurrentDryingDay(dryingDay());schedule();},Math.max(1,Date.parse(dryingDayStart(day))+86400000-Date.now()));};const refresh=()=>{setCurrentDryingDay(dryingDay());schedule();};schedule();window.addEventListener("focus",refresh);document.addEventListener("visibilitychange",refresh);return()=>{clearTimeout(timer);window.removeEventListener("focus",refresh);document.removeEventListener("visibilitychange",refresh);};},[]);
-  const dryingBase=crewDryingBase(user,flights,aircraft,currentDryingDay,base);
+  const dryingBase=currentBase||crewDryingBase(user,flights,aircraft,currentDryingDay,base);
   const dryingStorageKey=`flight-ia-drying-fleets-${user}`;
   const storedDryingSelection=useSyncExternalStore((listener)=>{window.addEventListener("drying-fleet-selection",listener);window.addEventListener("storage",listener);return()=>{window.removeEventListener("drying-fleet-selection",listener);window.removeEventListener("storage",listener);};},()=>{try{return localStorage.getItem(dryingStorageKey)??"";}catch{return "";}},()=>"");
   const dryingOptions=useMemo(()=>authorizedDryingFleets(fleets),[fleets]);
