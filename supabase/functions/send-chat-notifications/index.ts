@@ -13,10 +13,10 @@ Deno.serve(async request=>{
  for(const job of jobs||[]){
   const {data:msg}=await db.from("internal_messages").select("conversation_id").eq("id",job.message_id).single();
   const {data:person}=await db.from("authorized_users").select("active").eq("employee_number",job.employee_number).single();
-  const {data:member}=await db.from("internal_conversation_members").select("employee_number").eq("conversation_id",msg?.conversation_id).eq("employee_number",job.employee_number).maybeSingle();
+  const {data:member,error:membershipError}=await db.rpc("chat_push_allowed",{p_message:job.message_id,p_employee:job.employee_number});
   const {data:receipt}=await db.from("chat_receipts").select("read_at").eq("message_id",job.message_id).eq("employee_number",job.employee_number).maybeSingle();
   const {data:targets,error:targetError}=await db.from("push_subscriptions").select("*").eq("employee_number",job.employee_number);
-  let retry=Boolean(targetError);let deliveryStatus=targetError?"retrying":!person?.active||!member?"inactive":receipt?.read_at?"already_read":!targets?.length?"no_device":"sent";let lastError=targetError?"Subscription lookup failed":null;
+  let retry=Boolean(targetError||membershipError);let deliveryStatus=targetError||membershipError?"retrying":!person?.active||!member?"inactive":receipt?.read_at?"already_read":!targets?.length?"no_device":"sent";let lastError=targetError||membershipError?"Delivery authorization lookup failed":null;
   if(msg&&person?.active&&member&&!receipt?.read_at)for(const target of targets||[]){
    try{
     await webpush.sendNotification({endpoint:target.endpoint,keys:{p256dh:target.p256dh,auth:target.auth}},JSON.stringify({title:"Flight IA · Nova mensagem",body:"Você recebeu uma mensagem. Toque para abrir a conversa.",conversationId:msg.conversation_id,url:"/?chat="+msg.conversation_id,tag:"chat-"+msg.conversation_id}),{TTL:3600});
