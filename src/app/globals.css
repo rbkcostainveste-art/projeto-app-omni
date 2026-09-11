@@ -326,3 +326,10 @@ nav[aria-label="Navegação principal"] button[aria-current="page"] > span.absol
 /* A text-only notice uses its entire reading area. */
 .flight-app .notice-card:not(:has(.notice-carousel)) .notice-preview p { display:block; overflow:visible; -webkit-line-clamp:unset; white-space:pre-wrap; }
 .flight-app .notice-card:not(:has(.notice-carousel)) .notice-preview { min-height:110px; display:flex; flex-direction:column; justify-content:center; }
+
+/* Keep extension overlays out of the operational signature confirmation. */
+.signature-verification [data-lastpass-icon-root],
+.signature-verification [data-lastpass-root] {
+  display: none !important;
+  pointer-events: none !important;
+}
