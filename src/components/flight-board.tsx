@@ -1,5 +1,7 @@
 "use client";
-import { consumePresentationLogin } from "@/lib/presentation-login";
+import Link from "next/link";
+import { consumePresentationLogin, type PresentationLoginRequest } from "@/lib/presentation-login";
+import { clearStoredApplicationIdentity, endApplicationSession, restoreApplicationSession, signInApplication, verifiedApplicationIdentity, type ApplicationIdentity } from "@/lib/app-session";
 import { PowerCheckFlightPanel, PowerCheckTrailCard } from "./power-check-flight-panel";
 import {canEditPlannedTimes} from "@/lib/flight-planned-times";
 import {PlannedTimesEditor} from "./planned-times-editor";
@@ -154,6 +156,10 @@ export function FlightBoard() {
   const [serviceImportRevision,setServiceImportRevision]=useState(0);
   const [maintenanceOpenRecordId, setMaintenanceOpenRecordId] = useState<string | null>(null);
   const [user, setUser] = useState("");
+  const [isPresentationDemo, setIsPresentationDemo] = useState(false);
+  const [authBusy, setAuthBusy] = useState(false);
+  const authenticationSequence = useRef(0);
+  const authenticatedAuthId = useRef("");
   const screenHistory=useRef<MainScreen[]>([]);
   const currentScreen=useRef<MainScreen>({workspace:"wall",maintenanceModule:"service",coordinationWaves:false});
   const navigationUser=useRef("");
@@ -161,8 +167,8 @@ export function FlightBoard() {
   const [accessProfile, setAccessProfile] = useState<AccessProfile>("legacy");
   const [assignedBase, setAssignedBase] = useState("");
   const [assignedShift, setAssignedShift] = useState("");
-  const isActualAdmin = user === "0001" || accessProfile === "admin";
-  const canPreviewProfiles = isActualAdmin || accessProfile === "app_manager";
+  const isActualAdmin = !isPresentationDemo && (user === "0001" || accessProfile === "admin");
+  const canPreviewProfiles = !isPresentationDemo && (isActualAdmin || accessProfile === "app_manager");
   const [previewProfile, setPreviewProfile] = useState<AccessProfile | null>(null);
   const [previewEmployee, setPreviewEmployee] = useState("");
   const [previewPeople, setPreviewPeople] = useState<PreviewPerson[]>([]);
@@ -186,7 +192,7 @@ export function FlightBoard() {
   const canFilterBase = isAdminView || effectiveProfile === "legacy" || ["commander", "copilot", "coordination", "maintenance_director", "maintenance_manager"].includes(effectiveProfile);
   const canManageAircraft = isAdminView || effectiveProfile === "legacy" || ["coordination", "maintenance_director", "maintenance_manager", "maintenance_coordinator"].includes(effectiveProfile);
   const canManageAvailability = isAdminView || effectiveProfile === "legacy" || ["maintenance_director", "maintenance_manager", "maintenance_coordinator"].includes(effectiveProfile);
-  const canManagePeople = isAdminView || effectiveProfile === "legacy" || ["coordination", "maintenance_director", "maintenance_manager", "maintenance_coordinator"].includes(effectiveProfile);
+  const canManagePeople = !isPresentationDemo && (isAdminView || effectiveProfile === "legacy" || ["coordination", "maintenance_director", "maintenance_manager", "maintenance_coordinator"].includes(effectiveProfile));
   const canAccessFlightCoordination = isAdminView || effectiveProfile === "legacy" || effectiveProfile === "coordination";
   const isCrew = ["commander", "copilot", "flight_attendant"].includes(effectiveProfile);
   const workspace = selectedWorkspace === "cockpit" && !isCrew ? "wall" : selectedWorkspace;
@@ -223,7 +229,7 @@ export function FlightBoard() {
   const [signatureRequest, setSignatureRequest] = useState<{ label: string; action: () => void | Promise<void>; resolve: (ok: boolean) => void } | null>(null);
   const lastSignatureActivity = useRef(0);
   const signatureReauthenticationRequired = useRef(true);
-  const presentationLoginAttempted = useRef(false);
+  const identityBootstrapStarted = useRef(false);
   const lastActivityPersistedAt = useRef(0);
   const [profilePhoto, setProfilePhoto] = useState("");
   const [userDirectory, setUserDirectory] = useState<UserDirectory>({});
@@ -276,8 +282,36 @@ export function FlightBoard() {
   const localSnapshot = useRef({ flights, catalogs });
   const passagesSnapshot = useRef(passages);
 
+  const initializeIdentity = useEffectEvent(async (request: PresentationLoginRequest | null, storedUser: string | null) => {
+    try {
+      if(request) { await enterRequest(request); return; }
+      resetAuthentication();
+      if(storedUser && supabase) {
+        const attempt = ++authenticationSequence.current;
+        const identity = await restoreApplicationSession(supabase, storedUser, deviceContext());
+        if(attempt === authenticationSequence.current) acceptIdentity(identity, false);
+      }
+    } catch(error) {
+      resetAuthentication();
+      setLoginError(error instanceof Error ? error.message : "Entre novamente para continuar.");
+    } finally { setHydrated(true); }
+  });
+  const invalidateChangedSession = useEffectEvent((authUserId: string | undefined) => {
+    if(authenticatedAuthId.current && authUserId !== authenticatedAuthId.current) {
+      authenticationSequence.current++;
+      resetAuthentication(); setLoginError("A sessão mudou ou foi encerrada. Entre novamente com seu login.");
+    }
+  });
+  useEffect(() => {
+    if(!supabase) return;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => invalidateChangedSession(session?.user.id));
+    return () => subscription.unsubscribe();
+  }, []);
   useEffect(() => {
     const restore = window.setTimeout(() => {
+      if(identityBootstrapStarted.current) return;
+      identityBootstrapStarted.current = true;
+      const entryRequest = consumePresentationLogin();
       const stored = readStoredJson<Flight[]>("passagem-de-pista-flights");
       const storedUser = localStorage.getItem("passagem-de-pista-user");
       const storedCatalogs = readStoredJson<Catalogs>("passagem-de-pista-catalogs");
@@ -290,8 +324,7 @@ export function FlightBoard() {
         const isCurrentCatalog = localStorage.getItem("passagem-de-pista-catalogs-version") === "3";
         setCatalogs({ ...parsed, users: parsed.users ?? demoCatalogs.users, aircraft: parsed.aircraft.map((item) => ({ ...item, available: item.available ?? true, base: isCurrentCatalog && item.base ? item.base : demoCatalogs.aircraft.find((demo) => demo.prefix === item.prefix)?.base || parsed.bases[0] || "" })) });
       }
-      if(storedUser) { const storedFilters = readStoredJson<{ model: string; prefix: string }>(`passagem-de-pista-trail-filters-${storedUser}`); setFilters((current) => ({ ...current, date: todayLocal(), model: storedFilters?.model ?? "", prefix: storedFilters?.prefix ?? "" })); setProfilePhoto(localStorage.getItem(`flight-ia-profile-photo-${storedUser}`) ?? ""); setUser(storedUser); }
-      setHydrated(true);
+      void initializeIdentity(entryRequest, storedUser);
     }, 0);
     return () => window.clearTimeout(restore);
   }, []);
@@ -310,18 +343,25 @@ export function FlightBoard() {
     let channel: ReturnType<typeof supabase.channel> | undefined;
     async function connect() {
       const { data: sessionData } = await supabase!.auth.getSession();
+      if(!active) return;
       if(!sessionData.session) { if(active) { localStorage.removeItem("passagem-de-pista-user"); setUser(""); } return; }
       const { data: claimData, error: claimError } = await supabase!.rpc("refresh_current_device");
+      if(!active) return;
       if(claimError) { if(active) setSyncError("Reconectando sua sessão…"); return; }
       if(!claimData) { if(active) { localStorage.removeItem("passagem-de-pista-user"); setSyncError(""); setUser(""); setLogin(""); setPassword(""); } return; }
-      await supabase!.rpc("activate_current_device", { p_device_key: persistentDeviceKey(), p_device_label: deviceLabel(), p_user_agent: navigator.userAgent });
-      if(active) { const claim = claimData as { accessProfile?: AccessProfile; assignedBase?: string | null; workShift?: string | null; avatarDataUrl?: string | null } | null; const profile = claim?.accessProfile ?? "legacy"; const base = claim?.assignedBase ?? ""; setAccessProfile(profile); setAssignedBase(base); setAssignedShift(claim?.workShift ?? ""); setProfilePhoto(claim?.avatarDataUrl ?? ""); setFilters((current) => ({ ...current, base })); }
+      let claim: ApplicationIdentity;
+      try { claim = verifiedApplicationIdentity(claimData, { employeeNumber: user }); }
+      catch { clearStoredApplicationIdentity(localStorage); setUser(""); setLoginError("A sessão mudou. Entre novamente com seu login."); return; }
+      if(active) { setAccessProfile(claim.accessProfile as AccessProfile); setIsPresentationDemo(claim.isPresentationDemo); setAssignedBase(claim.assignedBase); setAssignedShift(claim.workShift); setProfilePhoto(claim.avatarDataUrl); setFilters((current) => ({ ...current, base: claim.assignedBase })); }
       const { data: directoryData, error: directoryError } = await supabase!.rpc("get_user_directory");
+      if(!active) return;
       if(directoryError) { if(active) setSyncError(directoryError.message); return; }
       if(active) setUserDirectory(Object.fromEntries(((directoryData ?? []) as { employee_number: string; display_name: string; avatar_data_url: string | null }[]).map((item) => [item.employee_number, { name: item.display_name, avatar: item.avatar_data_url ?? "" }])));
       const {data:authorRoles}=await supabase!.rpc("get_comment_author_roles");
+      if(!active) return;
       if(active&&authorRoles)setUserDirectory(current=>Object.fromEntries(Object.entries(current).map(([id,person])=>[id,{...person,role:(authorRoles as {employee_number:string;job_role:string}[]).find(p=>p.employee_number===id)?.job_role}])));
       const { data, error } = await supabase!.from("shared_app_state").select("flights,catalogs,revision").eq("id", "main").maybeSingle();
+      if(!active) return;
       if(error) { if(active) setSyncError(error.message); return; }
       if(data&&!isCompleteSharedState(data)){if(active)setSyncError("Dados de sincronização incompletos. Reabra a tela para tentar novamente.");return;}
       if(data) { const serialized = JSON.stringify({ flights: data.flights, catalogs: data.catalogs }); lastRemoteState.current = serialized; lastRemoteCatalogs.current = JSON.stringify(data.catalogs); if(active) { setFlights(data.flights as Flight[]); setCatalogs(data.catalogs as Catalogs); } }
@@ -350,7 +390,26 @@ export function FlightBoard() {
     return () => { active = false; setSyncReady(false); if(channel) void supabase.removeChannel(channel); };
   }, [hydrated, user]);
 
-  useEffect(() => { if(!user || !supabase) return; const timer = window.setInterval(() => { void supabase.rpc("refresh_current_device").then(({ data, error }) => { if(error) { setSyncError("Reconectando sua sessão…"); return; } if(!data) { localStorage.removeItem("passagem-de-pista-user"); setProfileOpen(false); setDevicesOpen(false); setUser(""); void supabase?.auth.signOut(); } }); }, 20000); return () => window.clearInterval(timer); }, [user]);
+  useEffect(() => {
+    if(!user || !supabase) return;
+    let active = true;
+    const timer = window.setInterval(() => {
+      void supabase.rpc("refresh_current_device").then(({ data, error }) => {
+        if(!active) return;
+        if(error) { setSyncError("Reconectando sua sessão…"); return; }
+        try {
+          const claim = verifiedApplicationIdentity(data, { employeeNumber: user });
+          if(claim.accessProfile !== accessProfile) { setPreviewProfile(null); setPreviewEmployee(""); setAdminOpen(false); }
+          setAccessProfile(claim.accessProfile as AccessProfile); setIsPresentationDemo(claim.isPresentationDemo);
+        } catch {
+          clearStoredApplicationIdentity(localStorage); setSyncReady(false);
+          setProfileOpen(false); setDevicesOpen(false); setPreviewProfile(null); setPreviewEmployee("");
+          setAccessProfile("legacy"); setUser(""); setLoginError("Sua sessão mudou ou expirou. Entre novamente.");
+        }
+      });
+    }, 20000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [user, accessProfile]);
 
   useEffect(() => { if(!user) return; const storageKey = `flight-ia-last-activity-${user}`; const stored = Number(localStorage.getItem(storageKey) ?? 0); lastSignatureActivity.current = stored; signatureReauthenticationRequired.current = !stored || Date.now() - stored > 60000; const registerActivity = () => { const current = Date.now(); if(document.visibilityState !== "visible") return; if(current - lastSignatureActivity.current > 60000) { signatureReauthenticationRequired.current = true; return; } if(signatureReauthenticationRequired.current) return; lastSignatureActivity.current = current; if(current - lastActivityPersistedAt.current > 5000) { lastActivityPersistedAt.current = current; localStorage.setItem(storageKey, String(current)); } }; const checkInactivity = () => { if(Date.now() - lastSignatureActivity.current > 60000) signatureReauthenticationRequired.current = true; }; const onVisibility = () => { if(document.visibilityState === "visible") checkInactivity(); }; document.addEventListener("pointerdown", registerActivity, { capture: true, passive: true }); document.addEventListener("keydown", registerActivity, { capture: true }); document.addEventListener("touchstart", registerActivity, { capture: true, passive: true }); document.addEventListener("scroll", registerActivity, { capture: true, passive: true }); document.addEventListener("visibilitychange", onVisibility); const timer = window.setInterval(checkInactivity, 5000); return () => { document.removeEventListener("pointerdown", registerActivity, true); document.removeEventListener("keydown", registerActivity, true); document.removeEventListener("touchstart", registerActivity, true); document.removeEventListener("scroll", registerActivity, true); document.removeEventListener("visibilitychange", onVisibility); window.clearInterval(timer); }; }, [user]);
 
@@ -547,28 +606,57 @@ export function FlightBoard() {
   const createPassage = useCallback((item: Passage) => { passagesSnapshot.current = [item, ...passagesSnapshot.current]; setPassages(passagesSnapshot.current); void (async () => { if(!supabase) return; const { data, error } = await supabase.from("runway_handovers").insert(passageToRow(item)).select().single(); if(error) { setPassages((items) => items.filter((current) => current.id !== item.id)); setSyncError(`Passagem não criada: ${error.message}`); return; } const saved = rowToPassage(data as PassageRow); setPassages((items) => items.map((current) => current.id === item.id ? saved : current)); })(); }, [setPassages]);
   const deletePassage = useCallback((id: string) => { if(!isAdmin || !window.confirm("Excluir definitivamente esta passagem?")) return; setPassages((items) => items.filter((item) => item.id !== id)); void (async () => { if(!supabase) return; const { error } = await supabase.from("runway_handovers").delete().eq("id", id); if(error) { setSyncError(`Passagem não excluída: ${error.message}`); } })(); }, [isAdmin,setPassages]);
 
-  async function authenticate(nextLogin = login, nextPassword = password) {
-    if(nextPassword !== "1234") { setLoginError("Matrícula não cadastrada ou senha inválida."); return; }
-    if(supabase) { const { data } = await supabase.auth.getSession(); if(!data.session) { const { error } = await supabase.auth.signInAnonymously(); if(error) { setLoginError("Não foi possível conectar ao serviço compartilhado."); return; } } const { data: claimData, error } = await supabase.rpc("claim_device_identity", { p_employee_number: nextLogin, p_password: nextPassword }); if(error) { setLoginError("Matrícula não autorizada no servidor."); return; } const { error: deviceError } = await supabase.rpc("activate_current_device", { p_device_key: persistentDeviceKey(), p_device_label: deviceLabel(), p_user_agent: navigator.userAgent }); if(deviceError) { setLoginError("Não foi possível registrar este dispositivo."); return; } const claim = claimData as { accessProfile?: AccessProfile; assignedBase?: string | null; workShift?: string | null } | null; const profile = claim?.accessProfile ?? "legacy"; const base = claim?.assignedBase ?? ""; setAccessProfile(profile); setAssignedBase(base); setAssignedShift(claim?.workShift ?? ""); setFilters((current) => ({ ...current, base })); }
-    else if(nextLogin !== "0001" && !catalogs.users.some((item) => item.employeeNumber === nextLogin)) { setLoginError("Matrícula não cadastrada ou senha inválida."); return; }
-    const signedInAt = Date.now(); lastSignatureActivity.current = signedInAt; signatureReauthenticationRequired.current = false; localStorage.setItem(`flight-ia-last-activity-${nextLogin}`, String(signedInAt)); const storedFilters = readStoredJson<{ model: string; prefix: string }>(`passagem-de-pista-trail-filters-${nextLogin}`); setFilters((current) => ({ ...current, date: todayLocal(), model: storedFilters?.model ?? "", prefix: storedFilters?.prefix ?? "" })); localStorage.setItem("passagem-de-pista-user", nextLogin); setProfilePhoto(localStorage.getItem(`flight-ia-profile-photo-${nextLogin}`) ?? ""); setUser(nextLogin);
+  function resetAuthentication() {
+    authenticatedAuthId.current = "";
+    clearStoredApplicationIdentity(localStorage);
+    setUser(""); setAccessProfile("legacy"); setIsPresentationDemo(false);
+    setAssignedBase(""); setAssignedShift(""); setProfilePhoto("");
+    setPreviewProfile(null); setPreviewEmployee(""); setPreviewPeople([]);
+    setProfileOpen(false); setDevicesOpen(false); setAdminOpen(false);
+    setPeopleManagementOpen(false); setAircraftManagementOpen(false);
+    setSyncReady(false); setSyncError(""); setUserDirectory({}); setAlerts({});
+    setPassword(""); setWorkspace("wall"); clearScreenHistory();
+    signatureRequest?.resolve(false); setSignatureRequest(null);
+    signatureReauthenticationRequired.current = true;
   }
-  async function enter(event: React.FormEvent) { event.preventDefault(); setLoginError(""); try { await authenticate(); } catch { setLoginError("Não foi possível conectar. Tente novamente."); } }
-  const authenticateFromPresentation = useEffectEvent(async (credentials: { login: string; password: string }) => {
-    setLogin(credentials.login);
-    setLoginError("");
-    try { await authenticate(credentials.login, credentials.password); }
-    catch { setLoginError("Não foi possível conectar. Tente novamente."); }
-  });
-  useEffect(() => {
-    if(!hydrated || presentationLoginAttempted.current) return;
-    const timer = setTimeout(() => {
-      const credentials = consumePresentationLogin();
-      presentationLoginAttempted.current = true;
-      if(credentials && !user) void authenticateFromPresentation(credentials);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [hydrated, user]);
+  function deviceContext() { return { p_device_key: persistentDeviceKey(), p_device_label: deviceLabel(), p_user_agent: navigator.userAgent }; }
+  function acceptIdentity(identity: ApplicationIdentity, fresh: boolean) {
+    authenticatedAuthId.current = identity.authUserId ?? "";
+    const profile = identity.accessProfile as AccessProfile;
+    const storedFilters = readStoredJson<{ model: string; prefix: string }>(`passagem-de-pista-trail-filters-${identity.employeeNumber}`);
+    setAccessProfile(profile); setAssignedBase(identity.assignedBase); setAssignedShift(identity.workShift);
+    setIsPresentationDemo(identity.isPresentationDemo); setProfilePhoto(identity.avatarDataUrl);
+    setFilters({ date: todayLocal(), base: identity.assignedBase, model: storedFilters?.model ?? "", prefix: storedFilters?.prefix ?? "" });
+    if(identity.isPresentationDemo) {
+      const initial: Partial<Record<AccessProfile, Workspace>> = { commander: "cockpit", mechanic: "flights", maintenance_leader: "maintenance", coordination: "coordination", toolroom: "tools" };
+      setWorkspace(initial[profile] ?? "wall"); setMaintenanceModule("service");
+    }
+    if(fresh && !identity.isPresentationDemo) { const now = Date.now(); lastSignatureActivity.current = now; signatureReauthenticationRequired.current = false; localStorage.setItem(`flight-ia-last-activity-${identity.employeeNumber}`, String(now)); }
+    localStorage.setItem("passagem-de-pista-user", identity.employeeNumber);
+    setUser(identity.employeeNumber);
+  }
+  async function enterRequest(request: PresentationLoginRequest) {
+    const attempt = ++authenticationSequence.current;
+    resetAuthentication(); setAuthBusy(true); setLoginError("");
+    if(request.kind === "credentials") setLogin(request.login.trim()); else setLogin("");
+    try {
+      if(!supabase) throw Error("Não foi possível conectar ao aplicativo. Tente novamente.");
+      if(request.kind === "account") {
+        await endApplicationSession(supabase);
+        if(request.expired && attempt === authenticationSequence.current) setLoginError("Por segurança, informe novamente seu login e senha.");
+        return;
+      }
+      const identity = await signInApplication(supabase, request, deviceContext());
+      if(attempt === authenticationSequence.current) acceptIdentity(identity, true);
+    } catch(error) {
+      if(attempt === authenticationSequence.current) { resetAuthentication(); setLoginError(error instanceof Error ? error.message : "Não foi possível conectar. Tente novamente."); }
+    } finally { if(attempt === authenticationSequence.current) setAuthBusy(false); }
+  }
+  async function enter(event: React.FormEvent) {
+    event.preventDefault();
+    if(authBusy) return;
+    await enterRequest({ kind: "credentials", login: login.trim(), password });
+  }
   async function registerFlightPhase(id: string, phase: FlightPhase, reason?: string) {
     if(!canOperateFlightPhase && phase !== "reopen") return;
     const current = localSnapshot.current.flights.find((flight) => flight.id === id);
@@ -652,7 +740,7 @@ export function FlightBoard() {
   // eslint-disable-next-line react-hooks/purity
   async function requireSignature(action: () => void | Promise<void>, label = "Confirmar assinatura") { const current = Date.now(); if(!signatureReauthenticationRequired.current && current - lastSignatureActivity.current <= 60000) { lastSignatureActivity.current = current; localStorage.setItem(`flight-ia-last-activity-${user}`, String(current)); await action(); return true; } signatureReauthenticationRequired.current = true; return new Promise<boolean>((resolve) => setSignatureRequest({ label, action, resolve })); }
   async function saveProfilePhoto(photo: string) { if(!supabase) return; const previous = profilePhoto; setProfilePhoto(photo); setUserDirectory((current) => ({ ...current, [user]: { name: currentUser?.name ?? current[user]?.name ?? user, avatar: photo } })); const { error } = await supabase.rpc("update_user_avatar", { p_employee_number: user, p_avatar_data_url: photo }); if(error) { setProfilePhoto(previous); setSyncError(`Foto não alterada: ${error.message}`); return; } setSyncError(""); }
-  async function logout() { if(supabase) { const { data } = await supabase.auth.getSession(); if(data.session) await supabase.rpc("disconnect_my_device", { p_auth_user_id: data.session.user.id }); await supabase.auth.signOut(); } localStorage.removeItem("passagem-de-pista-user"); setProfileOpen(false); setDevicesOpen(false);  setUser(""); }
+  async function logout() { await enterRequest({ kind: "account" }); }
 
   const [coordinationEditRequest,setCoordinationEditRequest]=useState<{id:string;nonce:number}|null>(null);
   async function openAssistantTarget(target:AssistantTargetRef,conversation?:{conversationId:string;title:string;message?:string}){
@@ -677,7 +765,7 @@ export function FlightBoard() {
   const assistantLabel=adminOpen?'Administração':({wall:wallLabel,flights:'Trilhos de voo',coordination:'Programação',maintenance:({service:"Passagem de Serviço",faults:"Relatos Técnicos",discrepancies:"Relatos Técnicos",passage:"Passagem de Pista"}[maintenanceModule]||"Manutenção"),activities:'Atividades',tools:'Ferramentaria',cockpit:'Cockpit'}[workspace]||workspace);
   const renderScreenAssistant=(label:string)=><AssistantConversations direct key={`${user}:${label}`} client={supabase} user={user} context={{id:`screen:${label}`,label,kind:'general'}} onClose={()=>assistantWorkspace?.close()} renderConversation={(id,back,title)=><AiAssistant key={id} conversationId={id} conversationTitle={title} area={label} onOpenTarget={openAssistantTarget} onReviewServices={reviewServicesFromAssistant} onReviewTechnicalRecord={reviewTechnicalRecordFromAssistant} onReviewMaintenanceAction={reviewMaintenanceActionFromAssistant} allowFlightCreation={canEditFlights} flights={flights} catalogs={effectiveProfile==="coordination"?{...catalogs,aircraft:aircraftAtBase(catalogs.aircraft,effectiveBase)}:scopedCatalogs} user={user} onClose={back} onCreate={async created=>{for(const flight of created)if(!await saveCoordinationFlight(flight,true))return false;return true;}}/>}/>;
   const splitWorkspace=!adminOpen && (workspace==="tools" || workspace==="flights" || workspace==="maintenance" || workspace==="activities");
-  if(!hydrated) return null;
+  if(!hydrated || authBusy) return <main className="grid min-h-dvh place-items-center bg-[#edf4fb] p-6"><div role="status" className="w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-lg"><ShieldCheck aria-hidden="true" className="mx-auto mb-4 animate-pulse text-[#1268d8]" size={36}/><h1 className="text-xl font-bold text-[#17324d]">Confirmando seu acesso</h1><p className="mt-2 text-sm text-[#60758c]">Estamos verificando seu login e o perfil autorizado.</p><Link href="/" className="mt-6 inline-flex min-h-11 items-center text-sm font-bold text-[#1268d8]">Voltar à apresentação</Link></div></main>;
   if(!user) return <LoginScreen login={login} password={password} error={loginError} setLogin={setLogin} setPassword={setPassword} onSubmit={enter} />;
   return (
     <ScreenNotificationsProvider scope={`${effectiveEmployee}:${effectiveProfile}:${adminOpen ? "admin" : workspace}:${workspace === "maintenance" ? maintenanceModule : ""}`}><PreparationProvider key={`${effectiveEmployee}:${effectiveProfile}`} client={supabase} flights={flights} onOpen={id=>{const f=flights.find(x=>x.id===id);if(f){setFilters(current=>({...current,date:f.date,prefix:f.prefix}));openContextScreen("flights");}}}><WorkspaceToolsContext.Provider value={!adminOpen && canAccessMaintenance ? <button onClick={() => openContextScreen("tools")} aria-label="Abrir Ferramentaria" title="Ferramentaria" className={`flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold shadow-sm ${toolPendingCount ? "bg-amber-400 text-amber-950 ring-2 ring-amber-200" : "bg-[#173f6d] text-white"}`}><PackageOpen size={20} /><span >Ferramentaria</span>{toolPendingCount ? <b className="grid h-6 min-w-6 place-items-center rounded-full bg-amber-950 px-1 text-xs text-white">{Math.min(toolPendingCount, 99)}</b> : null}</button> : null}><DesktopWorkspaceContext.Provider value={splitWorkspace}><div className={`flight-app min-h-screen bg-transparent ${splitWorkspace?"split-workspace":""} ${mobileChromeHidden ? "mobile-chrome-hidden" : ""}`}>
@@ -702,6 +790,7 @@ export function FlightBoard() {
         {canPreviewProfiles ? <div className="border-t border-white/15 px-4 pb-2 md:hidden"><select aria-label="Visualizar como" value={previewProfile ?? accessProfile} onChange={(event) => { clearScreenHistory(); const value = event.target.value as AccessProfile; setPreviewProfile(value === accessProfile ? null : value); if(!["mechanic", "maintenance_assistant", "toolroom", "maintenance_director", "maintenance_manager", "maintenance_coordinator", "maintenance_leader", "maintenance_inspector", "leader_inspector", "admin", "app_manager", "legacy"].includes(value)) setWorkspace((current) => current === "maintenance" || current === "activities" || current === "tools" ? "wall" : current); }} className="h-9 w-full rounded-lg border border-white/25 bg-white/15 px-3 text-xs font-bold text-white outline-none [&>option]:text-[#17324d]"><AccessProfileOptions /></select></div> : null}
         {canPreviewProfiles && previewProfile ? <div className="border-t border-white/15 px-4 pb-2 md:hidden"><select aria-label="Escolher usuário para apresentação" value={previewEmployee} onChange={(event) => selectPreviewUser(event.target.value)} className="h-9 w-full rounded-lg border border-white/25 bg-white/15 px-3 text-xs font-bold text-white outline-none [&>option]:text-[#17324d]"><option value="">Escolha um usuário real</option>{previewPeople.filter((person) => person.profile === previewProfile).map((person) => <option key={person.employeeNumber} value={person.employeeNumber}>{person.displayName} · {person.employeeNumber}</option>)}</select></div> : null}
       </header>
+      {isPresentationDemo ? <aside className="border-b border-sky-200 bg-sky-50 px-4 py-3 text-[#17324d]"><div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-2"><div><p className="text-sm font-bold">Teste · {accessProfileLabels[accessProfile]}</p><p className="mt-0.5 text-xs">Use dados simulados. Os registros salvos permanecem no aplicativo.</p></div><div className="flex flex-wrap gap-2"><button type="button" onClick={() => void enterRequest({ kind: "account" })} className="min-h-11 rounded-xl bg-[#1268d8] px-3 text-xs font-bold text-white">Entrar com meu login</button><Link href="/" className="inline-flex min-h-11 items-center rounded-xl border border-sky-200 bg-white px-3 text-xs font-bold">Voltar à apresentação</Link></div></div></aside> : null}
       {previewPerson ? <div className="sticky top-[78px] z-20 border-b border-amber-300 bg-amber-100 px-4 py-2 text-center text-xs font-bold text-amber-950 shadow-sm">Modo apresentação: {previewPerson.displayName} · Mat. {previewPerson.employeeNumber} · {accessProfileLabels[previewPerson.profile]}{previewPerson.assignedBase ? ` · ${previewPerson.assignedBase}` : ""}</div> : null}
       {splitWorkspace?<DesktopControlHost/>:null}
       {!adminOpen ? <main className="mx-auto max-w-[1280px] px-4 py-6 pb-28 sm:px-8">
@@ -718,7 +807,7 @@ export function FlightBoard() {
       {aircraftManagementOpen ? <AircraftManagementModal catalogs={catalogs} user={user} canManageAvailability={canManageAvailability} onChange={setCatalogs} onClose={() => setAircraftManagementOpen(false)} /> : null}
       {peopleManagementOpen ? <PeopleManagementModal crewOnly={effectiveProfile === "coordination"} bases={catalogs.bases} fleetOptions={catalogs.models} currentUser={user} canChangeRoles={isAdminView} canGrantAppManager={isActualAdmin} onSelfBaseChange={(base) => setAssignedBase(base)} onAvatarChange={(employeeNumber, name, avatar) => { setUserDirectory((current) => ({ ...current, [employeeNumber]: { name, avatar } })); if(employeeNumber === user) setProfilePhoto(avatar); }} onClose={() => setPeopleManagementOpen(false)} /> : null}
       {devicesOpen && supabase ? <ConnectedDevicesModal supabase={supabase} onLogout={() => void logout()} onClose={() => setDevicesOpen(false)} /> : null}
-      {signatureRequest && supabase ? <SignatureVerificationModal employeeNumber={user} label={signatureRequest.label} supabase={supabase} onCancel={() => { signatureRequest.resolve(false); setSignatureRequest(null); }} onVerified={async () => { const pending = signatureRequest; const verifiedAt = Date.now(); lastSignatureActivity.current = verifiedAt; signatureReauthenticationRequired.current = false; localStorage.setItem(`flight-ia-last-activity-${user}`, String(verifiedAt)); setSignatureRequest(null); await pending.action(); pending.resolve(true); }} /> : null}
+      {signatureRequest && supabase ? <SignatureVerificationModal isDemo={isPresentationDemo} employeeNumber={user} label={signatureRequest.label} supabase={supabase} onCancel={() => { signatureRequest.resolve(false); setSignatureRequest(null); }} onVerified={async () => { const pending = signatureRequest; const verifiedAt = Date.now(); lastSignatureActivity.current = verifiedAt; signatureReauthenticationRequired.current = false; localStorage.setItem(`flight-ia-last-activity-${user}`, String(verifiedAt)); setSignatureRequest(null); await pending.action(); pending.resolve(true); }} /> : null}
       {trashOpen ? <FlightTrash flights={flights.filter((flight) => flight.deletedAt)} onClose={() => setTrashOpen(false)} onRestore={restoreFlight} onDelete={permanentlyDeleteFlight} /> : null}
       {!adminOpen && effectiveProfile !== "toolroom" ? <nav aria-label="Navegação principal" className="fixed inset-x-0 bottom-0 z-40 border-t border-[#d4dfeb] bg-white/96 pb-[max(.45rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_#17324d1c] backdrop-blur"><div className="mx-auto grid max-w-3xl grid-flow-col auto-cols-fr">{([...(effectiveProfile === "dispatch" ? [] : [{ key: "wall", label: isCrew ? "Programação" : wallLabel, icon: <House size={21} /> }]), { key: "flights", label: "Trilhos", icon: <Plane size={21} /> }, ...(isCrew ? [{key:"cockpit",label:"Cockpit",icon:<MonitorSmartphone size={21}/>}]:[]), ...(canAccessFlightCoordination ? [{ key: "coordination", label: "Programação", icon: <CalendarDays size={21} /> }] : []), ...(canAccessMaintenance ? [{ key: "maintenance", label: "Manutenção", icon: <Wrench size={21} /> }, { key: "activities", label: effectiveProfile === "mechanic" ? "Designações" : "Atividades", icon: <ClipboardList size={21} /> }] : [])] as { key: typeof workspace; label: string; icon: React.ReactNode }[]).map((item) => <button key={item.key} onClick={() => openMainScreen(item.key,item.key==="maintenance"?"service":maintenanceModule)} aria-current={workspace === item.key ? "page" : undefined} className={`relative flex min-h-[64px] flex-col items-center justify-center gap-1 px-2 text-[11px] font-bold transition ${item.key === "activities" && effectiveProfile === "mechanic" && totalPendingAssignments > 0 ? "bg-amber-300 text-amber-950" : workspace === item.key ? "text-[#1268d8]" : "text-[#64778b] hover:bg-[#f4f8fc]"}`}>{workspace === item.key ? <span className={`absolute top-0 h-1 w-10 rounded-b-full ${item.key === "activities" && effectiveProfile === "mechanic" && totalPendingAssignments > 0 ? "bg-amber-800" : "bg-[#1268d8]"}`} /> : null}{item.icon}{item.key === "activities" && effectiveProfile === "mechanic" && totalPendingAssignments > 0 ? <span className="absolute right-[calc(50%-25px)] top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-amber-800 px-1 text-[10px] font-black text-white ring-2 ring-amber-200">{Math.min(totalPendingAssignments, 99)}</span> : null}<span>{item.label}</span></button>)}</div></nav> : null}
     </div></DesktopWorkspaceContext.Provider></WorkspaceToolsContext.Provider></PreparationProvider></ScreenNotificationsProvider>
@@ -739,15 +828,16 @@ function ConnectedDevicesModal({ supabase, onLogout, onClose }: { supabase: NonN
   return <ModalLayer><div className="fixed inset-0 z-[60] grid place-items-center bg-[#071a30]/60 p-3 backdrop-blur-sm" onMouseDown={(event) => { if(event.target === event.currentTarget) onClose(); }}><section role="dialog" aria-modal="true" aria-label="Dispositivos conectados" className="max-h-[90dvh] w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl"><header className="flex items-center justify-between border-b border-[#dce6f0] p-4"><div><p className="text-xs font-extrabold uppercase tracking-[.14em] text-[#1769e0]">Segurança</p><h2 className="mt-1 text-xl font-extrabold text-[#17324d]">Dispositivos conectados</h2><p className="mt-1 text-xs text-[#718197]">Veja onde sua matrícula está conectada e encerre acessos.</p></div><button onClick={onClose} aria-label="Fechar" className="grid h-10 w-10 place-items-center rounded-xl hover:bg-[#edf4fb]"><X size={19} /></button></header><div className="max-h-[65dvh] space-y-2 overflow-y-auto p-4">{loading ? <p className="p-8 text-center text-sm text-[#718197]">Carregando dispositivos…</p> : devices.map((device) => <article key={device.auth_user_id} className={`rounded-2xl border p-3 ${device.is_current ? "border-[#8bbcf4] bg-[#eef6ff]" : "border-[#dce6f0] bg-white"}`}><div className="flex items-start gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#dcecff] text-[#1268d8]"><MonitorSmartphone size={21} /></span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><strong className="text-sm text-[#17324d]">{device.device_label}</strong>{device.is_current ? <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-extrabold text-green-700">ESTE DISPOSITIVO</span> : null}</div><p className="mt-1 text-xs text-[#718197]">Última atividade: {new Date(device.last_seen_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</p></div><button disabled={disconnecting === device.auth_user_id} onClick={() => void disconnect(device)} className="shrink-0 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700 disabled:opacity-50">{disconnecting === device.auth_user_id ? "Saindo…" : "Desconectar"}</button></div></article>)}{!loading && !devices.length ? <p className="p-8 text-center text-sm text-[#718197]">Nenhum dispositivo conectado.</p> : null}</div></section></div></ModalLayer>;
 }
 
-function SignatureVerificationModal({ employeeNumber, label, supabase, onCancel, onVerified }: { employeeNumber: string; label: string; supabase: NonNullable<ReturnType<typeof createSupabaseClient>>; onCancel: () => void; onVerified: () => void | Promise<void> }) {
+function SignatureVerificationModal({ employeeNumber, label, supabase, onCancel, onVerified, isDemo = false }: { employeeNumber: string; label: string; supabase: NonNullable<ReturnType<typeof createSupabaseClient>>; onCancel: () => void; onVerified: () => void | Promise<void>; isDemo?: boolean }) {
   const [password, setPassword] = useState(""); const [error, setError] = useState(""); const [checking, setChecking] = useState(false);
-  async function submit(event: React.FormEvent) { event.preventDefault(); if(!password || checking) return; setChecking(true); const { data, error: verifyError } = await supabase.rpc("verify_signature_password", { p_password: password }); if(verifyError || !data) { setError("Senha inválida. A assinatura não foi realizada."); setChecking(false); return; } await onVerified(); }
+  async function submit(event: React.FormEvent) { event.preventDefault(); if(!isDemo && !password || checking) return; setChecking(true); try { const { data, error: verifyError } = isDemo ? await supabase.rpc("confirm_presentation_demo_action") : await supabase.rpc("verify_signature_password", { p_password: password }); if(verifyError || !data) { setError(isDemo ? "Não foi possível confirmar o teste. Tente novamente." : "Senha inválida. A assinatura não foi realizada."); setChecking(false); return; } await onVerified(); } catch { setError("Não foi possível confirmar. Tente novamente."); setChecking(false); } }
+  if(isDemo) return <DialogShell title="Confirmação de teste" onClose={onCancel}><form onSubmit={submit}><h3 className="font-bold text-[#17324d]">{label}</h3><p className="mt-3 text-sm leading-6 text-[#60758c]">Você está usando um perfil demonstrativo. A alteração será salva no aplicativo como registro de teste.</p>{error ? <p role="alert" className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}<div className="mt-5 flex flex-wrap justify-end gap-2"><button type="button" onClick={onCancel} className="min-h-11 rounded-xl border px-4 text-sm font-bold">Cancelar</button><button disabled={checking} className="min-h-11 rounded-xl bg-[#1268d8] px-4 text-sm font-bold text-white disabled:opacity-50">{checking ? "Confirmando…" : "Confirmar teste"}</button></div></form></DialogShell>;
   return <ModalLayer><div className="fixed inset-0 z-[100] grid place-items-center bg-[#071a30]/65 p-4 backdrop-blur-sm"><form onSubmit={submit} autoComplete="off" data-lpignore="true" className="signature-verification w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-extrabold uppercase tracking-[.14em] text-[#1769e0]">Assinatura protegida</p><h2 className="mt-1 text-xl font-extrabold text-[#17324d]">{label}</h2></div><button type="button" onClick={onCancel} aria-label="Cancelar" className="grid h-9 w-9 place-items-center rounded-lg hover:bg-[#edf4fb]"><X size={18} /></button></div><p className="mt-3 text-sm leading-6 text-[#60758c]">Confirme sua senha para assinar como matrícula <strong>{employeeNumber}</strong>. A confirmação valerá por 1 minuto.</p><label className="mt-4 block text-xs font-bold text-[#52677f]">Senha<input autoFocus type="password" name="signature-verification" autoComplete="off" data-lpignore="true" data-1p-ignore="true" value={password} onChange={(event) => { setPassword(event.target.value); setError(""); }} className="mt-1 h-11 w-full rounded-xl border border-[#c8d7e6] px-3 text-base outline-none focus:border-[#1769e0]" /></label>{error ? <p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-xs font-semibold text-red-700">{error}</p> : null}<div className="mt-5 flex justify-end gap-2"><button type="button" onClick={onCancel} className="rounded-xl border px-4 py-2.5 text-sm font-bold">Cancelar</button><button disabled={!password || checking} className="rounded-xl bg-[#1268d8] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">{checking ? "Confirmando…" : "Confirmar e assinar"}</button></div></form></div></ModalLayer>;
 }
 
 
 function LoginScreen({ login, password, error, setLogin, setPassword, onSubmit }: { login: string; password: string; error: string; setLogin: (value: string) => void; setPassword: (value: string) => void; onSubmit: (event: React.FormEvent) => void; }) {
-  return <main className="grid min-h-screen place-items-center bg-[#edf4fb] p-5"><div className="grid w-full max-w-[980px] overflow-hidden rounded-[28px] bg-white shadow-[0_30px_90px_#0b234224] md:grid-cols-[1.05fr_.95fr]"><section className="hidden min-h-[610px] flex-col justify-between bg-[#0d315e] p-12 text-white md:flex"><div className="flex items-center gap-3"><div className="grid h-11 w-11 place-items-center rounded-xl bg-white/12"><Plane /></div><span className="font-bold">Flight IA</span></div><div><p className="mb-4 text-xs font-bold uppercase tracking-[.22em] text-[#7db4f7]">Consciência situacional</p><h1 className="max-w-md text-4xl font-bold leading-tight tracking-[-.04em]">Cada voo, cada ação, todos na mesma página.</h1><p className="mt-5 max-w-md leading-relaxed text-[#bdd3ec]">Acompanhe o trilho operacional das aeronaves em tempo real, do abastecimento ao corte.</p></div><div className="flex gap-6 text-xs text-[#9ebcdd]"><span className="flex items-center gap-2"><ShieldCheck size={16} /> Registro por matrícula</span><span className="flex items-center gap-2"><Gauge size={16} /> Status ao vivo</span></div></section><section className="flex flex-col justify-center p-8 sm:p-12"><div className="mb-8 md:hidden"><div className="mb-3 grid h-11 w-11 place-items-center rounded-xl bg-[#1268d8] text-white"><Plane /></div></div><p className="text-sm font-bold text-[#1769e0]">Bem-vindo</p><h2 className="mt-1 text-3xl font-bold tracking-[-.04em]">Acesse a operação</h2><p className="mt-2 text-sm text-[#718197]">Entre com sua matrícula funcional.</p><form onSubmit={onSubmit} className="mt-8 space-y-4"><label className="block"><span className="mb-2 block text-sm font-semibold">Matrícula</span><div className="flex items-center rounded-xl border border-[#cedae8] px-3 focus-within:border-[#1769e0] focus-within:ring-4 focus-within:ring-[#1769e014]"><UserRound size={17} className="text-[#8192a5]" /><input autoFocus inputMode="numeric" value={login} onChange={(e) => setLogin(e.target.value)} className="h-12 w-full bg-transparent px-3 outline-none" placeholder="Ex.: 1024" /></div></label><label className="block"><span className="mb-2 block text-sm font-semibold">Senha</span><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 w-full rounded-xl border border-[#cedae8] px-4 outline-none focus:border-[#1769e0] focus:ring-4 focus:ring-[#1769e014]" /></label>{error ? <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}<button className="h-12 w-full rounded-xl bg-[#1268d8] font-bold text-white hover:bg-[#095cbf]">Entrar</button></form></section></div></main>;
+  return <main className="grid min-h-screen place-items-center bg-[#edf4fb] p-5"><div className="grid w-full max-w-[980px] overflow-hidden rounded-[28px] bg-white shadow-[0_30px_90px_#0b234224] md:grid-cols-[1.05fr_.95fr]"><section className="hidden min-h-[610px] flex-col justify-between bg-[#0d315e] p-12 text-white md:flex"><div className="flex items-center gap-3"><div className="grid h-11 w-11 place-items-center rounded-xl bg-white/12"><Plane /></div><span className="font-bold">Flight IA</span></div><div><p className="mb-4 text-xs font-bold uppercase tracking-[.22em] text-[#7db4f7]">Consciência situacional</p><h1 className="max-w-md text-4xl font-bold leading-tight tracking-[-.04em]">Cada voo, cada ação, todos na mesma página.</h1><p className="mt-5 max-w-md leading-relaxed text-[#bdd3ec]">Acompanhe o trilho operacional das aeronaves em tempo real, do abastecimento ao corte.</p></div><div className="flex gap-6 text-xs text-[#9ebcdd]"><span className="flex items-center gap-2"><ShieldCheck size={16} /> Registro por matrícula</span><span className="flex items-center gap-2"><Gauge size={16} /> Status ao vivo</span></div></section><section className="flex flex-col justify-center p-8 sm:p-12"><div className="mb-8 md:hidden"><div className="mb-3 grid h-11 w-11 place-items-center rounded-xl bg-[#1268d8] text-white"><Plane /></div></div><p className="text-sm font-bold text-[#1769e0]">Bem-vindo</p><h2 className="mt-1 text-3xl font-bold tracking-[-.04em]">Acesse a operação</h2><p className="mt-2 text-sm text-[#718197]">Entre com o login e a senha fornecidos para você.</p><form onSubmit={onSubmit} className="mt-8 space-y-4"><label className="block"><span className="mb-2 block text-sm font-semibold">Login</span><div className="flex items-center rounded-xl border border-[#cedae8] px-3 focus-within:border-[#1769e0] focus-within:ring-4 focus-within:ring-[#1769e014]"><UserRound size={17} className="text-[#8192a5]" /><input autoFocus required name="username" autoComplete="username" autoCapitalize="none" autoCorrect="off" value={login} onChange={(e) => setLogin(e.target.value)} className="h-12 w-full bg-transparent px-3 outline-none" placeholder="Seu login" /></div></label><label className="block"><span className="mb-2 block text-sm font-semibold">Senha</span><input required name="password" autoComplete="current-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="h-12 w-full rounded-xl border border-[#cedae8] px-4 outline-none focus:border-[#1769e0] focus:ring-4 focus:ring-[#1769e014]" /></label>{error ? <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}<button className="h-12 w-full rounded-xl bg-[#1268d8] font-bold text-white hover:bg-[#095cbf]">Entrar</button></form><Link href="/" className="mt-5 inline-flex min-h-11 items-center justify-center text-sm font-bold text-[#1268d8]">Voltar à apresentação</Link></section></div></main>;
 }
 
 function Filter({ label, icon, children }: { label: string; icon?: React.ReactNode; children: React.ReactNode; }) { return <label><span className="mb-1.5 flex items-center gap-1.5 text-xs font-extrabold text-[#526b82]">{icon}{label}</span><div className="[&>input]:h-11 [&>input]:w-full [&>input]:rounded-xl [&>input]:border [&>input]:border-[#c8d7e6] [&>input]:bg-white [&>input]:px-3 [&>input]:text-sm [&>input]:shadow-sm [&>input]:outline-none [&>select]:h-11 [&>select]:w-full [&>select]:rounded-xl [&>select]:border [&>select]:border-[#c8d7e6] [&>select]:bg-white [&>select]:px-3 [&>select]:text-sm [&>select]:shadow-sm [&>select]:outline-none">{children}</div></label>; }

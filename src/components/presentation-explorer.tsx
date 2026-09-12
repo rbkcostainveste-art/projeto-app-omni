@@ -7,24 +7,31 @@ import { ArrowDown, ArrowLeft, ArrowRight, ChevronDown, Expand, Monitor, MousePo
 import { presentationAreas, presentationResources, type PresentationScreen } from "@/lib/presentation-resources";
 import "./presentation-explorer.css";
 
-export function PresentationExplorer() {
+export function PresentationExplorer({ onTestApp }: { onTestApp?: () => void }) {
   const [areaId, setAreaId] = useState("manutencao");
   const [profileId, setProfileId] = useState("mecanico");
   const [resourceId, setResourceId] = useState("verificacoes");
   const [preview, setPreview] = useState<PresentationScreen | null>(null);
+  const [deviceView, setDeviceView] = useState<"mobile" | "desktop">("mobile");
   const explorerRef = useRef<HTMLElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const area = presentationAreas.find(item => item.id === areaId)!;
   const profile = area.profiles.find(item => item.id === profileId) ?? area.profiles[0];
   const resource = presentationResources[resourceId];
   const resourceIndex = profile.resourceIds.indexOf(resourceId);
+  const selectedDevice = deviceView === "mobile" && resource.mobile ? "mobile" : resource.desktop ? "desktop" : "mobile";
+
+  function selectResource(nextResourceId: string) {
+    setResourceId(nextResourceId);
+    setDeviceView("mobile");
+  }
 
   function selectProfile(nextAreaId: string, nextProfileId?: string, scroll = false) {
     const nextArea = presentationAreas.find(item => item.id === nextAreaId)!;
     const nextProfile = nextArea.profiles.find(item => item.id === nextProfileId) ?? nextArea.profiles[0];
     setAreaId(nextArea.id);
     setProfileId(nextProfile.id);
-    setResourceId(nextProfile.resourceIds[0]);
+    selectResource(nextProfile.resourceIds[0]);
     if (scroll) {
       explorerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       explorerRef.current?.focus({ preventScroll: true });
@@ -33,7 +40,7 @@ export function PresentationExplorer() {
 
   function moveResource(direction: number) {
     const index = (resourceIndex + direction + profile.resourceIds.length) % profile.resourceIds.length;
-    setResourceId(profile.resourceIds[index]);
+    selectResource(profile.resourceIds[index]);
   }
 
   function enlarge(screen: PresentationScreen) {
@@ -64,6 +71,10 @@ export function PresentationExplorer() {
           </article>;
         }))}
       </div>
+      <div className="px-role-mobile-summary">
+        <p>Manutenção, tripulação, coordenação e ferramentaria.</p>
+        <button type="button" onClick={() => selectProfile(area.id, profile.id, true)}>Escolher ambiente e ferramentas <ArrowDown size={18}/></button>
+      </div>
       <p className="px-role-footnote">Tripulação reúne piloto e comissário, com visibilidade e comandos conforme o perfil. As capturas são prévias do protótipo.</p>
     </section>
 
@@ -72,6 +83,7 @@ export function PresentationExplorer() {
         <div><p className="px-eyebrow">ESCOLHA. CLIQUE. CONHEÇA.</p><h2 id="px-explorer-title">Ferramentas por ambiente</h2><p>Troque o recurso e veja a tela correspondente, com uma explicação simples ao lado.</p></div>
         <div className="px-interaction-cue"><MousePointer2 size={19}/><span>Comece pelos botões abaixo<br/><strong>Você controla a apresentação</strong></span><ArrowDown size={18}/></div>
       </div>
+      <div className="px-desktop-controls">
       <div className="px-selection-step"><span className="px-step">1</span><span>Escolha o ambiente</span></div>
       <div className="px-area-controls" role="group" aria-label="Ambientes">
         {presentationAreas.map(item => <button type="button" key={item.id} aria-pressed={item.id === areaId} onClick={() => selectProfile(item.id)}>{item.label}</button>)}
@@ -81,7 +93,28 @@ export function PresentationExplorer() {
       </div> : null}
       <div className="px-selection-step"><span className="px-step">2</span><span>Clique em uma ferramenta</span><small>{profile.resourceIds.length} recursos para explorar</small></div>
       <div className="px-resource-controls" role="group" aria-label={`Ferramentas de ${profile.label}`}>
-        {profile.resourceIds.map(id => <button type="button" key={id} aria-pressed={id === resourceId} onClick={() => setResourceId(id)}>{presentationResources[id].title}</button>)}
+        {profile.resourceIds.map(id => <button type="button" key={id} aria-pressed={id === resourceId} onClick={() => selectResource(id)}>{presentationResources[id].title}</button>)}
+      </div>
+      </div>
+
+      <div className="px-mobile-controls">
+        <div className={`px-mobile-profile-fields ${area.profiles.length === 1 ? "px-mobile-single-profile" : ""}`}>
+          <label htmlFor="px-mobile-area">Ambiente<select id="px-mobile-area" value={area.id} onChange={event => selectProfile(event.target.value)}>
+            {presentationAreas.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
+          </select></label>
+          {area.profiles.length > 1 ? <label htmlFor="px-mobile-profile">Perfil<select id="px-mobile-profile" value={profile.id} onChange={event => selectProfile(area.id, event.target.value)}>
+            {area.profiles.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
+          </select></label> : null}
+        </div>
+        <label className="px-mobile-resource-label" htmlFor="px-mobile-resource">Ferramenta <span>{resourceIndex + 1} de {profile.resourceIds.length}</span></label>
+        <div className="px-mobile-resource-row">
+          <button type="button" onClick={() => moveResource(-1)} aria-label="Ferramenta anterior"><ArrowLeft size={19}/></button>
+          <select id="px-mobile-resource" value={resourceId} onChange={event => selectResource(event.target.value)}>
+            {profile.resourceIds.map(id => <option key={id} value={id}>{presentationResources[id].title}</option>)}
+          </select>
+          <button type="button" onClick={() => moveResource(1)} aria-label="Próxima ferramenta"><ArrowRight size={19}/></button>
+        </div>
+        <p>Use as setas ou a lista para trocar de ferramenta.</p>
       </div>
 
       <div className="px-preview-toolbar">
@@ -89,7 +122,12 @@ export function PresentationExplorer() {
         <div className="px-pagination"><button type="button" onClick={() => moveResource(-1)} aria-label="Ferramenta anterior"><ArrowLeft size={17}/></button><span>{resourceIndex + 1} / {profile.resourceIds.length}</span><button type="button" onClick={() => moveResource(1)} aria-label="Próxima ferramenta"><ArrowRight size={17}/></button></div>
       </div>
 
-      <div className={`px-showcase ${resource.desktop && resource.mobile ? "px-two-devices" : "px-one-device"}`}>
+      <div className={`px-showcase px-device-${selectedDevice} ${resource.desktop && resource.mobile ? "px-two-devices" : "px-one-device"}`}>
+        <div className="px-mobile-preview-intro" aria-live="polite" aria-atomic="true"><h3>{resource.title}</h3><p>{resource.summary}</p></div>
+        {resource.desktop && resource.mobile ? <div className="px-device-switch" role="group" aria-label="Formato da prévia">
+          <button type="button" onClick={() => setDeviceView("mobile")} aria-pressed={selectedDevice === "mobile"}><Smartphone size={16}/>Celular</button>
+          <button type="button" onClick={() => setDeviceView("desktop")} aria-pressed={selectedDevice === "desktop"}><Monitor size={16}/>Computador</button>
+        </div> : null}
         <div className="px-devices">
           {resource.desktop ? <figure className="px-laptop">
             <div className="px-laptop-frame"><div className="px-device-top"><i/><span>Computador</span></div>
@@ -102,7 +140,7 @@ export function PresentationExplorer() {
           {resource.mobile ? <figure className="px-phone">
             <div className="px-phone-frame"><div className="px-phone-top"><i/></div>
               <button type="button" className="px-screen-button" onClick={() => enlarge(resource.mobile!)} aria-label={`Ampliar ${resource.title} no celular`}>
-                <Image src={resource.mobile.src} alt={resource.mobile.caption} width={resource.mobile.width} height={resource.mobile.height} sizes="210px"/>
+                <Image src={resource.mobile.src} alt={resource.mobile.caption} width={resource.mobile.width} height={resource.mobile.height} sizes="(max-width: 700px) 230px, 210px"/>
                 <span className="px-phone-zoom"><Expand size={15}/></span>
               </button><div className="px-phone-bottom"><i/></div>
             </div><figcaption><Smartphone size={13}/>{resource.mobile.caption}</figcaption>
@@ -114,8 +152,8 @@ export function PresentationExplorer() {
           <details className="px-feature-details" key={resource.id}><summary>Entenda este recurso <ChevronDown size={16}/></summary><p>{resource.detail}</p></details>
           {resource.topic ? <a className="px-technical-detail" href={`#avaliacao-${resource.topic}`}>Ver explicação completa <ArrowRight size={13}/></a> : null}
           {!resource.desktop || !resource.mobile ? <p className="px-device-note">Nesta prévia, mostramos a captura disponível em {resource.desktop ? "computador" : "celular"}. Explore as demais visualizações no aplicativo.</p> : null}
-          <Link className="px-open-app" href="/app">Testar o aplicativo <ArrowRight size={20} aria-hidden="true"/></Link>
-          <small>Entre com seu login e senha para testar os recursos do seu perfil.</small>
+          {onTestApp ? <button type="button" className="px-open-app" onClick={onTestApp}>Testar o aplicativo <ArrowRight size={20} aria-hidden="true"/></button> : <Link className="px-open-app" href="/app">Testar o aplicativo <ArrowRight size={20} aria-hidden="true"/></Link>}
+          <small>Escolha uma experiência de demonstração ou entre com seu login.</small>
         </aside>
       </div>
       <div className="px-preview-explanation"><span className="px-status-dot"/><p><strong>No aplicativo, os ambientes compartilham atualizações em tempo real.</strong> Aqui, você navega por capturas reais de demonstração. Dados, comandos e sincronização podem ser avaliados no ambiente de teste.</p></div>
