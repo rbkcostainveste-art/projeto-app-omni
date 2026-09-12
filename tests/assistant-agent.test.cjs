@@ -16,6 +16,14 @@ test('general assistant prepares the same Maintenance Forecast review without pu
  assert.deepEqual(result.trace,[{tool:'preparar_servicos',status:'prepared'}]);
 });
 
+test('general assistant prepares pane and linked action without persisting either',async()=>{
+ const id='11111111-1111-4111-8111-111111111111';let turn=0,firstRequest;
+ const result=await agent.runAssistantAgent({apiKey:'test',model:'test',message:'prepare a pane desta TC e uma ação',media:[{type:'input_image',image_url:'data'}],history:[],actor:{...actor,accessProfile:'maintenance_inspector'},context:{area:'Relatos Técnicos',screen:{cards:[{id,prefix:'PR-CHT',title:'Vibração'}]}},navigationEnabled:false,allowTechnicalRecordCreation:true,allowDirectFault:true,allowActionCreation:true,signal:new AbortController().signal,deps:{query:async()=>({status:'available',items:[{id,prefix:'PR-CHT',title:'Vibração'}],cards:[{kind:'maintenance',id,title:'PR-CHT · Vibração',detail:'Macaé'}],complete:true}),search:()=>[],fetcher:async(_url,options)=>{const body=JSON.parse(options.body);firstRequest??=body;const output=turn===0?[{type:'function_call',name:'preparar_registro_tecnico',call_id:'record',arguments:JSON.stringify({kind:'fault',prefix:'PR-CHT',title:'Falha indicada na TC',description:'Texto legível da TC',tc:'TC-900',officialId:null,urgency:'urgent'})}]:turn===1?[{type:'function_call',name:'preparar_acao_manutencao',call_id:'action',arguments:JSON.stringify({recordId:id,prefix:'PR-CHT',title:'Inspecionar o sistema',tc:'TC-900',category:'Giro em baixa'})}]:[{type:'message',content:[{type:'output_text',text:JSON.stringify({reply:'Rascunhos preparados para revisão.',targets:[],openTarget:null,continueInTarget:false})}]}];turn++;return Response.json({status:'completed',output});}}});
+ assert.ok(firstRequest.tools.some(tool=>tool.name==='preparar_registro_tecnico'));assert.ok(firstRequest.tools.some(tool=>tool.name==='preparar_acao_manutencao'));
+ assert.equal(result.proposedTechnicalRecord.tc,'TC-900');assert.equal(result.proposedTechnicalRecord.kind,'fault');assert.equal(result.proposedMaintenanceAction.recordId,id);
+ assert.deepEqual(result.trace.map(item=>item.tool),['preparar_registro_tecnico','preparar_acao_manutencao']);
+});
+
 test('multiple-choice form tools accept only catalog entries and survive the server/client round trip',()=>{
  const helper=load('src/lib/assistant-form.ts'),form=helper.parseAssistantForm({id:'tools',label:'Ferramentas',mode:'draft',fields:{tools:{label:'Seleção',value:'[]',options:['Chave 10','Chave 12'],multiple:true}}});
  assert.deepEqual(helper.formTool(form).parameters.properties.tools.type,['array','null']);

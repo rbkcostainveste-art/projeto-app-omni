@@ -7,7 +7,7 @@ export async function assistantRecords(client:SupabaseClient,employee:string,sig
   if(error||!identity||identity.employeeNumber!==employee)return unavailable;
   const role=identity.accessProfile,base=typeof identity.assignedBase==='string'?identity.assignedBase.trim():'';
   const global=['admin','app_manager','maintenance_director','maintenance_manager'];
-  const local=['mechanic','maintenance_assistant','maintenance_coordinator','maintenance_leader','maintenance_inspector'];
+  const local=['mechanic','maintenance_assistant','maintenance_coordinator','maintenance_leader','maintenance_inspector','leader_inspector'];
   const profile={role,base};
   if(!global.includes(role)&&!local.includes(role))return {...unavailable,status:'not_authorized',profile};
   if(local.includes(role)&&!base)return {...unavailable,profile,notice:'Base não definida para consultar relatos deste perfil.'};
