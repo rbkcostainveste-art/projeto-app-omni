@@ -15,8 +15,10 @@ O eDB externo é o registro oficial. O Cockpit prepara dados operacionais opcion
 - Jornada: horários com data/fuso, apresentação importável do check-in, refeição e liberação, voo e noturno informados. Totais dia/mês/ano/30/90 são dos registros de jornada; não importam automaticamente o histórico externo. Minutos de voo são conferidos manualmente nesta versão.
 - Saldo somente com fonte da regra, responsável/data da validação e histórico declarado cobrindo o período. Não calcula aptidão completa, repousos, aclimatação, exposição noturna fisiológica ou todos os cenários de GRF. A referência de 90 h/mês e 930 h/ano vem do art. 33, IV, e permanece sem validação automática.
 
-## APIs pendentes
-REDEMET: variável de servidor `REDEMET_API_KEY`, além das variáveis públicas Supabase já utilizadas. Nunca cadastrar chave em campos de texto do Cockpit. A rota `/api/cockpit-weather` exige identidade ativa e consulta somente o domínio oficial com ICAO validado. Ainda não houve teste com chave real. Sem chave, informa indisponibilidade e oferece portal oficial. AISWEB/NOTAM e horários solares permanecem em consulta externa, aguardando credenciais e adaptador.
+## APIs
+REDEMET: variável de servidor `REDEMET_API_KEY`, além das variáveis públicas Supabase já utilizadas. Nunca cadastrar chave em campos de texto do Cockpit. A rota `/api/cockpit-weather` exige identidade ativa e consulta somente o domínio oficial com ICAO validado. Sem chave, informa indisponibilidade e oferece portal oficial.
+
+AISWEB: consulta ROTAER, NOTAMs atuais da localidade e horários solares em UTC pela rota autenticada `/api/cockpit-ais`. Credenciais privadas `AISWEB_API_KEY` e `AISWEB_API_PASS`. A consulta inclui NOTAMs antigos ainda vigentes, conserva texto original e metadados e não persiste os resultados no banco. Detalhes, limites e validação em [aisweb.md](aisweb.md).
 
 eDB: obter fornecedor, documentação, ambiente de testes, autenticação, IDs, regras de conflito/idempotência e confirmação de recebimento. A exportação local não prova envio. Alterações feitas no sistema oficial devem prevalecer na futura reconciliação.
 
