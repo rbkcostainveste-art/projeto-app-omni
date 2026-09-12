@@ -1,0 +1,2241 @@
+{
+  "pages": [
+    {
+      "key": "capa",
+      "title": "Proposta de integração\ne comunicação operacional",
+      "sub": "",
+      "kind": "cover"
+    },
+    {
+      "key": "inicio",
+      "title": "Índice · escolha por onde começar",
+      "sub": "Clique no assunto. Você pode conhecer a solução ou ir direto aos requisitos de adoção.",
+      "kind": "index",
+      "groups": [
+        [
+          "CONHECER A SOLUÇÃO",
+          [
+            [
+              "Confiança para avaliar a adoção",
+              "confianca"
+            ],
+            [
+              "Computador e celular",
+              "dispositivos"
+            ],
+            [
+              "Visões por profissional",
+              "perfis"
+            ],
+            [
+              "Piloto · programação e cockpit",
+              "perfil-piloto"
+            ],
+            [
+              "Preparação concluída · piloto e coordenação",
+              "preparacao-concluida"
+            ],
+            [
+              "MEL · prazo, contador e alertas",
+              "controle-mel"
+            ],
+            [
+              "Coordenação · programação de voos",
+              "perfil-coordenacao"
+            ],
+            [
+              "Ferramentaria · caixas e ferramentas",
+              "perfil-ferramentaria"
+            ],
+            [
+              "Relato técnico · campos e exemplo de IA",
+              "relatos"
+            ],
+            [
+              "Catálogo e comunicação entre equipes",
+              "mapa"
+            ]
+          ]
+        ],
+        [
+          "AVALIAR A ADOÇÃO",
+          [
+            [
+              "Proposta de piloto com grupo limitado",
+              "piloto"
+            ],
+            [
+              "Infraestrutura e segurança de dados",
+              "infra"
+            ],
+            [
+              "LGPD e proteção de dados",
+              "privacidade"
+            ],
+            [
+              "Governança e conservação de mensagens",
+              "governanca"
+            ],
+            [
+              "IA empresarial e controle de dados",
+              "ia-controle"
+            ],
+            [
+              "ANAC e registros oficiais",
+              "anac"
+            ],
+            [
+              "Documentação técnica autorizada",
+              "documentos"
+            ],
+            [
+              "Fontes legais e bibliografia",
+              "refs-normas"
+            ],
+            [
+              "Quatro vídeos para envio direto",
+              "videos"
+            ]
+          ]
+        ]
+      ]
+    },
+    {
+      "key": "confianca",
+      "title": "Confiança para avaliar a adoção",
+      "sub": "Para direção e TI: condições propostas antes do uso corporativo.",
+      "kind": "cards",
+      "items": [
+        [
+          "Ambiente aprovado pela OMNI",
+          "Aplicativo, banco de dados, identidade e fornecedores sob gestão ou contratação aprovada pela empresa. O protótipo demonstra os fluxos e apoia a avaliação do código."
+        ],
+        [
+          "Dados e acessos sob controle",
+          "Definir finalidade, permissões por perfil, proteção, retenção e recuperação. As informações compartilhadas devem respeitar a área de atuação e as autorizações atribuídas."
+        ],
+        [
+          "IA com uso delimitado",
+          "Serviço empresarial aprovado, regras para envio de dados e revisão humana das sugestões. Contratos e configurações devem tratar treinamento, retenção e localização do processamento."
+        ],
+        [
+          "Avaliação com evidências",
+          "A proposta reúne código, telas e referências para TI, Jurídico/Privacidade e responsáveis operacionais avaliarem o escopo. Os controles necessários devem ser comprovados antes do uso corporativo."
+        ]
+      ],
+      "note": "Protótipo para avaliação. As próximas páginas mostram o uso; o detalhamento dos controles, requisitos e fontes está reunido ao final.",
+      "jumps": [
+        [
+          "Conhecer os ambientes",
+          "dispositivos"
+        ],
+        [
+          "Consultar requisitos",
+          "infra"
+        ]
+      ]
+    },
+    {
+      "key": "dispositivos",
+      "title": "Do computador à palma da mão",
+      "sub": "Piloto, mecânico e ferramenteiro: foco no celular. Coordenação e gestão: visão no computador.",
+      "kind": "devices"
+    },
+    {
+      "key": "perfis",
+      "title": "Quem usa cada ambiente?",
+      "sub": "Escolha um perfil para conhecer suas telas e depois abrir os detalhes.",
+      "kind": "profiles",
+      "tiles": [
+        [
+          "Piloto",
+          "Voos do dia, preparação e registros de apoio.",
+          "perfil-piloto"
+        ],
+        [
+          "Mecânico",
+          "Tarefas recebidas, passagem de pista e relatos.",
+          "perfil-mecanico"
+        ],
+        [
+          "Inspetor",
+          "Acompanhamento técnico, continuidade e atividades.",
+          "perfil-inspetor"
+        ],
+        [
+          "Coordenação",
+          "Programação, tripulação e situação da operação.",
+          "perfil-coordenacao"
+        ],
+        [
+          "Ferramenteiro",
+          "Caixas, conferência, empréstimos e devoluções.",
+          "perfil-ferramentaria"
+        ],
+        [
+          "Ferramentas compartilhadas",
+          "Chat, notas, trilhos, ajuda e comunicação.",
+          "mapa"
+        ]
+      ]
+    },
+    {
+      "key": "perfil-piloto",
+      "title": "Visão geral · Piloto",
+      "sub": "O piloto consulta o que está previsto, prepara o voo e acompanha as informações vinculadas à sua atuação.",
+      "kind": "overview",
+      "role": "Piloto",
+      "nav": "Programação → Trilhos → Cockpit",
+      "shots": [
+        [
+          "1 · Conhecer o dia",
+          "mobile-cockpit",
+          "guia-cockpit",
+          "Veja os voos e a apresentação."
+        ],
+        [
+          "2 · Preparar o voo",
+          "mobile-preparo",
+          "preparacao",
+          "Abra os dados do voo selecionado."
+        ],
+        [
+          "3 · Registrar observação",
+          "mobile-ocorrencia",
+          "ocorrencias",
+          "Descreva o que foi observado."
+        ]
+      ],
+      "jumps": [
+        [
+          "Escolher outro perfil",
+          "perfis"
+        ],
+        [
+          "Ver todas as ferramentas",
+          "mapa"
+        ]
+      ]
+    },
+    {
+      "key": "guia-cockpit",
+      "title": "Piloto · entenda os primeiros botões",
+      "sub": "Você está no Cockpit. Comece pela data e pelas atividades previstas.",
+      "kind": "annotated",
+      "role": "Piloto",
+      "image": "mobile-cockpit",
+      "marks": [
+        [
+          0.2,
+          0.145
+        ],
+        [
+          0.13,
+          0.215
+        ],
+        [
+          0.23,
+          0.415
+        ],
+        [
+          0.24,
+          0.814
+        ]
+      ],
+      "steps": [
+        [
+          "1 · Data",
+          "Escolhe o dia que será consultado. Confira a data antes de interpretar a programação."
+        ],
+        [
+          "2 · Meu dia",
+          "Retorna à visão das atividades previstas. Preparação abre outra parte do cockpit; não encerra nem libera um voo."
+        ],
+        [
+          "3 · Minha jornada / registrar liberação",
+          "Abre o controle de jornada do tripulante. “Liberação” aqui se refere à jornada, não à liberação técnica da aeronave."
+        ],
+        [
+          "4 · Abrir no trilho",
+          "Leva ao acompanhamento do voo. É onde o piloto encontra as etapas compartilhadas com outros setores."
+        ]
+      ],
+      "jumps": [
+        [
+          "Ver preparação do voo",
+          "preparacao"
+        ],
+        [
+          "Voltar à visão do piloto",
+          "perfil-piloto"
+        ]
+      ]
+    },
+    {
+      "key": "preparacao",
+      "title": "Piloto · prepare o voo com antecedência",
+      "sub": "Abra o voo selecionado e confira as informações necessárias à preparação.",
+      "kind": "visual",
+      "image": "mobile-preparo",
+      "side": [
+        [
+          "1 · Confira identificação e rota",
+          "Número do voo, contrato, origem, destino e alternado ajudam a localizar a programação correta."
+        ],
+        [
+          "2 · Complete os dados previstos",
+          "Preencha combustível, unidade, passageiros, carga e observações conforme o planejamento aprovado. Os campos não calculam nem aprovam o combustível automaticamente."
+        ],
+        [
+          "3 · Consulte os documentos",
+          "Abra as referências disponibilizadas e prepare-se para a atividade prevista, inclusive um giro de manutenção quando programado."
+        ]
+      ],
+      "jumps": [
+        [
+          "Ver preparação concluída",
+          "preparacao-concluida"
+        ],
+        [
+          "Visão do piloto",
+          "perfil-piloto"
+        ]
+      ],
+      "mobile": true,
+      "role": "Piloto"
+    },
+    {
+      "key": "preparacao-concluida",
+      "title": "Preparação concluída · a equipe fica sabendo",
+      "sub": "O mecânico confirma sua parte. Piloto e coordenação visualizam a conclusão no cartão do voo.",
+      "kind": "visual",
+      "mobile": true,
+      "image": "preparation-mechanic-390",
+      "side": [
+        [
+          "1 · Concluir as verificações",
+          "O voo deve estar confirmado e as verificações obrigatórias, conferidas. O aplicativo verifica também as pendências técnicas registradas antes de habilitar a confirmação."
+        ],
+        [
+          "2 · Confirmar a preparação",
+          "O responsável da manutenção toca em “Confirmar preparação concluída”. O registro guarda matrícula, horário e vínculo com aquele voo."
+        ],
+        [
+          "3 · Compartilhar a conclusão",
+          "O cartão recebe o indicador “Preparação concluída”, visível no Trilho e nos painéis do piloto e da coordenação. O sino do aplicativo reúne o aviso."
+        ],
+        [
+          "Se algo mudar",
+          "Alterações relevantes na programação, nas verificações ou nos registros técnicos exigem nova confirmação. O OK anterior não é reaproveitado automaticamente."
+        ]
+      ],
+      "note": "Conclusão da preparação não substitui liberação técnica ou verificações do piloto. Sincronização ativa e consulta de apoio a cada 10 segundos; avisos dentro do aplicativo.",
+      "jumps": [
+        [
+          "Ver o controle MEL",
+          "controle-mel"
+        ],
+        [
+          "Visão do mecânico",
+          "perfil-mecanico"
+        ]
+      ]
+    },
+    {
+      "key": "edb",
+      "title": "Piloto · documentos e diário eletrônico",
+      "sub": "eDB é a referência ao diário eletrônico. Aqui, o piloto organiza informações para conferência.",
+      "kind": "visual",
+      "image": "mobile-edb",
+      "side": [
+        [
+          "1 · Reúna as informações",
+          "Informe a identificação e o link do diário, a sequência e as observações pertinentes ao voo."
+        ],
+        [
+          "2 · Confira o rascunho",
+          "Revise o conteúdo e os documentos antes de registrar sua ciência local ou preparar uma exportação."
+        ],
+        [
+          "3 · Entenda a integração",
+          "A conexão com o sistema oficial ainda precisa ser definida e validada. O aplicativo deve confirmar o recebimento antes de apresentar algo como enviado."
+        ],
+        [
+          "4 · Separe preparação de aprovação",
+          "Um arquivo exportado é uma cópia local. Não representa envio, assinatura ou liberação no sistema oficial."
+        ]
+      ],
+      "refs": [
+        "N4",
+        "N5"
+      ],
+      "jumps": [
+        [
+          "Requisitos de registros",
+          "registro-oficial"
+        ],
+        [
+          "Visão do piloto",
+          "perfil-piloto"
+        ]
+      ],
+      "mobile": true,
+      "role": "Piloto"
+    },
+    {
+      "key": "ocorrencias",
+      "title": "Da observação do piloto ao acompanhamento",
+      "sub": "Registrar o contexto e encaminhar conforme a necessidade.",
+      "kind": "visual",
+      "image": "mobile-ocorrencia",
+      "side": [
+        [
+          "O que registrar",
+          "Título, tipo, trecho, data/hora, local, sistema, tripulação e descrição do observado. Localização e mídias complementam quando pertinentes."
+        ],
+        [
+          "Encaminhamento técnico",
+          "Selecionar a aeronave e confirmar o envio pelo fluxo disponível. O aplicativo mantém a relação com o registro criado, sem ampliar permissões do piloto."
+        ],
+        [
+          "Apoio da IA",
+          "Sugerir clareza e tradução sem substituir a informação original por diagnóstico ou resultado não observado."
+        ],
+        [
+          "Contexto operacional",
+          "A observação pode vir de uma conversa, mas continua exigindo revisão e confirmação. O registro obrigatório aplicável permanece necessário."
+        ]
+      ],
+      "jumps": [
+        [
+          "Relatos com IA",
+          "relatos"
+        ],
+        [
+          "Conversa vinculada",
+          "chat"
+        ],
+        [
+          "Visão do piloto",
+          "perfil-piloto"
+        ]
+      ],
+      "mobile": true,
+      "role": "Piloto"
+    },
+    {
+      "key": "jornada",
+      "title": "Contadores, jornada e qualificações",
+      "sub": "Consulte horários e informações pessoais. Confira os dados antes de usar os totais apresentados.",
+      "kind": "visual",
+      "image": "mobile-jornada",
+      "side": [
+        [
+          "Contadores",
+          "Consultar eventos, leituras e diferenças registradas. Acionamento, tempo de motor e tempo de voo não devem ser tratados como grandezas equivalentes."
+        ],
+        [
+          "Jornada",
+          "Registrar apresentação, intervalo, liberação e totais conferidos. Consultar somatórios do período com indicação de histórico incompleto."
+        ],
+        [
+          "Qualificações",
+          "Consultar licenças e certificados cadastrados para a matrícula. A visualização de vencimento não equivale a um bloqueio operacional automático."
+        ],
+        [
+          "Validação corporativa",
+          "Conferir Lei do Aeronauta, RBAC 117, regime e regras aplicáveis. O protótipo não calcula todos os cenários de fadiga nem declara aptidão."
+        ]
+      ],
+      "refs": [
+        "N11",
+        "N12",
+        "N13"
+      ],
+      "jumps": [
+        [
+          "Cockpit",
+          "guia-cockpit"
+        ],
+        [
+          "Visão do piloto",
+          "perfil-piloto"
+        ]
+      ],
+      "mobile": true,
+      "role": "Piloto"
+    },
+    {
+      "key": "ais",
+      "title": "Consultas AIS e meteorológicas",
+      "sub": "Consulte referências para preparar o voo. A disponibilidade dos dados depende das fontes conectadas.",
+      "kind": "visual",
+      "image": "mobile-ais",
+      "side": [
+        [
+          "Contexto do local",
+          "Selecionar aeródromo/ICAO e consultar referências disponíveis para a preparação do voo."
+        ],
+        [
+          "Meteorologia",
+          "A integração REDEMET depende de credencial e configuração. Na ausência, o sistema deve sinalizar a indisponibilidade e oferecer o portal oficial."
+        ],
+        [
+          "AIS/NOTAM",
+          "As consultas externas e futuras integrações precisam de validação de fonte, atualização e acesso."
+        ],
+        [
+          "Conferência do piloto",
+          "Verificar horário, validade e cobertura da informação consultada. Nenhum resumo de IA substitui o briefing e os procedimentos exigidos."
+        ]
+      ],
+      "refs": [
+        "G4",
+        "G5"
+      ],
+      "jumps": [
+        [
+          "Preparação do voo",
+          "preparacao"
+        ],
+        [
+          "Visão do piloto",
+          "perfil-piloto"
+        ]
+      ],
+      "mobile": true,
+      "role": "Piloto"
+    },
+    {
+      "key": "perfil-mecanico",
+      "title": "Visão geral · Mecânico",
+      "sub": "Designações é o nome do acesso às tarefas atribuídas ao mecânico. A prioridade é entender o que fazer, executar e registrar o resultado.",
+      "kind": "overview",
+      "role": "Mecânico",
+      "nav": "Mural → Trilhos → Manutenção → Designações",
+      "shots": [
+        [
+          "1 · Conferir a pista",
+          "mobile-pista",
+          "pista",
+          "Consulte as tarefas da aeronave."
+        ],
+        [
+          "2 · Passar o serviço",
+          "mobile-servico",
+          "servico",
+          "Deixe o trabalho compreensível ao próximo turno."
+        ],
+        [
+          "3 · Acompanhar o relato",
+          "mobile-relato",
+          "troubleshooting",
+          "Consulte fatos, anexos e comentários."
+        ]
+      ],
+      "jumps": [
+        [
+          "Escolher outro perfil",
+          "perfis"
+        ],
+        [
+          "Ver todas as ferramentas",
+          "mapa"
+        ]
+      ]
+    },
+    {
+      "key": "perfil-inspetor",
+      "title": "Visão geral · Inspetor",
+      "sub": "O inspetor acompanha o trabalho em Atividades. Para o mecânico, o acesso às tarefas recebidas se chama Designações.",
+      "kind": "overview",
+      "role": "Inspetor",
+      "nav": "Mural → Trilhos → Manutenção → Atividades",
+      "shots": [
+        [
+          "1 · Organizar o serviço",
+          "mobile-servico",
+          "servico",
+          "Registre contexto e necessidade de continuidade."
+        ],
+        [
+          "2 · Acompanhar o caso",
+          "mobile-relato",
+          "botoes-relato",
+          "Consulte o caso e as ações relacionadas."
+        ],
+        [
+          "3 · Conferir informações",
+          "mobile-comentarios",
+          "comentarios",
+          "Revise evidências e esclarecimentos."
+        ]
+      ],
+      "jumps": [
+        [
+          "Visão do mecânico",
+          "perfil-mecanico"
+        ],
+        [
+          "Escolher outro perfil",
+          "perfis"
+        ]
+      ]
+    },
+    {
+      "key": "pista",
+      "title": "Passagem de pista · veja o que falta",
+      "sub": "Uma lista por aeronave ajuda a equipe seguinte a continuar o trabalho.",
+      "kind": "visual",
+      "image": "mobile-pista",
+      "side": [
+        [
+          "1 · Confira aeronave e data",
+          "Abra a passagem correspondente. Os itens reúnem lavagem, secagem, óleo, HUMS, diário e outras tarefas da rotina."
+        ],
+        [
+          "2 · Registre a etapa realizada",
+          "Use os campos conforme o que foi feito e o procedimento aplicável. As etapas pendentes permanecem visíveis."
+        ],
+        [
+          "3 · Compartilhe a continuidade",
+          "O registro de lavagem alimenta o acompanhamento de secagem. A equipe autorizada consulta as atualizações; concluir uma etapa não equivale a liberar a aeronave."
+        ]
+      ],
+      "jumps": [
+        [
+          "Passagem entre turnos",
+          "servico"
+        ],
+        [
+          "Vídeos previstos",
+          "videos"
+        ]
+      ],
+      "mobile": true,
+      "role": "Mecânico e inspetor"
+    },
+    {
+      "key": "servico",
+      "title": "Passagem de serviço · continue de onde pararam",
+      "sub": "Quem assume encontra o que foi feito e o que ainda precisa de atenção.",
+      "kind": "visual",
+      "image": "mobile-servico",
+      "side": [
+        [
+          "1 · Abra o serviço da aeronave",
+          "Leia a descrição, as observações anteriores e os anexos. O contexto fica reunido junto do trabalho."
+        ],
+        [
+          "2 · Registre sua contribuição",
+          "Informe o que você executou, o resultado observado e o que permanece pendente. Use comentários para esclarecer o necessário."
+        ],
+        [
+          "3 · Deixe o próximo passo claro",
+          "A equipe seguinte encontra o histórico. Quando necessário, a liderança gera uma ação vinculada, conforme autorização."
+        ]
+      ],
+      "jumps": [
+        [
+          "Acompanhar um caso",
+          "troubleshooting"
+        ],
+        [
+          "Mecânico ou inspetor?",
+          "perfil-inspetor"
+        ],
+        [
+          "Conversar sobre o serviço",
+          "chat"
+        ]
+      ],
+      "mobile": true,
+      "role": "Mecânico e inspetor"
+    },
+    {
+      "key": "relatos",
+      "title": "Relato técnico · três passos para começar",
+      "sub": "Descreva o que observou. Revise a sugestão. Confira a referência e o encaminhamento.",
+      "kind": "visual",
+      "image": "mobile-relato",
+      "side": [
+        [
+          "1 · Conte o que aconteceu",
+          "Confira a aeronave e descreva o fato observado. Informe quando ocorreu e acrescente uma foto ou outro anexo útil, se disponível."
+        ],
+        [
+          "2 · Peça ajuda para escrever",
+          "Abra “Conversar com IA neste relato”. O assistente pode organizar a redação ou traduzir, mantendo o sentido do que você informou."
+        ],
+        [
+          "3 · Revise antes de confirmar",
+          "Compare original e sugestão. Confira as referências e envie pelo fluxo autorizado. A decisão técnica permanece com o profissional responsável."
+        ]
+      ],
+      "jumps": [
+        [
+          "Ver um exemplo completo",
+          "exemplo-ia"
+        ],
+        [
+          "Entender os botões",
+          "botoes-relato"
+        ],
+        [
+          "Consultar os campos",
+          "campos-fatos"
+        ]
+      ],
+      "mobile": true,
+      "role": "Mecânico e inspetor"
+    },
+    {
+      "key": "botoes-relato",
+      "title": "Relato técnico · o que cada botão faz",
+      "sub": "Mecânico e inspetor consultam o mesmo caso conforme suas permissões.",
+      "kind": "annotated",
+      "role": "Manutenção · recurso compartilhado",
+      "image": "mobile-relato",
+      "marks": [
+        [
+          0.13,
+          0.45
+        ],
+        [
+          0.14,
+          0.59
+        ],
+        [
+          0.55,
+          0.59
+        ],
+        [
+          0.18,
+          0.84
+        ]
+      ],
+      "steps": [
+        [
+          "1 · Adicionar anexos ao relato",
+          "Reúne evidências junto do fato descrito. Fotos e arquivos ajudam a entender a observação; não substituem a avaliação técnica."
+        ],
+        [
+          "2 · Vincular ocorrência",
+          "Relaciona registros sobre o mesmo assunto. O vínculo preserva o contexto entre profissionais e turnos."
+        ],
+        [
+          "3 · Gerar ação",
+          "Inicia uma ação relacionada ao caso quando o perfil tem autorização. Criar a ação não declara o serviço executado."
+        ],
+        [
+          "4 · Conversar com IA neste relato",
+          "Abre o assistente com o contexto do registro. A sugestão precisa ser conferida antes de ser aplicada ou confirmada."
+        ]
+      ],
+      "jumps": [
+        [
+          "Entender os campos",
+          "campos-fatos"
+        ],
+        [
+          "Ver exemplo de IA",
+          "exemplo-ia"
+        ],
+        [
+          "Visões da manutenção",
+          "perfil-inspetor"
+        ]
+      ]
+    },
+    {
+      "key": "campos-fatos",
+      "title": "Relato técnico · registrar fatos com clareza",
+      "sub": "O que preencher e por que isso ajuda quem vai analisar o caso.",
+      "kind": "table",
+      "role": "Mecânico e inspetor",
+      "cols": [
+        "Campo",
+        "Como preencher e qual problema ajuda a evitar"
+      ],
+      "rows": [
+        [
+          "Aeronave / prefixo",
+          "Selecione a aeronave correta. Evita associar o relato e suas evidências a outro equipamento."
+        ],
+        [
+          "Título",
+          "Resuma o sintoma observado: “Indicação intermitente do altímetro”. Evite apresentar como causa confirmada algo ainda em investigação."
+        ],
+        [
+          "Descrição",
+          "Informe o que ocorreu, quando e em quais condições, distinguindo observação própria de informação recebida de outra pessoa."
+        ],
+        [
+          "TC / OS, quando aplicável",
+          "Informe o identificador real da tarefa ou ordem. Não invente número para completar o formulário."
+        ],
+        [
+          "Prioridade",
+          "Ajuda a organizar o atendimento. A opção escolhida não dispensa registro obrigatório nem determina disponibilidade da aeronave."
+        ],
+        [
+          "Anexos",
+          "Junte evidências pertinentes, preservando contexto e acesso autorizado. O conteúdo enviado à IA segue a política corporativa."
+        ]
+      ],
+      "note": "Finalidade: reduzir ambiguidades e preservar quem observou o quê. O profissional confere o conteúdo e o encaminhamento antes de confirmar.",
+      "jumps": [
+        [
+          "Próximos campos",
+          "campos-controle"
+        ],
+        [
+          "Exemplo de IA",
+          "exemplo-ia"
+        ]
+      ]
+    },
+    {
+      "key": "exemplo-ia",
+      "title": "Relatar, revisar e conferir a referência",
+      "sub": "Exemplo didático do S-92A, antes do voo. A fonte está identificada para consulta.",
+      "kind": "example",
+      "role": "Observação → sugestão de redação → revisão autorizada",
+      "before": "Antes do voo, vi óleo na região do filtro da MGB. Não consegui identificar de onde vinha.",
+      "after": "Antes do voo, foi observada presença de óleo na região do filtro do sistema de lubrificação da MGB. O autor do relato não identificou a origem.",
+      "checks": [
+        [
+          "Fato preservado",
+          "A redação descreve óleo observado. Não afirma defeito no filtro nem inventa a causa."
+        ],
+        [
+          "Fonte identificada",
+          "Documento, parágrafos e página permitem conferir a relação entre o assunto e a referência."
+        ],
+        [
+          "Aplicabilidade a confirmar",
+          "A equipe verifica número de série, configuração e histórico de cumprimento da AD."
+        ],
+        [
+          "Decisão com o profissional",
+          "O responsável revisa o relato e define o encaminhamento. Este exemplo não autoriza voo nem postergação."
+        ]
+      ],
+      "jumps": [
+        [
+          "Conferir a referência",
+          "exemplo-fontes"
+        ],
+        [
+          "Voltar ao relato",
+          "relatos"
+        ]
+      ],
+      "reference": "Referência técnica para triagem: FAA AD 2009-25-10, parágrafos (d)(1) e (d)(2), p. 5 da cópia do acervo. Esses itens tratam de vazamento no conjunto do filtro sob condições específicas de aplicabilidade. [S8]",
+      "reference_url": "https://ad.easa.europa.eu/ad/US-2009-25-10"
+    },
+    {
+      "key": "exemplo-fontes",
+      "title": "Uma referência que pode ser conferida",
+      "sub": "O documento sustenta a consulta. Os fatos observados continuam sendo responsabilidade de quem relata.",
+      "kind": "cards",
+      "role": "Fonte para revisão técnica · aplicabilidade a confirmar",
+      "items": [
+        [
+          "Documento e localização",
+          "FAA AD 2009-25-10, de 2009; trecho normativo na p. 5 da cópia do acervo. Consulte Applicability e os parágrafos (d), (d)(1) e (d)(2). O link [S8] abre a publicação oficial."
+        ],
+        [
+          "Relação com o exemplo",
+          "O trecho aborda inspeção de vazamento no conjunto do filtro de lubrificação da MGB antes do primeiro voo do dia, para as aeronaves que atendam à condição do parágrafo (d). É por isso que aparece como fonte relacionada à observação."
+        ],
+        [
+          "O que precisa ser validado",
+          "A AD especifica S-92A com números de série 920006 a 920109. O parágrafo (d) se refere ao cenário de substituições previstas em (b). Conferir histórico, configuração, cumprimento e eventuais meios alternativos antes de aplicar qualquer exigência."
+        ],
+        [
+          "Registro com rastreabilidade",
+          "O aplicativo deve permitir conferir a fonte e preservar observação, ação realizada, resultado e responsável. A AD não comprova a origem do óleo visto no exemplo. A equipe consulta a documentação vigente e aplicável para decidir o tratamento."
+        ]
+      ],
+      "refs": [
+        "S8"
+      ],
+      "note": "Exemplo documental, sem execução de manutenção. O ASB 92-63-018 é citado pela AD, mas seu texto integral não foi usado para inventar instruções neste exemplo.",
+      "jumps": [
+        [
+          "Abrir a bibliografia S-92A",
+          "refs-s92-2"
+        ],
+        [
+          "Registros oficiais",
+          "registro-oficial"
+        ]
+      ]
+    },
+    {
+      "key": "troubleshooting",
+      "title": "Pesquisa de pane · todo o histórico junto",
+      "sub": "Antes de repetir uma investigação, veja o que os outros profissionais já registraram.",
+      "kind": "visual",
+      "image": "mobile-relato",
+      "side": [
+        [
+          "1 · Consulte o caso",
+          "Abra o relato e leia comentários, anexos e resultados anteriores. Use os vínculos para encontrar ocorrências relacionadas."
+        ],
+        [
+          "2 · Acrescente o que descobriu",
+          "Registre o resultado observado sem apagar o contexto anterior. Se o sintoma reaparecer, preserve a ligação com o caso."
+        ],
+        [
+          "3 · Continue com base nas evidências",
+          "A equipe encontra o próximo passo. Casos anteriores apoiam a pesquisa; a solução exige documentação e avaliação aplicáveis."
+        ]
+      ],
+      "jumps": [
+        [
+          "Controle de prazo MEL",
+          "controle-mel"
+        ],
+        [
+          "Visão do inspetor",
+          "perfil-inspetor"
+        ]
+      ],
+      "mobile": true,
+      "role": "Mecânico e inspetor"
+    },
+    {
+      "key": "controle-mel",
+      "title": "MEL · prazo visível e datas preservadas",
+      "sub": "O lançamento posterior no aplicativo conserva a descoberta e a aplicação do diferimento registradas na origem.",
+      "kind": "visual",
+      "image": "mel-deadline-1366",
+      "side": [
+        [
+          "1 · Vincular e conferir",
+          "Informe a referência do registro oficial, item e revisão MEL, descoberta, aplicação e fuso de contagem."
+        ],
+        [
+          "2 · Acompanhar o prazo",
+          "B, C e D: cálculo por dias calendáricos, excluindo o dia da descoberta, com limite da categoria. A: data limite conferida pelo responsável conforme o item."
+        ],
+        [
+          "3 · Receber os avisos",
+          "Antecedência de 24, 48 ou 72 horas, além de aviso em 24 horas e no vencimento. O servidor verifica os prazos a cada cinco minutos."
+        ],
+        [
+          "Correção com autoria",
+          "Alterar datas exige autorização e motivo. O histórico preserva os valores anteriores. Cadastrar depois não reinicia o prazo."
+        ]
+      ],
+      "refs": [
+        "N14"
+      ],
+      "note": "Categoria A com horas, ciclos ou dias de voo exige controle próprio: este contador não calcula esses limites. O aplicativo não concede extensão de MEL.",
+      "jumps": [
+        [
+          "Preparação concluída",
+          "preparacao-concluida"
+        ],
+        [
+          "Registros oficiais",
+          "registro-oficial"
+        ]
+      ]
+    },
+    {
+      "key": "comentarios",
+      "title": "Comentários · esclarecimentos junto do caso",
+      "sub": "Um novo profissional consegue entender o que já foi discutido.",
+      "kind": "visual",
+      "image": "mobile-comentarios",
+      "side": [
+        [
+          "1 · Leia antes de continuar",
+          "O comentário reúne informações do acompanhamento. Anexos ajudam a mostrar o contexto."
+        ],
+        [
+          "2 · Acrescente o esclarecimento",
+          "Registre fatos e resultados úteis ao caso. Use o chat quando precisar conversar com os participantes."
+        ],
+        [
+          "3 · Preserve o vínculo",
+          "Relacione ocorrências e mantenha autoria e histórico. O registro formal aplicável continua no fluxo competente."
+        ]
+      ],
+      "jumps": [
+        [
+          "Abrir apresentação do chat",
+          "chat"
+        ],
+        [
+          "Consultar governança",
+          "governanca"
+        ]
+      ],
+      "mobile": true,
+      "role": "Mecânico e inspetor"
+    },
+    {
+      "key": "perfil-coordenacao",
+      "title": "Visão geral · Coordenação",
+      "sub": "A coordenação organiza voos e tripulação e acompanha o que as outras equipes registram. As telas abaixo destacam a visão em computador.",
+      "kind": "overview",
+      "role": "Coordenação",
+      "nav": "Mural → Trilhos → Programação",
+      "shots": [
+        [
+          "1 · Programar",
+          "coord",
+          "coordenacao",
+          "Informe aeronave, horário e tripulação."
+        ],
+        [
+          "2 · Organizar as levas",
+          "importacao",
+          "programacao",
+          "Revise o grupo antes de confirmar."
+        ],
+        [
+          "3 · Acompanhar etapas",
+          "checks",
+          "trilhos",
+          "Veja o andamento compartilhado."
+        ]
+      ],
+      "jumps": [
+        [
+          "Escolher outro perfil",
+          "perfis"
+        ],
+        [
+          "Ver todas as ferramentas",
+          "mapa"
+        ]
+      ]
+    },
+    {
+      "key": "coordenacao",
+      "title": "Coordenação · programe e acompanhe",
+      "sub": "A programação fica disponível para quem precisa preparar e executar o voo.",
+      "kind": "visual",
+      "image": "coord",
+      "side": [
+        [
+          "1 · Informe o voo",
+          "Escolha aeronave, data, horário, destino e tripulação. Acrescente as informações necessárias à preparação."
+        ],
+        [
+          "2 · Revise e confirme",
+          "Confira o que foi programado. Agrupar voos em levas ajuda a organizar a confirmação."
+        ],
+        [
+          "3 · Acompanhe a operação",
+          "Pilotos consultam sua programação e a manutenção acompanha as etapas pertinentes. As atualizações compartilhadas reduzem a necessidade de retransmitir informações."
+        ]
+      ],
+      "jumps": [
+        [
+          "Revisar a programação",
+          "programacao"
+        ],
+        [
+          "Visão da coordenação",
+          "perfil-coordenacao"
+        ]
+      ],
+      "role": "Coordenação"
+    },
+    {
+      "key": "programacao",
+      "title": "Programação · menos preenchimento repetido",
+      "sub": "Importe ou repita uma programação, confira a lista e confirme os voos.",
+      "kind": "visual",
+      "image": "importacao",
+      "side": [
+        [
+          "1 · Prepare a lista",
+          "Use a programação disponível ou a importação assistida para organizar uma proposta de voos."
+        ],
+        [
+          "2 · Confira os dados",
+          "Revise aeronaves, tripulação, datas, horários e unidades. A lista sugerida pela IA pode ser corrigida antes de aplicar."
+        ],
+        [
+          "3 · Confirme o grupo",
+          "Selecione a leva e use o comando de confirmação. Programação preliminar e voo confirmado são etapas diferentes."
+        ]
+      ],
+      "jumps": [
+        [
+          "Voltar à coordenação",
+          "coordenacao"
+        ]
+      ],
+      "role": "Coordenação"
+    },
+    {
+      "key": "perfil-ferramentaria",
+      "title": "Visão geral · Ferramenteiro",
+      "sub": "O ferramenteiro trabalha em um ambiente próprio. Ele não utiliza o trilho de voos como centro da sua rotina.",
+      "kind": "overview",
+      "role": "Ferramenteiro",
+      "nav": "Ferramentaria · fluxo próprio de caixas e ferramentas",
+      "shots": [
+        [
+          "1 · Consultar a gaveta",
+          "mobile-ferramentas",
+          "guia-ferramentaria",
+          "Localize ferramentas e sua situação."
+        ],
+        [
+          "2 · Conferir os itens",
+          "mobile-ferramentas-detalhe",
+          "guia-ferramentaria",
+          "Detalhe da mesma tela: confira antes de continuar."
+        ],
+        [
+          "3 · Organizar o catálogo",
+          "ferramentas",
+          "guia-ferramentaria",
+          "Cadastro visual conforme autorização."
+        ]
+      ],
+      "jumps": [
+        [
+          "Escolher outro perfil",
+          "perfis"
+        ],
+        [
+          "Ver todas as ferramentas",
+          "mapa"
+        ]
+      ]
+    },
+    {
+      "key": "guia-ferramentaria",
+      "title": "Ferramentaria · consultar, selecionar e conferir",
+      "sub": "O celular ajuda a localizar o item e entender a situação apresentada.",
+      "kind": "annotated",
+      "role": "Ferramenteiro · acesso também no computador",
+      "image": "mobile-ferramentas",
+      "marks": [
+        [
+          0.14,
+          0.117
+        ],
+        [
+          0.4,
+          0.3
+        ],
+        [
+          0.36,
+          0.6
+        ],
+        [
+          0.26,
+          0.865
+        ]
+      ],
+      "steps": [
+        [
+          "1 · Gaveta",
+          "Seleciona a gaveta do catálogo. A imagem desta demonstração usa a visualização de simulação do próprio aplicativo."
+        ],
+        [
+          "2 · Ferramentas",
+          "Os itens visuais e os nomes ajudam a localizar a ferramenta. O cadastro deve corresponder à caixa física."
+        ],
+        [
+          "3 · Situação do item",
+          "A indicação de empréstimo identifica uma pendência registrada. Ela ajuda a rastrear; não comprova a localização física do item."
+        ],
+        [
+          "4 · Confira e continue",
+          "Revise a seleção e siga o fluxo de retirada ou devolução. O registro acompanha a conferência física e as confirmações exigidas pela empresa."
+        ]
+      ],
+      "jumps": [
+        [
+          "Visão da ferramentaria",
+          "perfil-ferramentaria"
+        ],
+        [
+          "Escolher outro perfil",
+          "perfis"
+        ]
+      ]
+    },
+    {
+      "key": "mapa",
+      "title": "Explore os ambientes conectados",
+      "sub": "Catálogo compartilhado: cada seção identifica quem utiliza o recurso. Clique para explorar.",
+      "kind": "map",
+      "tiles": [
+        [
+          "Trilhos e tempo real",
+          "trilhos"
+        ],
+        [
+          "Coordenação e programação",
+          "coordenacao"
+        ],
+        [
+          "Passagem de pista",
+          "pista"
+        ],
+        [
+          "Passagem de serviço",
+          "servico"
+        ],
+        [
+          "Relatos técnicos e IA",
+          "relatos"
+        ],
+        [
+          "Troubleshooting e referências",
+          "troubleshooting"
+        ],
+        [
+          "Cockpit do piloto",
+          "guia-cockpit"
+        ],
+        [
+          "Chat, chamadas e notas",
+          "chat"
+        ],
+        [
+          "Ferramentaria",
+          "guia-ferramentaria"
+        ],
+        [
+          "Mural e atividades",
+          "mural"
+        ],
+        [
+          "Ajuda e pendências",
+          "ajuda"
+        ],
+        [
+          "Cadastros e gestão",
+          "cadastros"
+        ]
+      ]
+    },
+    {
+      "key": "trilhos",
+      "title": "A informação acompanha cada etapa",
+      "sub": "O trilho é o acompanhamento visual das etapas de uma aeronave ou voo, compartilhado conforme o acesso.",
+      "kind": "visual",
+      "image": "checks",
+      "side": [
+        [
+          "O que aparece",
+          "Aeronave, programação, checks de manutenção e eventos da operação. A visualização e os comandos variam conforme o perfil."
+        ],
+        [
+          "Fluxo demonstrado",
+          "A manutenção registra uma etapa; os demais setores acompanham a atualização pertinente. Pilotos registram eventos operacionais conforme suas permissões."
+        ],
+        [
+          "Para a rotina",
+          "Preparação do primeiro voo e continuidade durante o almoço: quem assume consulta etapas concluídas e pendentes."
+        ],
+        [
+          "Condição de uso",
+          "Tempo real depende de conexão e sincronização. O sinal de conectividade deve ser observado; prever contingência para falhas de rede."
+        ]
+      ],
+      "jumps": [
+        [
+          "Ver cockpit",
+          "guia-cockpit"
+        ],
+        [
+          "Ver coordenação",
+          "coordenacao"
+        ]
+      ],
+      "role": "Todos os perfis, conforme acesso"
+    },
+    {
+      "key": "chat",
+      "title": "Chat · esclareça sem perder o contexto",
+      "sub": "A conversa pode ficar vinculada ao serviço para facilitar a continuidade.",
+      "kind": "visual",
+      "image": "chat",
+      "side": [
+        [
+          "1 · Encontre a conversa",
+          "Busque a pessoa, o assunto ou a aeronave. Confira os participantes antes de compartilhar informação."
+        ],
+        [
+          "2 · Mostre o que precisa",
+          "Escreva, anexe uma foto ou use voz e vídeo para complementar a explicação."
+        ],
+        [
+          "3 · Continue quando precisar",
+          "Consulte o histórico autorizado e abra o registro relacionado. Informações que exigem registro técnico devem seguir para o fluxo correspondente."
+        ]
+      ],
+      "jumps": [
+        [
+          "Chamadas e gravação",
+          "chamadas"
+        ],
+        [
+          "Notas pessoais",
+          "notas"
+        ],
+        [
+          "Vídeo do chat",
+          "videos"
+        ]
+      ],
+      "role": "Todos os perfis, conforme acesso"
+    },
+    {
+      "key": "chamadas",
+      "title": "Mostrar a situação à distância",
+      "sub": "Voz, vídeo e gravação como apoio à comunicação.",
+      "kind": "cards",
+      "items": [
+        [
+          "Ligar por voz ou vídeo",
+          "Iniciar pela conversa e atender a chamada. A comunicação depende de permissões de microfone/câmera, compatibilidade, conectividade e infraestrutura de chamadas."
+        ],
+        [
+          "Controles da chamada",
+          "O componente possui controles de microfone, câmera, troca de câmera, compartilhamento de tela e encerramento. A disponibilidade varia com navegador e dispositivo."
+        ],
+        [
+          "Gravar e revisar",
+          "O protótipo permite gravação em trechos de até cinco minutos. Ao finalizar, o usuário pode visualizar, salvar, enviar à conversa ou descartar. Gravar não significa arquivar automaticamente."
+        ],
+        [
+          "Governança da mídia",
+          "Definir aviso aos participantes, finalidade, base legal, acesso, armazenamento e retenção. Conteúdo técnico relevante deve ser encaminhado ao registro adequado. Validar chamadas nas redes e aparelhos do piloto."
+        ]
+      ],
+      "jumps": [
+        [
+          "Governança e retenção",
+          "governanca"
+        ],
+        [
+          "Voltar ao chat",
+          "chat"
+        ]
+      ],
+      "note": "A captura do chat mostra os botões de voz e vídeo. Esta página descreve controles identificados no componente; não apresenta uma chamada real nem um teste de qualidade da rede corporativa.",
+      "role": "Todos os perfis, conforme acesso"
+    },
+    {
+      "key": "notas",
+      "title": "Lembretes pessoais, com propósito claro",
+      "sub": "Organização individual integrada ao ambiente de comunicação.",
+      "kind": "visual",
+      "image": "notas",
+      "side": [
+        [
+          "Registrar e encontrar",
+          "Criar notas, buscar, consultar a agenda e organizar lembretes pessoais ou administrativos."
+        ],
+        [
+          "Privacidade",
+          "A interface apresenta as notas como individuais. O acesso e a retenção devem seguir a política corporativa e os controles no servidor."
+        ],
+        [
+          "Encaminhar corretamente",
+          "Falhas e condições técnicas não devem ficar apenas em notas pessoais. Usar o fluxo de relato técnico quando o conteúdo exigir acompanhamento."
+        ],
+        [
+          "Assistência",
+          "A IA pode ajudar a organizar o rascunho dentro dos recursos disponíveis, com revisão do usuário antes de salvar."
+        ]
+      ],
+      "jumps": [
+        [
+          "Relatos técnicos",
+          "relatos"
+        ],
+        [
+          "Chat",
+          "chat"
+        ]
+      ],
+      "role": "Todos os perfis, conforme acesso"
+    },
+    {
+      "key": "mural",
+      "title": "Mural, atividades e ações",
+      "sub": "Tornar visíveis os próximos passos de cada equipe.",
+      "kind": "cards",
+      "items": [
+        [
+          "Mural e Ao Vivo",
+          "Consultar publicações, atualizações e ações no público correspondente. A área mostra o contexto relevante para o setor e permite acompanhar mudanças."
+        ],
+        [
+          "Atividades e designações",
+          "Criar e acompanhar atividades, selecionar responsáveis, registrar execução e consultar resultados e comentários, conforme permissão."
+        ],
+        [
+          "Comentários e ciência",
+          "Visualizar participantes, novas mensagens, orientações fixadas e recibos disponíveis. Leitura ou ciência não devem ser confundidas com aprovação técnica."
+        ],
+        [
+          "Histórico e organização",
+          "Filtrar por período e contexto, consultar publicações anteriores e republicar quando permitido. A origem de uma ação e seus vínculos precisam permanecer identificáveis."
+        ]
+      ],
+      "jumps": [
+        [
+          "Passagem de serviço",
+          "servico"
+        ],
+        [
+          "Chat da atividade",
+          "chat"
+        ]
+      ],
+      "note": "Fluxo ilustrativo: necessidade identificada → responsável designado → execução registrada → resultado acompanhado. A situação técnica da aeronave é avaliada separadamente.",
+      "role": "Todos os perfis, conforme acesso"
+    },
+    {
+      "key": "ajuda",
+      "title": "Ajuda, pendências e ferramentas do topo",
+      "sub": "Apoio ao usuário sem sair do contexto.",
+      "kind": "visual",
+      "image": "ajuda",
+      "side": [
+        [
+          "Ajuda contextual",
+          "Vídeos organizados por perfil e tela, com contato para dúvidas, sugestões e problemas. O cadastro administrativo permite publicar ou substituir tutoriais."
+        ],
+        [
+          "Pendências pessoais",
+          "A tela atual mostra exemplos de Qpulse e treinamentos. Não há integração real dessas pendências declarada nesta versão."
+        ],
+        [
+          "Perfil e dispositivos",
+          "Consultar identidade, opções disponíveis e dispositivos conectados. Encerrar uma sessão segue o comando correspondente."
+        ],
+        [
+          "Assistente e conexão",
+          "Abrir conversas com a IA e observar o indicador de sincronização. Os comandos expostos variam conforme a área e as permissões."
+        ]
+      ],
+      "jumps": [
+        [
+          "Ver pendências",
+          "pendencias"
+        ],
+        [
+          "Quatro vídeos previstos",
+          "videos"
+        ]
+      ],
+      "role": "Todos os perfis, conforme acesso"
+    },
+    {
+      "key": "pendencias",
+      "title": "Integrações futuras identificadas",
+      "sub": "Distinguir a demonstração do dado corporativo conectado.",
+      "kind": "visual",
+      "image": "pendencias",
+      "side": [
+        [
+          "O que a imagem mostra",
+          "Exemplos de pendências pessoais de Qpulse e treinamentos, identificados como demonstração na própria tela."
+        ],
+        [
+          "O que falta",
+          "Definir fonte, autenticação, permissões, atualização e responsável pelo conteúdo antes de exibir números reais."
+        ],
+        [
+          "Mesmo princípio para eDB",
+          "Uma tela preparada para integrar não é evidência de conexão. O sistema precisa receber e reconciliar confirmações do fornecedor."
+        ],
+        [
+          "Critério de apresentação",
+          "Recursos demonstrativos e planejados permanecem identificados no PDF e no piloto para evitar expectativa de automação já concluída."
+        ]
+      ],
+      "jumps": [
+        [
+          "Cadastros e integrações",
+          "cadastros"
+        ]
+      ],
+      "role": "Todos os perfis, conforme acesso"
+    },
+    {
+      "key": "cadastros",
+      "title": "Cadastros que sustentam os fluxos",
+      "sub": "Configuração administrativa e operacional conforme autorização.",
+      "kind": "visual",
+      "side": [
+        [
+          "Pessoas e designações",
+          "Gerenciar função, base, frota e designações aplicáveis. Conferir permissões reais antes de conceder acesso ao piloto."
+        ],
+        [
+          "Aeronaves e catálogos",
+          "Administrar identificação, base, posição, disponibilidade e referências operacionais nos módulos correspondentes."
+        ],
+        [
+          "Clientes e contexto do voo",
+          "Manter clientes/plataformas, contratos e locais usados na programação e na documentação do cockpit."
+        ],
+        [
+          "Configurações especializadas",
+          "Autorizações técnicas, procedimentos, parâmetros documentais, vídeos de Ajuda e referências de integração. Cada configuração precisa de responsável e revisão."
+        ]
+      ],
+      "jumps": [
+        [
+          "Governança",
+          "governanca"
+        ],
+        [
+          "Inventário de comandos",
+          "catalogo"
+        ]
+      ]
+    },
+    {
+      "key": "catalogo",
+      "title": "Inventário de recursos para consulta",
+      "sub": "Cobertura dos grupos funcionais identificados no código local.",
+      "kind": "table",
+      "cols": [
+        "Área",
+        "Recursos e comandos relacionados"
+      ],
+      "rows": [
+        [
+          "Navegação e topo",
+          "Perfil/foto; dispositivos; sair; indicador de conexão; mensagens; assistente; ajuda; pendências; visualização por perfil autorizada."
+        ],
+        [
+          "Mural e atividades",
+          "Publicações; avisos; público; filtros; histórico; republicação; ações; designações; execução; comentários; ciência; anexos e conversa vinculada."
+        ],
+        [
+          "Voos e coordenação",
+          "Programar; importar com assistência; repetir; levas; confirmar; editar/cancelar; histórico/lixeira; posição; checks; eventos; retorno e secagem."
+        ],
+        [
+          "Manutenção",
+          "Passagem de pista; passagem de serviço; relatos/casos; programação; designar; vincular ocorrência; gerar ação; comentários; recorrência; acompanhamento e auditoria."
+        ],
+        [
+          "Cockpit",
+          "Meu dia/apresentação; preparação; AIS/meteo; documentos/eDB; ocorrências; contadores; jornada; situação/licenças; consulta de resumo técnico."
+        ],
+        [
+          "Chat, notas e IA",
+          "Busca/filtros; participantes; anexos/câmera; mensagens/recibos; voz/vídeo; gravação; notas/agenda; conversas de IA; histórico; sugestões e aplicação revisada."
+        ],
+        [
+          "Ferramentaria",
+          "Caixas/gavetas; silhuetas; conferência; empréstimos; recebimento; pendências; transferência; histórico; correções e gestão."
+        ],
+        [
+          "Administração",
+          "Pessoas; aeronaves; bases e catálogos; clientes/plataformas; contratos; regras/documentos do cockpit; autorizações técnicas; vídeos de Ajuda."
+        ]
+      ],
+      "note": "Os comandos dependem do perfil e do estado do registro. Este catálogo não atesta que todas as combinações foram homologadas; os cenários serão conferidos com usuários de cada área."
+    },
+    {
+      "key": "videos",
+      "title": "Vídeos da demonstração",
+      "sub": "Sete vídeos definidos para a apresentação, com espaços reservados para inserção após a gravação.",
+      "kind": "table",
+      "cols": [
+        "Vídeo",
+        "Conteúdo e duração sugerida"
+      ],
+      "rows": [
+        [
+          "01 · Apresentação geral",
+          "Segurança, condições de adoção, conexão entre setores e um fluxo em tempo real. Cerca de 3 minutos."
+        ],
+        [
+          "02 · Coordenação",
+          "Painel de controle, programação, confirmação e comunicação com as equipes."
+        ],
+        [
+          "03 · Cockpit da tripulação",
+          "Meu dia, apresentação, preparação, documentos e ocorrências."
+        ],
+        [
+          "04 · Ferramentaria",
+          "Caixas, ferramentas, conferência, empréstimos e recebimentos."
+        ],
+        [
+          "05 · Passagem de serviço e automações",
+          "Histórico de investigação, pendências, geração de ações, continuidade entre turnos e sincronização das equipes."
+        ],
+        [
+          "06 · IA para dados e textos técnicos",
+          "Organização dos dados, correção e tradução, comparação com o original, referências verificáveis e aplicação revisada."
+        ],
+        [
+          "07 · Chat e videochamada",
+          "Mensagens, notas, anexos, voz, vídeo e consulta à gravação, conforme as regras de uso."
+        ]
+      ],
+      "note": "A programação original da edição 1.4 foi ampliada pelo autor para sete vídeos. Os arquivos serão inseridos no site após a gravação; os botões permitem consultar as explicações de cada tema desde já.",
+      "jumps": [
+        [
+          "IA e registros",
+          "relatos"
+        ],
+        [
+          "Chat e chamadas",
+          "chat"
+        ],
+        [
+          "Continuidade",
+          "troubleshooting"
+        ]
+      ]
+    },
+    {
+      "key": "piloto",
+      "title": "Um piloto para validar o valor na prática",
+      "sub": "Proposta inicial sujeita à definição conjunta com a OMNI.",
+      "kind": "cards",
+      "items": [
+        [
+          "Grupo e escopo",
+          "Selecionar uma base e representantes de manutenção, coordenação, pilotos e ferramentaria, conforme o escopo aprovado. Começar com poucos fluxos e responsabilidades claras."
+        ],
+        [
+          "Antes de iniciar",
+          "Aprovar ambiente e dados, revisar acessos, validar procedimentos, treinar participantes e definir suporte/contingência. Usar dados fictícios antes de qualquer operação real."
+        ],
+        [
+          "O que medir",
+          "Tempo para localizar informação; pendências perdidas na troca de turno; retrabalho por falta de contexto; qualidade dos relatos; facilidade de uso e comportamento com falhas de conexão."
+        ],
+        [
+          "Decisão de continuidade",
+          "Registrar resultados, falhas e ajustes. A ampliação depende da avaliação das áreas responsáveis. Uso oficial e integrações reguladas precisam da validação específica correspondente."
+        ]
+      ],
+      "note": "Solicitação proposta: patrocínio para uma avaliação técnica e operacional que defina as condições de um piloto controlado. Não há estimativa de economia ou redução de ocorrências sem medição."
+    },
+    {
+      "key": "infra",
+      "title": "Construção sob controle da empresa",
+      "sub": "Arquitetura proposta, em nível executivo.",
+      "kind": "cards",
+      "items": [
+        [
+          "Ambiente de desenvolvimento",
+          "Repositório e acessos aprovados pela OMNI, revisão de alterações e separação entre desenvolvimento, homologação e produção. O computador do autor não será a infraestrutura operacional da empresa."
+        ],
+        [
+          "Aplicativo e banco corporativos",
+          "Hospedagem e banco sob gestão ou contratação aprovada por TI. Definir localização dos dados, acesso de suporte, criptografia, segregação de ambientes e credenciais protegidas."
+        ],
+        [
+          "Aproveitamento do protótipo",
+          "Os fluxos, componentes e código existentes reduzem o trabalho de descoberta. O reaproveitamento depende de revisão de arquitetura, segurança, licenças e manutenção; não se presume migração sem ajustes."
+        ],
+        [
+          "Operação e continuidade",
+          "Definir monitoramento, responsáveis, atualização de dependências, cópias de segurança e testes de restauração. Prever procedimento de contingência e exportação dos dados para evitar dependência de uma pessoa."
+        ]
+      ],
+      "note": "Proposta de arquitetura: usuários autorizados → aplicativo → banco e arquivos aprovados → integrações expressamente habilitadas. Cada fluxo externo deve ser inventariado."
+    },
+    {
+      "key": "privacidade",
+      "title": "Proteção de dados e LGPD",
+      "sub": "A política precisa se traduzir em controles e evidências.",
+      "kind": "cards",
+      "items": [
+        [
+          "Finalidade e minimização",
+          "Mapear dados de colaboradores, contatos, escalas, mensagens, anexos e gravações. Definir finalidade e base legal por tratamento; coletar apenas o necessário. Consentimento não é uma solução genérica para toda atividade."
+        ],
+        [
+          "Acesso e responsabilidades",
+          "Identificar controlador, operadores e encarregado/canal de privacidade. Aplicar acessos por perfil e necessidade, revisar permissões e encerrar acessos quando mudar o vínculo ou a função."
+        ],
+        [
+          "Retenção e direitos",
+          "Definir prazos por categoria, atendimento aos titulares e descarte controlado. Obrigações legais e regulatórias podem exigir conservação; exclusão de uma conta não deve eliminar indevidamente registros obrigatórios."
+        ],
+        [
+          "Evidências para aprovação",
+          "Inventário de dados, contratos de tratamento, matriz de acesso, política de retenção, procedimento de incidentes e testes de proteção. Avaliar relatório de impacto conforme risco e orientação aplicável."
+        ]
+      ],
+      "refs": [
+        "N1",
+        "N2",
+        "N3"
+      ],
+      "note": "LGPD: arts. 6º, 7º/11, 15–16, 33–39 e 46–50. As medidas acima são propostas a conferir e formalizar com a empresa, não declaração de conformidade já obtida."
+    },
+    {
+      "key": "governanca",
+      "title": "Governança para sustentar a operação",
+      "sub": "Acesso, responsabilidade, conservação e recuperação.",
+      "kind": "cards",
+      "items": [
+        [
+          "Acessos conforme a responsabilidade",
+          "Cada profissional acessa informações e funções pertinentes à sua atuação. As permissões consideram perfil, base, frota e designações, conforme o recurso. A matriz deve ser aprovada pela OMNI; acesso administrativo não substitui autorização técnica."
+        ],
+        [
+          "Mudanças e suporte",
+          "Designar responsáveis pelo produto, suporte e conteúdo técnico. Aprovar mudanças, manter versões e registrar decisões. Prever continuidade, treinamento e transferência de conhecimento."
+        ],
+        [
+          "Mensagens e gravações",
+          "Propor prazos por categoria e finalidade, com preservação quando houver obrigação de guarda, investigação ou solicitação competente. Chat informal não é automaticamente descartável. Não usar exclusão para evitar fiscalização."
+        ],
+        [
+          "Incidentes e recuperação",
+          "Definir comunicação interna, contenção, preservação de evidências e avaliação das obrigações de comunicação à ANPD e titulares. Testar restauração e operação em contingência."
+        ]
+      ],
+      "refs": [
+        "N1",
+        "N3",
+        "N5"
+      ],
+      "note": "Política automatizada de retenção e bloqueio de descarte: requisitos da implantação a verificar/implementar. Não são apresentados como concluídos no protótipo."
+    },
+    {
+      "key": "ia-controle",
+      "title": "IA empresarial com limites definidos",
+      "sub": "Melhorar a escrita e a consulta, mantendo a decisão com o profissional.",
+      "kind": "cards",
+      "items": [
+        [
+          "Usos previstos",
+          "Correção, tradução, organização de informações e consulta a fontes autorizadas. O usuário deve conferir a sugestão antes de aplicá-la e antes de confirmar um registro técnico."
+        ],
+        [
+          "Dados que podem sair",
+          "Inventariar textos, anexos, áudio e trechos documentais enviados ao fornecedor. Escolher serviço empresarial aprovado, condições de retenção, processamento, suboperadores e uso dos dados para treinamento."
+        ],
+        [
+          "Localização e contratos",
+          "Treinamento, retenção e transferência internacional são assuntos distintos. Exigir evidência contratual e técnica das condições escolhidas. Se houver transferência internacional, adotar mecanismo válido e transparência correspondente."
+        ],
+        [
+          "Limites técnicos",
+          "A IA não confirma aeronavegabilidade, não substitui profissional autorizado e não deve criar referências, diagnósticos ou resultados inexistentes. Ausência de fonte aplicável precisa ser explícita."
+        ]
+      ],
+      "refs": [
+        "N1",
+        "N2"
+      ],
+      "note": "Situação do protótipo: há integração de IA externa no código. Não se afirma processamento exclusivamente local, retenção zero ou aprovação corporativa. A configuração final será definida por TI."
+    },
+    {
+      "key": "anac",
+      "title": "Referências ANAC e seu papel",
+      "sub": "O enquadramento depende do uso, dos certificados e dos procedimentos do operador.",
+      "kind": "table",
+      "cols": [
+        "Referência",
+        "Aplicação na avaliação da solução"
+      ],
+      "rows": [
+        [
+          "RBAC 43 · EMD 05 [N6]",
+          "Pessoas autorizadas, execução e registros de manutenção. Seções 43.7, 43.9, 43.11–43.16, conforme aplicabilidade."
+        ],
+        [
+          "RBAC 135 · EMD 15 [N7]",
+          "Irregularidades e ações corretivas (135.65), equipamentos inoperantes (135.179), registros e liberação (135.439/443), conforme programa aplicável."
+        ],
+        [
+          "RBAC 145 · EMD 09 [N8]",
+          "Organização de manutenção: autorizações, procedimentos, inspeção e arquivamento. Seções 145.157, 145.209, 145.213 e 145.219."
+        ],
+        [
+          "Resolução 773/2025 [N4]",
+          "Diário de bordo oficial, integridade e conservação. Uso digital deve ser submetido à ANAC, observando o normativo de sistemas informatizados."
+        ],
+        [
+          "Resolução 458/2017 · compilada [N5]",
+          "Aceitação e requisitos dos sistemas que substituem registros em papel: escopo, segurança, assinaturas, logs, auditoria e recuperação."
+        ],
+        [
+          "RBAC 91 / IS 91-015B [N9–N10]",
+          "Referências complementares de registros e correções. Não aplicar prazos ou procedimentos indistintamente a todos os documentos."
+        ]
+      ],
+      "note": "Não há declaração genérica de “aplicativo aprovado”. Será necessário definir o escopo e demonstrar o atendimento aos requisitos aplicáveis, com as áreas responsáveis e a ANAC quando exigido."
+    },
+    {
+      "key": "registro-oficial",
+      "title": "Do relato ao registro formal",
+      "sub": "Organizar a observação sem perder as obrigações de registro.",
+      "kind": "cards",
+      "items": [
+        [
+          "Relatar o fato",
+          "Identificar aeronave, momento, sintoma e evidências disponíveis. Uma ocorrência intermitente continua sendo informação relevante. A classificação do formulário não dispensa obrigações aplicáveis ao conteúdo."
+        ],
+        [
+          "Avaliar e encaminhar",
+          "Profissional autorizado define o tratamento conforme documentação e procedimentos. O acompanhamento interno deve preservar o vínculo com o registro formal exigido e a confirmação de sua realização."
+        ],
+        [
+          "Separar resultado e disponibilidade",
+          "Conclusão satisfatória de uma tarefa não equivale à liberação da aeronave. A situação depende da avaliação completa, das aprovações e de outras pendências aplicáveis."
+        ],
+        [
+          "Uso digital oficial",
+          "Se a solução vier a substituir o diário ou outro registro obrigatório, será preciso cumprir o processo correspondente. A proposta inicial mantém o sistema oficial e usa o aplicativo como apoio, até validação de uma integração ou substituição."
+        ]
+      ],
+      "refs": [
+        "N4",
+        "N5",
+        "N6",
+        "N7"
+      ],
+      "note": "Exemplos como pintura, indicação intermitente ou suspeita de trinca exigem avaliação própria. Este PDF não define limites aceitáveis nem autoriza despacho ou postergação de correção."
+    },
+    {
+      "key": "campos-controle",
+      "title": "Consulta detalhada · registro e decisão técnica",
+      "sub": "Para responsáveis técnicos: informações que sustentam o acompanhamento e o encerramento autorizado.",
+      "kind": "table",
+      "role": "Manutenção · revisão autorizada",
+      "cols": [
+        "Campo ou grupo",
+        "Como usar sem confundir as etapas"
+      ],
+      "rows": [
+        [
+          "Vínculo com registro oficial",
+          "Informe e confira a referência exigida no processo. Digitar um identificador não comprova integração ou envio ao diário oficial."
+        ],
+        [
+          "Documento e revisão",
+          "Identifique a fonte realmente consultada e aplicável. Sem fonte confirmada, a IA deve pedir conferência e não inventar capítulo ou procedimento."
+        ],
+        [
+          "Ação e resultado",
+          "Descreva apenas o serviço executado e o resultado observado. Uma sugestão da IA não pode se transformar em execução fictícia."
+        ],
+        [
+          "Investigação e condição da aeronave",
+          "A fase da pesquisa é diferente da situação operacional. Não deduza liberação pela conclusão de um comentário ou tarefa."
+        ],
+        [
+          "Limite e próxima verificação",
+          "Use somente critérios autorizados e rastreáveis. Texto livre não equivale a um controle validado de vencimentos."
+        ],
+        [
+          "Encerramento / APRS",
+          "Aprovação para retorno ao serviço exige profissional autorizado e processo aplicável. O app não concede essa autorização."
+        ]
+      ],
+      "refs": [
+        "N6",
+        "N7"
+      ],
+      "jumps": [
+        [
+          "Exemplo de IA",
+          "exemplo-ia"
+        ],
+        [
+          "Requisitos de registros",
+          "registro-oficial"
+        ]
+      ]
+    },
+    {
+      "key": "documentos",
+      "title": "Documentação técnica com origem e revisão",
+      "sub": "O acervo demonstrativo e o futuro acervo corporativo têm papéis diferentes.",
+      "kind": "cards",
+      "items": [
+        [
+          "Acervo público utilizado",
+          "Foram localizados 17 arquivos: nove documentos relacionados ao S-92A e oito arquivos/capítulos de três publicações gerais da FAA. Correspondem às 12 referências únicas enviadas pelo autor."
+        ],
+        [
+          "Natureza das fontes",
+          "A TCDS descreve dados de certificação. ADs tratam de ações de aeronavegabilidade em seus âmbitos de aplicação. SIB/SAIB são informativos. Os handbooks da FAA são gerais; não constituem AMM, FIM ou RFM completo do S-92A."
+        ],
+        [
+          "Acervo corporativo proposto",
+          "Cadastrar documento, revisão, validade, aplicabilidade, origem e permissões. A empresa deve autorizar o uso de manuais licenciados e definir atualização e retirada de revisões obsoletas."
+        ],
+        [
+          "Consulta por piloto ou manutenção",
+          "Exibir a fonte e permitir conferir o trecho no documento. Referência recuperada pela IA deve ser verificada quanto à página, revisão e aplicabilidade. Não disponibilizar procedimento operacional sem controle documental."
+        ]
+      ],
+      "refs": [
+        "S1",
+        "S2",
+        "S3",
+        "S4",
+        "S5",
+        "S6",
+        "S7",
+        "S8",
+        "S9",
+        "G1",
+        "G2",
+        "G3"
+      ],
+      "note": "Acesso público não implica autorização irrestrita de reprodução. A bibliografia documenta as fontes usadas na demonstração, não atesta aplicabilidade atual a cada aeronave da OMNI."
+    },
+    {
+      "key": "refs-normas",
+      "title": "Referências legais e regulatórias",
+      "sub": "Fontes para a avaliação de adoção. Consulta em 10 de setembro de 2026.",
+      "kind": "refs",
+      "ids": [
+        "N1",
+        "N2",
+        "N3",
+        "N4",
+        "N5",
+        "N6",
+        "N7"
+      ]
+    },
+    {
+      "key": "refs-normas-2",
+      "title": "Referências legais e operacionais",
+      "sub": "Aplicabilidade deve ser conferida com certificados, manuais e procedimentos da OMNI.",
+      "kind": "refs",
+      "ids": [
+        "N8",
+        "N9",
+        "N10",
+        "N11",
+        "N12",
+        "N13",
+        "N14"
+      ]
+    },
+    {
+      "key": "refs-s92",
+      "title": "Bibliografia pública do S-92A",
+      "sub": "Edições utilizadas na demonstração; acesso original informado: 9 de setembro de 2026.",
+      "kind": "refs",
+      "ids": [
+        "S1",
+        "S2",
+        "S3",
+        "S4",
+        "S5"
+      ]
+    },
+    {
+      "key": "refs-s92-2",
+      "title": "Bibliografia pública do S-92A",
+      "sub": "Continuação. Identificação conferida com os PDFs locais e páginas das autoridades.",
+      "kind": "refs",
+      "ids": [
+        "S6",
+        "S7",
+        "S8",
+        "S9"
+      ],
+      "note": "Datas de publicação no Federal Register podem diferir da data de cadastro no portal EASA. Mantidas as datas do documento usado. A TCDS local é Issue 9; seu estado de revisão atual deve ser reconfirmado antes de uso operacional. SIB e SAIB citados são informativos."
+    },
+    {
+      "key": "refs-gerais",
+      "title": "Publicações gerais e fontes de consulta",
+      "sub": "Material de apoio; não substitui manuais específicos autorizados.",
+      "kind": "refs",
+      "ids": [
+        "G1",
+        "G2",
+        "G3",
+        "G4",
+        "G5"
+      ],
+      "note": "Os handbooks foram identificados pelas cópias usadas no protótipo. Verificar edições e suplementos vigentes para qualquer uso posterior. Os links DECEA documentam integrações, não comprovam credenciais ou conectividade configuradas."
+    },
+    {
+      "key": "edicao",
+      "title": "Sobre esta edição e próximos ajustes",
+      "sub": "Proposta para revisão do autor e avaliação pelas áreas competentes.",
+      "kind": "cards",
+      "items": [
+        [
+          "Autoria da proposta",
+          "Robson Kerly de Araújo Costa · MMA · ANAC 139090. Destinatários: diretoria e TI da OMNI Táxi Aéreo, seguidos das áreas responsáveis e gestão operacional."
+        ],
+        [
+          "Base de elaboração",
+          "Código local, documentação e fontes oficiais. As capturas reais mostram recursos em cenários de demonstração; a navegação agrupa recursos compartilhados e não representa uma sessão autenticada completa de cada cargo. Detalhes pessoais sem relação com a ferramenta foram omitidos nas capturas públicas."
+        ],
+        [
+          "O que esta edição não certifica",
+          "Não foram homologadas todas as permissões em produção, a implantação corporativa, as integrações externas, a política de retenção ou os procedimentos do operador. Não há declaração de aprovação ANAC."
+        ],
+        [
+          "Revisão antes de distribuir",
+          "Confirmar fidelidade das telas com o autor; conferir os sete vídeos previstos para a apresentação; revisar referências e requisitos com TI/Jurídico/áreas técnicas; aprovar o escopo e os critérios do piloto."
+        ]
+      ],
+      "note": "Documento elaborado em 10/09/2026. Edição 1.4 para revisão. A identificação visual do nome do protótipo em algumas capturas não constitui proposta de marca definitiva."
+    }
+  ],
+  "references": {
+    "N1": [
+      "BRASIL. Lei nº 13.709/2018 (LGPD), texto compilado. Arts. 6º, 7º/11, 15–16, 33–39 e 46–50.",
+      "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709compilado.htm"
+    ],
+    "N2": [
+      "ANPD. Resolução CD/ANPD nº 19, de 23 de agosto de 2024. Transferência internacional de dados.",
+      "https://www.gov.br/anpd/pt-br/acesso-a-informacao/institucional/atos-normativos/regulamentacoes_anpd/resolucao-cd-anpd-no-19-de-23-de-agosto-de-2024"
+    ],
+    "N3": [
+      "ANPD. Regulamento de Comunicação de Incidente de Segurança, Resolução nº 15/2024. Portal orientativo oficial.",
+      "https://www.gov.br/anpd/pt-br/canais_atendimento/agente-de-tratamento/comunicado-de-incidente-de-seguranca-cis"
+    ],
+    "N4": [
+      "ANAC. Resolução nº 773, de 25 de junho de 2025. Diário de bordo. Vigência desde 1º de janeiro de 2026.",
+      "https://www.anac.gov.br/assuntos/legislacao/legislacao-1/resolucoes/2025/resolucao-773"
+    ],
+    "N5": [
+      "ANAC. Resolução nº 458, de 20 de dezembro de 2017, texto compilado. Sistemas informatizados para registro e guarda de informações.",
+      "https://www.anac.gov.br/assuntos/legislacao/legislacao-1/resolucoes/2017/resolucao-no-458-20-12-2017"
+    ],
+    "N6": [
+      "ANAC. RBAC 43, Emenda 05. Manutenção, manutenção preventiva, reconstrução e alteração.",
+      "https://www.anac.gov.br/assuntos/legislacao/legislacao-1/rbha-e-rbac/rbac/rbac-43"
+    ],
+    "N7": [
+      "ANAC. RBAC 135, Emenda 15. Operações de transporte aéreo no escopo do regulamento; registros, manutenção e liberação.",
+      "https://www.anac.gov.br/assuntos/legislacao/legislacao-1/rbha-e-rbac/rbac/rbac-135"
+    ],
+    "N8": [
+      "ANAC. RBAC 145, Emenda 09. Organizações de manutenção de produto aeronáutico.",
+      "https://www.anac.gov.br/assuntos/legislacao/legislacao-1/rbha-e-rbac/rbac/rbac-145"
+    ],
+    "N9": [
+      "ANAC. RBAC 91, Emenda 07. Requisitos gerais de operação. Seção 91.417, quando aplicável.",
+      "https://www.anac.gov.br/assuntos/legislacao/legislacao-1/rbha-e-rbac/rbac/rbac-91"
+    ],
+    "N10": [
+      "ANAC. IS 91-015B. Referência complementar para registros e correções, conforme escopo.",
+      "https://www.anac.gov.br/assuntos/legislacao/legislacao-1/iac-e-is/is/is-91-015"
+    ],
+    "N11": [
+      "BRASIL. Lei nº 13.475, de 28 de agosto de 2017. Exercício da profissão de aeronauta.",
+      "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2017/lei/l13475.htm"
+    ],
+    "N12": [
+      "ANAC. RBAC 117, Emenda 01. Gerenciamento de risco de fadiga humana. Edição identificada no índice oficial.",
+      "https://www.anac.gov.br/assuntos/legislacao/legislacao-1/rbha-e-rbac/rbac"
+    ],
+    "N13": [
+      "ANAC. IS 117-001C, 2026. Orientações de aplicação do gerenciamento de risco de fadiga humana.",
+      "https://www.anac.gov.br/assuntos/legislacao/legislacao-1/boletim-de-pessoal/2026/bps-v-21-no-28-13-a-17-07-2026/is-117-001c/visualizar_ato_normativo"
+    ],
+    "S1": [
+      "EASA. Type Certificate Data Sheet EASA.IM.R.001: Sikorsky S-92A. Issue 9, 25 maio 2021. Cópia utilizada no protótipo.",
+      "https://www.easa.europa.eu/en/downloads/7957/en"
+    ],
+    "S2": [
+      "FAA. AD 2023-09-07. Main Rotor - Swashplate Assembly - Inspection/Removal. Publicação: 25 maio 2023; vigência: 29 jun. 2023.",
+      "https://ad.easa.europa.eu/ad/US-2023-09-07"
+    ],
+    "S3": [
+      "FAA. AD 2022-11-04. Horizontal Stabilizer Forward Root/Strut Fittings - Life Limit/Inspection. Publicação: 23 maio 2022; vigência: 27 jun. 2022.",
+      "https://ad.easa.europa.eu/ad/US-2022-11-04"
+    ],
+    "S4": [
+      "FAA. AD 2021-08-18. Landing Gear - Main Landing Gear Assembly/Nose Landing Gear Kit - Inspection. Publicação: 14 abr. 2021; vigência: 29 abr. 2021.",
+      "https://ad.easa.europa.eu/ad/US-2021-08-18"
+    ],
+    "S5": [
+      "EASA. AD 2015-0013. Fuel - Internal Auxiliary Fuel System - Modification. 30 jan. 2015; vigência: 13 fev. 2015.",
+      "https://ad.easa.europa.eu/ad/2015-0013"
+    ],
+    "S6": [
+      "EASA. AD 2011-0109. Main Rotor Drive - Main Gearbox Assembly - Inspection/Replacement. 8 jun. 2011, corrigida em 15 jun. 2011; vigência: 17 jun. 2011.",
+      "https://ad.easa.europa.eu/ad/2011-0109"
+    ],
+    "S7": [
+      "EASA. SIB 2009-05. Sikorsky S-92A Main Gearbox Malfunctions. 17 mar. 2009. Boletim informativo.",
+      "https://ad.easa.europa.eu/ad/2009-05"
+    ],
+    "S8": [
+      "FAA. AD 2009-25-10. Main Gearbox Lube System Filter Assembly - Inspection. Publicação: 4 dez. 2009; vigência: 21 dez. 2009.",
+      "https://ad.easa.europa.eu/ad/US-2009-25-10"
+    ],
+    "S9": [
+      "FAA. SAIB SW-12-23. Sikorsky S-92A Fuselage - Cabin Airframe Inspection. 29 mar. 2012. Boletim informativo.",
+      "https://ad.easa.europa.eu/ad/SW-12-23"
+    ],
+    "G1": [
+      "FAA. Pilot’s Handbook of Aeronautical Knowledge. FAA-H-8083-25C, 2023. Capítulos 7 (Systems), 8 (Instruments) e 16 (Navigation).",
+      "https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/phak"
+    ],
+    "G2": [
+      "FAA. Instrument Flying Handbook. FAA-H-8083-15B, 2012. Instrumentos, navegação e cross-check.",
+      "https://www.faa.gov/sites/faa.gov/files/pilots/FAA-H-8083-15B.pdf"
+    ],
+    "G3": [
+      "FAA. Helicopter Flying Handbook, 2019. Capítulos 4 (Systems), 5 (RFM), 11 (Emergencies) e 13 (ADM).",
+      "https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/helicopter_flying_handbook"
+    ],
+    "G4": [
+      "DECEA. API REDEMET: orientações oficiais para integração meteorológica.",
+      "https://ajuda.decea.mil.br/base-de-conhecimento/api-redemet-o-que-e/"
+    ],
+    "G5": [
+      "DECEA. API AISWEB: orientações oficiais para integração.",
+      "https://ajuda.decea.mil.br/base-de-conhecimento/o-que-e-a-api-aisweb/"
+    ],
+    "N14": [
+      "ANAC. IS 91-012, Revisão C, 04 ago. 2025. MEL e operação com equipamentos e instrumentos inoperantes. Itens 4.1.6, 5.1.2.5.3 e 5.3.12. Consulta: 10 set. 2026.",
+      "https://pergamum.anac.gov.br/pergamum/vinculos/IS91-012C.pdf"
+    ]
+  },
+  "provenance": {
+    "title": "Proposta de integração e comunicação operacional",
+    "author": "Robson Kerly de Araújo Costa",
+    "source": "Proposta_integracao_operacional_OMNI.pdf",
+    "edition": "1.4",
+    "date": "2026-09-10",
+    "note": "Transposição do conteúdo editorial do PDF comercial. A programação de vídeos é apresentada nesta página com a atualização definida pelo autor."
+  },
+  "images": {
+    "ajuda": {
+      "src": "/presentation/dossier/ajuda.jpg",
+      "width": 1160,
+      "height": 660
+    },
+    "chat": {
+      "src": "/presentation/dossier/chat.jpg",
+      "width": 1160,
+      "height": 660
+    },
+    "checks": {
+      "src": "/presentation/screens/checks.jpg",
+      "width": 725,
+      "height": 492
+    },
+    "coord": {
+      "src": "/presentation/dossier/coord.jpg",
+      "width": 1100,
+      "height": 780
+    },
+    "ferramentas": {
+      "src": "/presentation/dossier/ferramentas.jpg",
+      "width": 882,
+      "height": 794
+    },
+    "importacao": {
+      "src": "/presentation/screens/levas.jpg",
+      "width": 725,
+      "height": 392
+    },
+    "mel-deadline-1366": {
+      "src": "/presentation/dossier/mel-deadline-1366.jpg",
+      "width": 992,
+      "height": 524
+    },
+    "mobile-ais": {
+      "src": "/presentation/dossier/mobile-ais.jpg",
+      "width": 390,
+      "height": 844
+    },
+    "mobile-cockpit": {
+      "src": "/presentation/dossier/mobile-cockpit.jpg",
+      "width": 390,
+      "height": 844
+    },
+    "mobile-cockpit-desktop": {
+      "src": "/presentation/dossier/mobile-cockpit-desktop.jpg",
+      "width": 1100,
+      "height": 780
+    },
+    "mobile-comentarios": {
+      "src": "/presentation/dossier/mobile-comentarios.jpg",
+      "width": 390,
+      "height": 844
+    },
+    "mobile-edb": {
+      "src": "/presentation/dossier/mobile-edb.jpg",
+      "width": 390,
+      "height": 844
+    },
+    "mobile-ferramentas": {
+      "src": "/presentation/dossier/mobile-ferramentas.jpg",
+      "width": 390,
+      "height": 844
+    },
+    "mobile-ferramentas-detalhe": {
+      "src": "/presentation/dossier/mobile-ferramentas-detalhe.jpg",
+      "width": 390,
+      "height": 235
+    },
+    "mobile-jornada": {
+      "src": "/presentation/dossier/mobile-jornada.jpg",
+      "width": 390,
+      "height": 844
+    },
+    "mobile-ocorrencia": {
+      "src": "/presentation/dossier/mobile-ocorrencia.jpg",
+      "width": 390,
+      "height": 844
+    },
+    "mobile-pista": {
+      "src": "/presentation/dossier/mobile-pista.jpg",
+      "width": 390,
+      "height": 844
+    },
+    "mobile-preparo": {
+      "src": "/presentation/dossier/mobile-preparo.jpg",
+      "width": 390,
+      "height": 844
+    },
+    "mobile-relato": {
+      "src": "/presentation/dossier/mobile-relato.jpg",
+      "width": 390,
+      "height": 844
+    },
+    "mobile-servico": {
+      "src": "/presentation/dossier/mobile-servico.jpg",
+      "width": 390,
+      "height": 844
+    },
+    "notas": {
+      "src": "/presentation/dossier/notas.jpg",
+      "width": 1160,
+      "height": 660
+    },
+    "pendencias": {
+      "src": "/presentation/dossier/pendencias.jpg",
+      "width": 1160,
+      "height": 660
+    },
+    "preparation-mechanic-390": {
+      "src": "/presentation/dossier/preparation-mechanic-390.jpg",
+      "width": 358,
+      "height": 757
+    }
+  }
+}

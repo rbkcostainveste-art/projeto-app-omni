@@ -1,4 +1,5 @@
 "use client";
+import { consumePresentationLogin } from "@/lib/presentation-login";
 import { PowerCheckFlightPanel, PowerCheckTrailCard } from "./power-check-flight-panel";
 import {canEditPlannedTimes} from "@/lib/flight-planned-times";
 import {PlannedTimesEditor} from "./planned-times-editor";
@@ -37,7 +38,7 @@ import {DryingTrailCard} from "@/components/drying-trail-card";
 import {FlightTrash} from "./flight-trash";
 import {positionValue} from "@/lib/maintenance-edit-read";
 
-import { useCallback, useLayoutEffect, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { ArrowLeft, BookOpen, Bot, Send, Bell, CalendarDays, ChevronDown, ClipboardList, Clock3, Eye, Filter as FilterIcon, Fuel, Gauge, History, House, LogOut, MonitorSmartphone, PackageOpen, Pencil, Plane, Plus, RotateCcw, Search, Settings, ShieldCheck, Trash2, Upload, UserRound, Wrench, X } from "lucide-react";
 import {normalizeOperationalAssignment} from "@/lib/operational-assignment";
 import { createSupabaseClient } from "@/lib/supabase";
@@ -222,6 +223,7 @@ export function FlightBoard() {
   const [signatureRequest, setSignatureRequest] = useState<{ label: string; action: () => void | Promise<void>; resolve: (ok: boolean) => void } | null>(null);
   const lastSignatureActivity = useRef(0);
   const signatureReauthenticationRequired = useRef(true);
+  const presentationLoginAttempted = useRef(false);
   const lastActivityPersistedAt = useRef(0);
   const [profilePhoto, setProfilePhoto] = useState("");
   const [userDirectory, setUserDirectory] = useState<UserDirectory>({});
@@ -545,13 +547,28 @@ export function FlightBoard() {
   const createPassage = useCallback((item: Passage) => { passagesSnapshot.current = [item, ...passagesSnapshot.current]; setPassages(passagesSnapshot.current); void (async () => { if(!supabase) return; const { data, error } = await supabase.from("runway_handovers").insert(passageToRow(item)).select().single(); if(error) { setPassages((items) => items.filter((current) => current.id !== item.id)); setSyncError(`Passagem não criada: ${error.message}`); return; } const saved = rowToPassage(data as PassageRow); setPassages((items) => items.map((current) => current.id === item.id ? saved : current)); })(); }, [setPassages]);
   const deletePassage = useCallback((id: string) => { if(!isAdmin || !window.confirm("Excluir definitivamente esta passagem?")) return; setPassages((items) => items.filter((item) => item.id !== id)); void (async () => { if(!supabase) return; const { error } = await supabase.from("runway_handovers").delete().eq("id", id); if(error) { setSyncError(`Passagem não excluída: ${error.message}`); } })(); }, [isAdmin,setPassages]);
 
-  async function enter(event: React.FormEvent) {
-    event.preventDefault();
-    if(password !== "1234") { setLoginError("Matrícula não cadastrada ou senha inválida."); return; }
-    if(supabase) { const { data } = await supabase.auth.getSession(); if(!data.session) { const { error } = await supabase.auth.signInAnonymously(); if(error) { setLoginError("Não foi possível conectar ao serviço compartilhado."); return; } } const { data: claimData, error } = await supabase.rpc("claim_device_identity", { p_employee_number: login, p_password: password }); if(error) { setLoginError("Matrícula não autorizada no servidor."); return; } const { error: deviceError } = await supabase.rpc("activate_current_device", { p_device_key: persistentDeviceKey(), p_device_label: deviceLabel(), p_user_agent: navigator.userAgent }); if(deviceError) { setLoginError("Não foi possível registrar este dispositivo."); return; } const claim = claimData as { accessProfile?: AccessProfile; assignedBase?: string | null; workShift?: string | null } | null; const profile = claim?.accessProfile ?? "legacy"; const base = claim?.assignedBase ?? ""; setAccessProfile(profile); setAssignedBase(base); setAssignedShift(claim?.workShift ?? ""); setFilters((current) => ({ ...current, base })); }
-    else if(login !== "0001" && !catalogs.users.some((item) => item.employeeNumber === login)) { setLoginError("Matrícula não cadastrada ou senha inválida."); return; }
-    const signedInAt = Date.now(); lastSignatureActivity.current = signedInAt; signatureReauthenticationRequired.current = false; localStorage.setItem(`flight-ia-last-activity-${login}`, String(signedInAt)); const storedFilters = readStoredJson<{ model: string; prefix: string }>(`passagem-de-pista-trail-filters-${login}`); setFilters((current) => ({ ...current, date: todayLocal(), model: storedFilters?.model ?? "", prefix: storedFilters?.prefix ?? "" })); localStorage.setItem("passagem-de-pista-user", login); setProfilePhoto(localStorage.getItem(`flight-ia-profile-photo-${login}`) ?? ""); setUser(login);
+  async function authenticate(nextLogin = login, nextPassword = password) {
+    if(nextPassword !== "1234") { setLoginError("Matrícula não cadastrada ou senha inválida."); return; }
+    if(supabase) { const { data } = await supabase.auth.getSession(); if(!data.session) { const { error } = await supabase.auth.signInAnonymously(); if(error) { setLoginError("Não foi possível conectar ao serviço compartilhado."); return; } } const { data: claimData, error } = await supabase.rpc("claim_device_identity", { p_employee_number: nextLogin, p_password: nextPassword }); if(error) { setLoginError("Matrícula não autorizada no servidor."); return; } const { error: deviceError } = await supabase.rpc("activate_current_device", { p_device_key: persistentDeviceKey(), p_device_label: deviceLabel(), p_user_agent: navigator.userAgent }); if(deviceError) { setLoginError("Não foi possível registrar este dispositivo."); return; } const claim = claimData as { accessProfile?: AccessProfile; assignedBase?: string | null; workShift?: string | null } | null; const profile = claim?.accessProfile ?? "legacy"; const base = claim?.assignedBase ?? ""; setAccessProfile(profile); setAssignedBase(base); setAssignedShift(claim?.workShift ?? ""); setFilters((current) => ({ ...current, base })); }
+    else if(nextLogin !== "0001" && !catalogs.users.some((item) => item.employeeNumber === nextLogin)) { setLoginError("Matrícula não cadastrada ou senha inválida."); return; }
+    const signedInAt = Date.now(); lastSignatureActivity.current = signedInAt; signatureReauthenticationRequired.current = false; localStorage.setItem(`flight-ia-last-activity-${nextLogin}`, String(signedInAt)); const storedFilters = readStoredJson<{ model: string; prefix: string }>(`passagem-de-pista-trail-filters-${nextLogin}`); setFilters((current) => ({ ...current, date: todayLocal(), model: storedFilters?.model ?? "", prefix: storedFilters?.prefix ?? "" })); localStorage.setItem("passagem-de-pista-user", nextLogin); setProfilePhoto(localStorage.getItem(`flight-ia-profile-photo-${nextLogin}`) ?? ""); setUser(nextLogin);
   }
+  async function enter(event: React.FormEvent) { event.preventDefault(); setLoginError(""); try { await authenticate(); } catch { setLoginError("Não foi possível conectar. Tente novamente."); } }
+  const authenticateFromPresentation = useEffectEvent(async (credentials: { login: string; password: string }) => {
+    setLogin(credentials.login);
+    setLoginError("");
+    try { await authenticate(credentials.login, credentials.password); }
+    catch { setLoginError("Não foi possível conectar. Tente novamente."); }
+  });
+  useEffect(() => {
+    if(!hydrated || presentationLoginAttempted.current) return;
+    const timer = setTimeout(() => {
+      const credentials = consumePresentationLogin();
+      presentationLoginAttempted.current = true;
+      if(credentials && !user) void authenticateFromPresentation(credentials);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [hydrated, user]);
   async function registerFlightPhase(id: string, phase: FlightPhase, reason?: string) {
     if(!canOperateFlightPhase && phase !== "reopen") return;
     const current = localSnapshot.current.flights.find((flight) => flight.id === id);

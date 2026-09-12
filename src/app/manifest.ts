@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Flight IA - Operações Aéreas",
     short_name: "Flight IA",
     description: "Acompanhamento operacional de voos em tempo real",
-    start_url: "/",
+    start_url: "/app",
     display: "standalone",
     background_color: "#e7eff8",
     theme_color: "#0d315e",
