@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useRef, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ChevronDown, Expand, Monitor, MousePointer2, Smartphone, X } from "lucide-react";
 import { presentationAreas, presentationResources, type PresentationScreen } from "@/lib/presentation-resources";
@@ -113,8 +114,8 @@ export function PresentationExplorer() {
           <details className="px-feature-details" key={resource.id}><summary>Entenda este recurso <ChevronDown size={16}/></summary><p>{resource.detail}</p></details>
           {resource.topic ? <a className="px-technical-detail" href={`#avaliacao-${resource.topic}`}>Ver explicação completa <ArrowRight size={13}/></a> : null}
           {!resource.desktop || !resource.mobile ? <p className="px-device-note">Nesta prévia, mostramos a captura disponível em {resource.desktop ? "computador" : "celular"}. Explore as demais visualizações no aplicativo.</p> : null}
-          <a className="px-open-app" href="/app">Testar no aplicativo <ArrowRight size={16}/></a>
-          <small>Acesso com seu login e senha.</small>
+          <Link className="px-open-app" href="/app">Testar o aplicativo <ArrowRight size={20} aria-hidden="true"/></Link>
+          <small>Entre com seu login e senha para testar os recursos do seu perfil.</small>
         </aside>
       </div>
       <div className="px-preview-explanation"><span className="px-status-dot"/><p><strong>No aplicativo, os ambientes compartilham atualizações em tempo real.</strong> Aqui, você navega por capturas reais de demonstração. Dados, comandos e sincronização podem ser avaliados no ambiente de teste.</p></div>

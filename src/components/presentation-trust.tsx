@@ -195,6 +195,6 @@ export function PresentationReferences() {
       <Panel title="Documentos públicos S-92A" teaser="Certificação, ADs, SIB e SAIB usados como exemplos." icon={<BookOpen />}><ReferenceList items={s92References} /><p className="p-trust-fine">Relação das cópias utilizadas no protótipo. Uma revisão posterior ou substituição pode alterar o documento consultado pelo link. As diretrizes devem ser avaliadas segundo sua aplicabilidade.</p></Panel>
       <Panel title="FAA geral e integrações" teaser="Handbooks e fontes oficiais DECEA." icon={<Link2 />}><ReferenceList items={generalReferences} /><p className="p-trust-fine">As edições indicam o material utilizado. Links de API documentam possibilidades; não comprovam credenciais, autorização de uso ou conexão já configurada.</p></Panel>
     </div>
-    <div className="p-trust-footer"><p>Proposta independente de <strong>Robson Kerly de Araújo Costa</strong><br />MMA · ANAC 139090 · Protótipo para avaliação</p><a href="https://wa.me/5521986739747" target="_blank" rel="noopener noreferrer">Falar sobre a proposta <ArrowUpRight size={16} aria-hidden="true" /><small>WhatsApp · (21) 98673-9747</small></a></div>
+    <div className="p-trust-footer"><p>Proposta independente de <strong>Robson Kerly de Araújo Costa</strong><br />MMA · ANAC 139090 · Protótipo para avaliação</p><a href="#contato">Fale conosco <ArrowDown size={16} aria-hidden="true" /><small>Ligação ou WhatsApp · (21) 98673-9747</small></a></div>
   </section>;
 }
