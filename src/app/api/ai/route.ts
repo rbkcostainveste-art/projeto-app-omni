@@ -35,8 +35,9 @@ export async function POST(request: Request) {
     const context={area:typeof raw.area==='string'?raw.area.slice(0,120):'',screen:raw.screen&&JSON.stringify(raw.screen).length<12000?raw.screen:null,timeZone,today:calendarDay(new Date(),timeZone)};
     const form=parseAssistantForm(raw.form);
     const allowFlightCreation=Boolean((raw.capabilities as {createFlights?:boolean}|undefined)?.createFlights)&&['admin','app_manager','coordination','maintenance_director','maintenance_manager','maintenance_coordinator','maintenance_leader','maintenance_inspector','mechanic'].includes(actor.accessProfile);
+    const allowServiceCreation=['admin','app_manager','maintenance_director','maintenance_manager','maintenance_coordinator','maintenance_leader','maintenance_inspector'].includes(actor.accessProfile);
     const signal=AbortSignal.any([request.signal,AbortSignal.timeout(110000)]);
-    const result=await runAssistantAgent({allowFlightCreation,form,apiKey,model:process.env.OPENAI_MODEL||'gpt-5.4-mini',message:body.message||'',media,history:access.history,actor,context,navigationEnabled:request.headers.get('x-assistant-cards')==='1',signal,deps:{query:q=>assistantQuery(access.client,actor,q,signal,timeZone),search:query=>searchTechnicalLibrary(query,5)}});
+    const result=await runAssistantAgent({allowFlightCreation,allowServiceCreation,form,apiKey,model:process.env.OPENAI_MODEL||'gpt-5.4-mini',message:body.message||'',media,history:access.history,actor,context,navigationEnabled:request.headers.get('x-assistant-cards')==='1',signal,deps:{query:q=>assistantQuery(access.client,actor,q,signal,timeZone),search:query=>searchTechnicalLibrary(query,5)}});
     console.info('assistant_tools',JSON.stringify(result.trace));
     return NextResponse.json(result,{headers:{'Cache-Control':'no-store'}});
   }catch{return NextResponse.json({error:'A consulta não foi concluída. Seu texto foi preservado para tentar novamente.'},{status:502,headers:{'Cache-Control':'no-store'}});}

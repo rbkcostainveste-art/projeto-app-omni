@@ -6,6 +6,16 @@ const actor={employeeNumber:'42',accessProfile:'mechanic',assignedBase:'Macaé',
 const args=(dataset,extra={})=>({dataset,query:null,prefix:null,base:null,from:null,until:null,status:'all',mine:false,offset:0,id:null,...extra});
 const at='2026-09-09T20:00:00Z';
 
+test('general assistant prepares the same Maintenance Forecast review without publishing',async()=>{
+ let turn=0,firstRequest;
+ const result=await agent.runAssistantAgent({apiKey:'test',model:'test',message:'programe os serviços deste Maintenance Forecast',media:[{type:'input_image',image_url:'data'}],history:[],actor:{...actor,accessProfile:'maintenance_inspector'},context:{area:'Mural'},navigationEnabled:false,allowServiceCreation:true,signal:new AbortController().signal,deps:{query:async()=>{throw Error('must not search open reports');},search:()=>[],fetcher:async(_url,options)=>{const body=JSON.parse(options.body);firstRequest??=body;return Response.json({status:'completed',output:turn++===0?[{type:'function_call',name:'preparar_servicos',call_id:'services',arguments:JSON.stringify({services:[{prefix:'PR-OHI',taskReference:'2511-001',title:'Life vest',description:'12M inspection',woTask:null,notes:null},{prefix:'PR-OHI',taskReference:'Audit-S92A',title:'Airframe',description:'21D audit',woTask:'260394-1197',notes:null}]})}]:[{type:'message',content:[{type:'output_text',text:JSON.stringify({reply:'Preparei dois serviços para revisão.',targets:[],openTarget:null,continueInTarget:false})}]}]});}}});
+ assert.ok(firstRequest.tools.some(tool=>tool.name==='preparar_servicos'));
+ assert.equal(result.proposedServices.length,2);
+ assert.equal(result.proposedServices[0].tc,'');
+ assert.equal(result.proposedServices[1].tc,'260394-1197');
+ assert.deepEqual(result.trace,[{tool:'preparar_servicos',status:'prepared'}]);
+});
+
 test('multiple-choice form tools accept only catalog entries and survive the server/client round trip',()=>{
  const helper=load('src/lib/assistant-form.ts'),form=helper.parseAssistantForm({id:'tools',label:'Ferramentas',mode:'draft',fields:{tools:{label:'Seleção',value:'[]',options:['Chave 10','Chave 12'],multiple:true}}});
  assert.deepEqual(helper.formTool(form).parameters.properties.tools.type,['array','null']);
