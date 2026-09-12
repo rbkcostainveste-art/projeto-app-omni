@@ -18,7 +18,7 @@ do $$ declare k record; entries jsonb; before_boxes jsonb; wall_id text:='admin-
  perform public.admin_content('delete','wall_comments',jsonb_build_array(jsonb_build_object('post_id',wall_id,'comment_id','wall-comment')),'EXCLUIR');
  perform public.admin_content('delete','maintenance_entries',jsonb_build_array(jsonb_build_object('record_id',record_id,'entry_id','record-entry')),'EXCLUIR');
  if (select jsonb_array_length(coalesce(data->'comments','[]')) from public.operational_wall_posts where id=wall_id)<>0 or (select jsonb_array_length(coalesce(data->'entries','[]')) from public.maintenance_records where id=record_id)<>0 then raise exception 'granular deletion incomplete';end if;
- if (select count(*) from private.admin_content_deletion_audit)<=audit_before+1 then raise exception 'granular deletion audit incomplete';end if;
+ if (select count(*) from private.admin_content_deletion_audit)<>audit_before then raise exception 'granular deletion retained an administrative audit during tests';end if;
  for k in select * from private.content_kinds() where kind not in('toolboxes','toolbox_visual_catalog') loop
   loop
    entries:=public.admin_content('list',k.kind)->'rows';exit when jsonb_array_length(entries)=0;
@@ -28,5 +28,6 @@ do $$ declare k record; entries jsonb; before_boxes jsonb; wall_id text:='admin-
  end loop;
  if exists(select 1 from public.maintenance_records) or exists(select 1 from public.internal_conversations) or (select jsonb_array_length(flights) from public.shared_app_state where id='main')<>0 then raise exception 'cleanup incomplete';end if;
  if before_boxes is distinct from (select jsonb_agg(to_jsonb(t) order by id) from public.toolboxes t) then raise exception 'demo boxes changed';end if;
+ if (select count(*) from private.admin_content_deletion_audit)<>audit_before then raise exception 'content deletion retained an administrative audit during tests';end if;
 end $$;
 rollback;
