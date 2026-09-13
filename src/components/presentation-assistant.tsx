@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowUpRight, ChevronRight, LoaderCircle, MessageCircle, RotateCcw, Send, ShieldCheck, Sparkles, Square, X } from "lucide-react";
+import { PresentationAssistantVoice } from "./presentation-assistant-voice";
 import "./presentation-assistant.css";
 
 type AssistantLink = { id: string; label: string; href: string };
@@ -40,6 +41,7 @@ export function PresentationAssistant() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [retryMessages, setRetryMessages] = useState<RequestMessage[] | null>(null);
+  const [voiceActive, setVoiceActive] = useState(false);
 
   function showAssistant(initialQuestion?: string) {
     if (initialQuestion) setQuestion(initialQuestion.slice(0, 2000));
@@ -151,6 +153,18 @@ export function PresentationAssistant() {
     sendQuestion(question);
   }
 
+  async function sendVoice(file: File) {
+    const form = new FormData();
+    form.set("file", file);
+    const response = await fetch("/api/presentation-assistant/transcribe", { method: "POST", body: form });
+    const result: unknown = await response.json().catch(() => null);
+    if (!response.ok || typeof result !== "object" || result === null || !("text" in result) || typeof result.text !== "string" || !result.text.trim()) {
+      const message = typeof result === "object" && result !== null && "error" in result && typeof result.error === "string" ? result.error : "Não consegui ouvir a mensagem. Grave novamente ou escreva sua pergunta.";
+      throw Error(message);
+    }
+    sendQuestion(result.text);
+  }
+
   function closeAssistant() {
     dialogRef.current?.close();
   }
@@ -195,12 +209,17 @@ export function PresentationAssistant() {
       <footer className="pa-composer-wrap">
         <form className="pa-composer" onSubmit={submit}>
           <label htmlFor="presentation-assistant-question" className="pa-sr-only">Sua pergunta sobre o aplicativo</label>
-          <textarea ref={textareaRef} id="presentation-assistant-question" value={question} onChange={event => setQuestion(event.target.value)} maxLength={2000} rows={2} placeholder="Escreva sua dúvida sobre o aplicativo…" enterKeyHint="enter" onKeyDown={event => {
-            if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing && !window.matchMedia("(max-width: 600px)").matches) { event.preventDefault(); sendQuestion(question); }
-          }}/>
-          {busy ? <button className="pa-send pa-stop" type="button" aria-label="Interromper resposta" title="Interromper resposta" onClick={() => requestRef.current?.abort()}><Square size={16} aria-hidden="true"/></button> : <button className="pa-send" type="submit" disabled={!question.trim()} aria-label="Enviar pergunta" title="Enviar pergunta"><Send size={18} aria-hidden="true"/></button>}
+          {!voiceActive && (
+            <textarea ref={textareaRef} id="presentation-assistant-question" value={question} onChange={event => setQuestion(event.target.value)} maxLength={2000} rows={2} placeholder="Escreva ou envie uma mensagem de voz…" enterKeyHint="send" aria-keyshortcuts="Enter" onKeyDown={event => {
+              if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey && !event.nativeEvent.isComposing) { event.preventDefault(); sendQuestion(question); }
+            }}/>
+          )}
+          {!busy && (
+            <PresentationAssistantVoice disabled={busy} onSend={sendVoice} onError={setError} onActiveChange={setVoiceActive}/>
+          )}
+          {!voiceActive && (busy ? <button className="pa-send pa-stop" type="button" aria-label="Interromper resposta" title="Interromper resposta" onClick={() => requestRef.current?.abort()}><Square size={16} aria-hidden="true"/></button> : <button className="pa-send" type="submit" disabled={!question.trim()} aria-label="Enviar pergunta" title="Enviar pergunta · Enter"><Send size={18} aria-hidden="true"/></button>)}
         </form>
-        <p className="pa-privacy-note">Perguntas processadas pela OpenAI. Não envie dados pessoais ou operacionais.</p>
+        <p className="pa-privacy-note">Texto e voz são processados pela OpenAI. Não envie dados pessoais ou operacionais.</p>
       </footer>
     </dialog>
   </>;

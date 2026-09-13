@@ -1,5 +1,4 @@
-import { handlePresentationAssistant } from "@/lib/presentation-assistant";
-import { getPresentationKnowledge } from "@/lib/presentation-assistant-knowledge";
+import { handlePresentationTranscription } from "@/lib/presentation-transcription";
 import { consumePresentationRequestQuota } from "@/lib/presentation-request-quota";
 
 export const runtime = "nodejs";
@@ -7,10 +6,10 @@ export const maxDuration = 60;
 
 export async function POST(request: Request) {
   const apiKey = process.env.OPENAI_API_KEY;
-  return handlePresentationAssistant(request, {
-    apiKey, model: process.env.PRESENTATION_ASSISTANT_MODEL || process.env.OPENAI_MODEL || "gpt-5.4-mini",
+  return handlePresentationTranscription(request, {
+    apiKey,
+    model: process.env.PRESENTATION_TRANSCRIBE_MODEL || "gpt-transcribe",
     enabled: process.env.PRESENTATION_ASSISTANT_ENABLED !== "false",
-    getKnowledge: getPresentationKnowledge,
     consumeQuota: () => consumePresentationRequestQuota(request, apiKey!),
   });
 }
