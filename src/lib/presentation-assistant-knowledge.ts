@@ -90,7 +90,7 @@ const currentTopics: PresentationKnowledgeTopic[] = [
   },
   {
     id: "contato-proposta", title: "Fale conosco e próximo passo", href: "#contato",
-    text: "Proposta independente de Robson Kerly de Araújo Costa. Contato: (21) 98673-9747, ligação ou WhatsApp. O próximo passo proposto é uma conversa com a direção e a TI para definir requisitos e caminho para validação controlada. Uma avaliação técnica e operacional pode definir as condições de um piloto com grupo limitado, antes de ampliar. Não há preço, prazo comercial de implantação ou contrato publicado nesta apresentação.",
+    text: "Projeto independente de Robson Kerly de Araújo Costa. Fale diretamente com o criador para conhecer a proposta e tirar dúvidas. Contato: (21) 98673-9747, ligação ou WhatsApp. Robson apresenta seu próprio projeto; este contato não representa a OMNI, sua direção ou sua TI. Caso uma empresa tenha interesse na adoção, suas áreas responsáveis deverão avaliar os requisitos e as condições de implantação, conforme suas políticas. Não há preço, prazo comercial de implantação ou contrato publicado nesta apresentação.",
     keywords: ["contato", "whatsapp", "telefone", "preco", "valor", "contratar", "prazo", "reuniao", "piloto controlado", "autor"],
   },
 ];

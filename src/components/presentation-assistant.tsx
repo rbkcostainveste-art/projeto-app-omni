@@ -164,23 +164,23 @@ export function PresentationAssistant() {
   return <>
     <button type="button" className="presentation-assistant-launcher" aria-haspopup="dialog" aria-controls="presentation-assistant-dialog" aria-expanded={open} onClick={() => showAssistant()}>
       <span className="pa-launcher-icon"><MessageCircle size={24} aria-hidden="true"/><span>IA</span></span>
-      <span><strong>Tire suas dúvidas</strong><small>Conheça os benefícios</small></span>
+      <span><strong>Converse com a IA</strong><small>Respostas na hora, aqui no site</small></span>
       <ChevronRight size={17} aria-hidden="true"/>
     </button>
 
     <dialog ref={dialogRef} id="presentation-assistant-dialog" className="presentation-assistant-dialog" aria-labelledby="presentation-assistant-title" onClose={() => { setOpen(false); restoreFocusRef.current?.focus({ preventScroll: true }); }}>
       <header className="pa-header">
         <span className="pa-header-icon"><Sparkles size={23} aria-hidden="true"/></span>
-        <div><h2 id="presentation-assistant-title">Vamos conhecer a solução?</h2><p>Assistente IA da apresentação</p></div>
+        <div><h2 id="presentation-assistant-title">Converse com a IA</h2><p>Pergunte e receba a resposta aqui</p></div>
         <button type="button" className="pa-close" aria-label="Fechar assistente" onClick={closeAssistant} autoFocus><X size={21} aria-hidden="true"/></button>
       </header>
 
       <div ref={transcriptRef} className="pa-transcript" role="log" aria-label="Conversa com o assistente" aria-live="polite" aria-relevant="additions text">
         <div className="pa-welcome">
           <span className="pa-welcome-label"><ShieldCheck size={15} aria-hidden="true"/> Segurança, confiança e operação</span>
-          <h3>O que você gostaria de entender?</h3>
-          <p>Posso explicar as ferramentas, os benefícios para sua equipe e as condições para a empresa adotar o aplicativo.</p>
-          <p>Conte sua dúvida. Se quiser, diga em qual área você atua para eu trazer exemplos mais úteis.</p>
+          <h3>Olá! Qual é a sua dúvida?</h3>
+          <p>Sou o assistente de IA deste projeto. Respondo aqui, na conversa, sobre ferramentas, segurança e implantação.</p>
+          <p>Pode perguntar, pedir um exemplo e aprofundar o assunto. Se me contar sua área, adapto a explicação para você.</p>
         </div>
         {messages.length === 0 && <div className="pa-suggestions" aria-label="Perguntas para começar">{suggestedQuestions.map(item => <button key={item.label} type="button" disabled={busy} onClick={() => sendQuestion(item.question)}>{item.label}<ArrowUpRight size={16} aria-hidden="true"/></button>)}</div>}
         {messages.map((message, index) => <article className={`pa-message pa-message-${message.role}`} key={index}>
