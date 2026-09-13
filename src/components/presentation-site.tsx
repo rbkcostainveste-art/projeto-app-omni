@@ -3,13 +3,14 @@
 import Image from "next/image";
 import { type FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, CirclePlay, LockKeyhole, MessageCircle, Phone, Plane, MonitorSmartphone, ClipboardCheck, Wrench, CalendarClock, PackageOpen, ChevronDown, X } from "lucide-react";
+import { ArrowRight, CirclePlay, LockKeyhole, MessageCircle, Phone, Plane, MonitorSmartphone, ClipboardCheck, Wrench, CalendarClock, PackageOpen, ChevronDown, X, Sparkles } from "lucide-react";
 import { preparePresentationLogin, preparePresentationDemo, preparePresentationAccountLogin, type PresentationDemoProfile } from "@/lib/presentation-login";
 import { presentationVideos, presentationVideoPath, type PresentationVideo } from "@/lib/presentation-videos";
 import { PresentationExplorer } from "./presentation-explorer";
 import { PresentationSecurity, PresentationConfidence, PresentationReferences } from "./presentation-trust";
 import { PresentationDossier } from "./presentation-dossier";
 import { PresentationMobileSection } from "./presentation-mobile-section";
+import { PresentationAssistant, openPresentationAssistant } from "./presentation-assistant";
 import "./presentation-site.css";
 
 const trialProfiles = [
@@ -79,10 +80,11 @@ export function PresentationSite({ availableVideos = [] }: { availableVideos?: s
       </div>
     </section>
     <div className="presentation-guide" aria-label="Índice da proposta"><a href="#seguranca"><span>01</span> Segurança <ArrowRight/></a><a href="#confianca"><span>02</span> Confiança <ArrowRight/></a><a href="#ambientes"><span>03</span> Ferramentas <ArrowRight/></a></div>
+    <button type="button" className="presentation-assistant-invite" onClick={() => openPresentationAssistant()}><Sparkles size={24} aria-hidden="true"/><span><strong>O que essa solução pode fazer pela sua equipe?</strong><small>Converse com a IA sobre ferramentas, segurança e implantação.</small></span><span className="presentation-assistant-invite-action">Tirar minhas dúvidas <ArrowRight size={17} aria-hidden="true"/></span></button>
     <PresentationMobileSection name="Segurança para adotar" description="Infraestrutura, integração e proteção de dados." sectionId="seguranca" number="01"><PresentationSecurity/></PresentationMobileSection>
     <PresentationMobileSection name="Confiança para avaliar" description="IA, governança e requisitos ANAC." sectionId="confianca" number="02"><PresentationConfidence/></PresentationMobileSection>
     <PresentationExplorer onTestApp={showTrial}/>
-    <section className="presentation-try" aria-labelledby="presentation-try-title">
+    <section id="experimentar" className="presentation-try" aria-labelledby="presentation-try-title">
       <div className="presentation-try-icon"><MonitorSmartphone size={34} aria-hidden="true"/></div>
       <div><p className="eyebrow">EXPERIMENTE NA PRÁTICA</p><h2 id="presentation-try-title">Conheça o aplicativo por dentro.</h2><p>Escolha um perfil para testar ou entre com seu login e senha.</p><small>Use dados simulados. Os registros salvos permanecem e podem ser vistos por outros usuários autorizados.</small></div>
       <button type="button" onClick={showTrial} className="presentation-test-button">Testar o aplicativo <ArrowRight size={20} aria-hidden="true"/></button>
@@ -109,5 +111,6 @@ export function PresentationSite({ availableVideos = [] }: { availableVideos?: s
     <dialog ref={dialog} className="presentation-video-dialog" aria-labelledby="presentation-video-title" onClose={() => setActiveVideo(null)} onClick={event => { if (event.target === event.currentTarget) closeVideo(); }}>
       {activeVideo ? <div className="presentation-video-player"><header><h2 id="presentation-video-title">{activeVideo.title}</h2><button onClick={closeVideo} aria-label="Fechar vídeo"><X size={22}/></button></header><video key={activeVideo.id} src={presentationVideoPath(activeVideo.id)} poster={activeVideo.poster} controls autoPlay playsInline preload="metadata">Seu navegador não permite a reprodução. <a href={presentationVideoPath(activeVideo.id)}>Abrir vídeo</a></video></div> : null}
     </dialog>
+    <PresentationAssistant/>
   </main>;
 }
