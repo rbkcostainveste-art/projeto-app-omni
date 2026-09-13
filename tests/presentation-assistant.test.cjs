@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const ts = require('typescript');
 const exportsObject = {};
 new Function('exports', ts.transpileModule(fs.readFileSync('src/lib/presentation-assistant.ts','utf8'), {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(exportsObject);
-const {handlePresentationAssistant,parsePresentationMessages,parsePresentationAnswer} = exportsObject;
+const {handlePresentationAssistant,parsePresentationMessages,parsePresentationAnswer,presentationSalesInstructions} = exportsObject;
 const links = [{id:'security',label:'Segurança',href:'#seguranca'},{id:'contact',label:'Fale conosco',href:'#contato'}];
 function req(body={messages:[{role:'user',content:'Como funciona a segurança?'}]},headers={}) {
   return new Request('https://example.com/api/presentation-assistant',{method:'POST',headers:{'content-type':'application/json',origin:'https://example.com',...headers},body:JSON.stringify(body)});
@@ -55,4 +55,13 @@ test('provider errors and partial structured response are not exposed as complet
 test('actual body byte limit applies even without content-length',async()=>{
   const {deps,calls}=setup();const response=await handlePresentationAssistant(req({messages:[{role:'user',content:'á'.repeat(19000)}]}),deps);
   assert.equal(response.status,400);assert.deepEqual(calls,[]);
+});
+test('assistant answers in layers and connects each relevant question to a concrete benefit',()=>{
+  assert.match(presentationSalesInstructions,/1 a 3 frases e até 60 palavras/);
+  assert.match(presentationSalesInstructions,/Só aprofunde quando o visitante pedir/);
+  assert.match(presentationSalesInstructions,/venda consultiva sutil e direta/);
+  assert.match(presentationSalesInstructions,/relato técnico/);
+  assert.match(presentationSalesInstructions,/sugestão para melhorar a redação técnica/);
+  assert.match(presentationSalesInstructions,/sem prometer conformidade automática/);
+  assert.match(presentationSalesInstructions,/recurso mais específico para explorar/);
 });

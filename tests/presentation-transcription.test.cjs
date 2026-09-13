@@ -87,7 +87,7 @@ test('provider errors and empty transcriptions are explained without exposing pr
 
 test('assistant prompt asks for direct answers while keeping precise site navigation', () => {
   const prompt = fs.readFileSync('src/lib/presentation-assistant.ts', 'utf8');
-  assert.match(prompt, /Comece pela resposta direta/);
+  assert.match(prompt, /Comece pela resposta concreta/);
   assert.match(prompt, /recurso mais específico para explorar/);
   assert.match(prompt, /até 3 linkIds/);
 });

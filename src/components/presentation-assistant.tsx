@@ -192,9 +192,8 @@ export function PresentationAssistant() {
       <div ref={transcriptRef} className="pa-transcript" role="log" aria-label="Conversa com o assistente" aria-live="polite" aria-relevant="additions text">
         <div className="pa-welcome">
           <span className="pa-welcome-label"><ShieldCheck size={15} aria-hidden="true"/> Segurança, confiança e operação</span>
-          <h3>Olá! Qual é a sua dúvida?</h3>
-          <p>Sou o assistente de IA deste projeto. Respondo aqui, na conversa, sobre ferramentas, segurança e implantação.</p>
-          <p>Pode perguntar, pedir um exemplo e aprofundar o assunto. Se me contar sua área, adapto a explicação para você.</p>
+          <h3>O que você quer saber?</h3>
+          <p>Pergunte sobre ferramentas, segurança ou implantação. Respondo na hora, adapto à sua área e mostro onde conferir no site.</p>
         </div>
         {messages.length === 0 && <div className="pa-suggestions" aria-label="Perguntas para começar">{suggestedQuestions.map(item => <button key={item.label} type="button" disabled={busy} onClick={() => sendQuestion(item.question)}>{item.label}<ArrowUpRight size={16} aria-hidden="true"/></button>)}</div>}
         {messages.map((message, index) => <article className={`pa-message pa-message-${message.role}`} key={index}>
