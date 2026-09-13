@@ -99,6 +99,18 @@ export const presentationResources: Record<string, PresentationResource> = {
     desktop: desktop("ia-relato", "Formulário e assistente de IA lado a lado", 1183, 918),
     mobile: mobile("mobile-ia-relato", "Assistente de IA no celular"), topic: "ia-exemplo",
   },
+  "mural-piloto": {
+    id: "mural-piloto", title: "Mural · programação", summary: "Comece o dia sabendo o que está previsto e o que mudou nos seus voos.",
+    detail: "Na primeira área do piloto, a Programação reúne voos por situação, giros de manutenção e avisos de secagem. Os voos atribuídos ao piloto aparecem aqui. Esta captura real mostra a visão de um visitante sem voos vinculados.",
+    desktop: desktop("pilot-mural-desktop", "Piloto · mural de programação no computador", 1085, 769),
+    mobile: mobile("pilot-mural-mobile", "Piloto · mural de programação no celular", 375, 812), topic: "mural-piloto",
+  },
+  "trilhos-piloto": {
+    id: "trilhos-piloto", title: "Trilhos do piloto", summary: "Escolha a data e acompanhe as etapas dos voos atribuídos a você.",
+    detail: "Os filtros ajudam a encontrar o voo e abrir seu acompanhamento compartilhado com manutenção e coordenação. No aplicativo, as atualizações chegam em tempo real conforme o acesso. Esta captura mostra os controles disponíveis, ainda sem voos atribuídos ao visitante.",
+    desktop: desktop("pilot-trilhos-desktop", "Piloto · filtros e datas dos trilhos no computador", 1085, 769),
+    mobile: mobile("pilot-trilhos-mobile", "Piloto · filtros e datas dos trilhos no celular", 375, 812), topic: "trilhos-piloto",
+  },
   cockpit: {
     id: "cockpit", title: "Cockpit · meu dia", summary: "Consulte a programação e registre sua apresentação em um único ambiente.",
     detail: "O piloto encontra o contexto do dia e os atalhos para preparar o voo. As informações do voo e os comandos dependem da escala, do perfil e das autorizações.",
@@ -183,7 +195,7 @@ export const presentationAreas = [
     { id: "mecanico", label: "Mecânico", description: "Trilho, atividades e execução", resourceIds: ["verificacoes", "trilho", "pista", "secagem", "passagem", "relato", "acoes", "comentarios", "ia", ...common] },
   ] },
   { id: "tripulacao", label: "Tripulação", profiles: [
-    { id: "piloto", label: "Piloto", description: "Cockpit e preparação do voo", resourceIds: ["cockpit", "preparo", "ais", "documentos", "ocorrencias", "jornada", "prontidao", "secagem", ...common] },
+    { id: "piloto", label: "Piloto", description: "Mural, trilhos e cockpit", resourceIds: ["mural-piloto", "trilhos-piloto", "cockpit", "preparo", "ais", "documentos", "ocorrencias", "jornada", "prontidao", "secagem", ...common] },
     { id: "comissario", label: "Comissário · consulta", description: "Informações conforme autorização", resourceIds: ["cockpit-consulta", ...common] },
   ] },
   { id: "ferramentaria", label: "Ferramentaria", profiles: [

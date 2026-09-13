@@ -28,7 +28,7 @@
               "perfis"
             ],
             [
-              "Piloto · programação e cockpit",
+              "Piloto · mural, trilhos e cockpit",
               "perfil-piloto"
             ],
             [
@@ -149,7 +149,7 @@
       "tiles": [
         [
           "Piloto",
-          "Voos do dia, preparação e registros de apoio.",
+          "Mural, trilhos e cockpit para acompanhar o dia.",
           "perfil-piloto"
         ],
         [
@@ -182,31 +182,39 @@
     {
       "key": "perfil-piloto",
       "title": "Visão geral · Piloto",
-      "sub": "O piloto consulta o que está previsto, prepara o voo e acompanha as informações vinculadas à sua atuação.",
+      "sub": "Comece pelo mural de programação, acompanhe os voos nos trilhos e prepare sua atuação no cockpit.",
       "kind": "overview",
       "role": "Piloto",
-      "nav": "Programação → Trilhos → Cockpit",
+      "nav": "Mural (Programação) → Trilhos → Cockpit",
       "shots": [
         [
-          "1 · Conhecer o dia",
+          "1 · Mural de programação",
+          "pilot-mural-mobile",
+          "mural-piloto",
+          "Veja a situação dos voos e os avisos da sua rotina."
+        ],
+        [
+          "2 · Trilhos do piloto",
+          "pilot-trilhos-mobile",
+          "trilhos-piloto",
+          "Escolha a data e acompanhe as etapas compartilhadas."
+        ],
+        [
+          "3 · Cockpit",
           "mobile-cockpit",
           "guia-cockpit",
-          "Veja os voos e a apresentação."
-        ],
-        [
-          "2 · Preparar o voo",
-          "mobile-preparo",
-          "preparacao",
-          "Abra os dados do voo selecionado."
-        ],
-        [
-          "3 · Registrar observação",
-          "mobile-ocorrencia",
-          "ocorrencias",
-          "Descreva o que foi observado."
+          "Acesse apresentação, preparação e registros do voo."
         ]
       ],
       "jumps": [
+        [
+          "Preparação do voo",
+          "preparacao"
+        ],
+        [
+          "Registrar uma observação",
+          "ocorrencias"
+        ],
         [
           "Escolher outro perfil",
           "perfis"
@@ -218,8 +226,78 @@
       ]
     },
     {
+      "key": "mural-piloto",
+      "title": "Piloto · mural de programação",
+      "sub": "A primeira área reúne o que está previsto e os avisos que ajudam a organizar o dia.",
+      "kind": "visual",
+      "role": "Piloto",
+      "image": "pilot-mural-mobile",
+      "side": [
+        [
+          "1 · Consulte a situação dos voos",
+          "Os cartões separam manutenção, voos confirmados, planejados, cancelados, retornados e finalizados. Selecione uma situação para consultar os voos correspondentes."
+        ],
+        [
+          "2 · Confira os avisos de secagem",
+          "O botão Secagens de compressores reúne as pendências dessa rotina, conforme os registros e as permissões do piloto."
+        ],
+        [
+          "3 · Siga para o acompanhamento",
+          "A navegação inferior permite trocar entre Programação, Trilhos e Cockpit. Os voos atribuídos ao piloto aparecem conforme sua escala e autorização."
+        ]
+      ],
+      "note": "Captura real de um visitante de demonstração sem voos atribuídos. O mural também pode ser visualizado no computador; as atualizações compartilhadas dependem de conexão e sincronização ativa.",
+      "jumps": [
+        [
+          "Conhecer os trilhos do piloto",
+          "trilhos-piloto"
+        ],
+        [
+          "Voltar à visão geral",
+          "perfil-piloto"
+        ]
+      ]
+    },
+    {
+      "key": "trilhos-piloto",
+      "title": "Piloto · acompanhe os voos nos trilhos",
+      "sub": "Encontre os voos atribuídos a você e acompanhe as etapas no mesmo contexto da manutenção e da coordenação.",
+      "kind": "visual",
+      "role": "Piloto",
+      "image": "pilot-trilhos-mobile",
+      "side": [
+        [
+          "1 · Escolha a data",
+          "Use Hoje, Ontem ou outra data da lista. A seleção ajuda a localizar a programação que deseja acompanhar."
+        ],
+        [
+          "2 · Ajuste os filtros",
+          "O seletor de tipos organiza o que aparece. Se nenhum voo for encontrado, confira a data, os filtros e a atribuição do voo ao seu usuário."
+        ],
+        [
+          "3 · Acompanhe as etapas",
+          "Quando houver um voo disponível, abra seu acompanhamento. As informações compartilhadas mostram as etapas pertinentes à sua atuação, conforme as permissões do perfil."
+        ]
+      ],
+      "note": "Esta captura mostra os controles reais, ainda sem voos atribuídos ao visitante. No aplicativo, informações compartilhadas são atualizadas em tempo real com conexão e sincronização ativa. A visão também está disponível no computador.",
+      "jumps": [
+        [
+          "Conhecer o cockpit",
+          "guia-cockpit"
+        ],
+        [
+          "Entender o fluxo compartilhado",
+          "trilhos"
+        ],
+        [
+          "Voltar à visão geral",
+          "perfil-piloto"
+        ]
+      ]
+    },
+    {
       "key": "guia-cockpit",
-      "title": "Piloto · entenda os primeiros botões",
+      "title": "Piloto · entenda os botões do cockpit",
       "sub": "Você está no Cockpit. Comece pela data e pelas atividades previstas.",
       "kind": "annotated",
       "role": "Piloto",
@@ -1199,8 +1277,8 @@
           "troubleshooting"
         ],
         [
-          "Cockpit do piloto",
-          "guia-cockpit"
+          "Piloto · mural, trilhos e cockpit",
+          "perfil-piloto"
         ],
         [
           "Chat, chamadas e notas",
@@ -2122,6 +2200,16 @@
     "note": "Transposição do conteúdo editorial do PDF comercial. A programação de vídeos é apresentada nesta página com a atualização definida pelo autor."
   },
   "images": {
+    "pilot-mural-mobile": {
+      "src": "/presentation/screens/pilot-mural-mobile.jpg",
+      "width": 375,
+      "height": 812
+    },
+    "pilot-trilhos-mobile": {
+      "src": "/presentation/screens/pilot-trilhos-mobile.jpg",
+      "width": 375,
+      "height": 812
+    },
     "ajuda": {
       "src": "/presentation/dossier/ajuda.jpg",
       "width": 1160,

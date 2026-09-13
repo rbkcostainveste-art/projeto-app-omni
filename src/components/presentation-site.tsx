@@ -16,7 +16,7 @@ import "./presentation-site.css";
 const trialProfiles = [
   { id: "maintenance_leader", label: "Manutenção · líderes", description: "Passagem de serviço e acompanhamento técnico.", icon: ClipboardCheck },
   { id: "mechanic", label: "Manutenção · mecânicos", description: "Trilho, atividades e execução.", icon: Wrench },
-  { id: "commander", label: "Tripulação · comandante", description: "Cockpit e preparação do voo.", icon: Plane },
+  { id: "commander", label: "Tripulação · comandante", description: "Mural, trilhos e cockpit do piloto.", icon: Plane },
   { id: "coordination", label: "Coordenação", description: "Painel e programação dos voos.", icon: CalendarClock },
   { id: "toolroom", label: "Ferramentaria", description: "Caixas, ferramentas e conferências.", icon: PackageOpen },
 ] as const;
@@ -46,7 +46,7 @@ export function PresentationSite({ availableVideos = [] }: { availableVideos?: s
     dialog.current?.showModal();
   }
   function closeVideo() { dialog.current?.close(); setActiveVideo(null); }
-  function showTrial() { setTrialEntering(false); trialDialog.current?.showModal(); }
+  function showTrial() { router.prefetch("/app"); setTrialEntering(false); trialDialog.current?.showModal(); }
   function enterDemo(profile: PresentationDemoProfile) {
     if (trialEntering) return;
     setTrialEntering(true);
@@ -63,7 +63,7 @@ export function PresentationSite({ availableVideos = [] }: { availableVideos?: s
       <a href="#inicio" className="presentation-brand" aria-label="Flight IA, início"><Plane aria-hidden="true"/><span>Flight<span className="brand-ia"> IA</span><small>INTEGRAÇÃO OPERACIONAL</small></span></a>
       <nav aria-label="Navegação da apresentação"><a href="#seguranca">Segurança</a><a href="#confianca">Confiança</a><a href="#ambientes">Ambientes</a><a href="#videos">Vídeos</a><a href="#bibliografia">Referências</a></nav>
       <button type="button" className="presentation-mobile-login-toggle" aria-expanded={loginExpanded} aria-controls="presentation-login-form" onClick={() => setLoginExpanded(value => !value)}><LockKeyhole size={15} aria-hidden="true"/>Entrar<ChevronDown size={15} aria-hidden="true"/></button>
-      <form id="presentation-login-form" onSubmit={enter} className={loginExpanded ? "presentation-login is-expanded" : "presentation-login"} aria-label="Entrar no aplicativo">
+      <form id="presentation-login-form" onSubmit={enter} onFocusCapture={() => router.prefetch("/app")} className={loginExpanded ? "presentation-login is-expanded" : "presentation-login"} aria-label="Entrar no aplicativo">
         <label><span className="sr-only">Login</span><input name="username" value={login} onChange={event => setLogin(event.target.value)} placeholder="Login" autoComplete="username" autoCapitalize="none" required disabled={entering}/></label>
         <label><span className="sr-only">Senha</span><input name="password" value={password} onChange={event => setPassword(event.target.value)} type="password" placeholder="Senha" autoComplete="current-password" required disabled={entering}/></label>
         <button disabled={entering} type="submit"><LockKeyhole size={14} aria-hidden="true"/>{entering ? "Entrando…" : "Entrar"}</button>

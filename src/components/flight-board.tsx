@@ -353,14 +353,19 @@ export function FlightBoard() {
       try { claim = verifiedApplicationIdentity(claimData, { employeeNumber: user }); }
       catch { clearStoredApplicationIdentity(localStorage); setUser(""); setLoginError("A sessão mudou. Entre novamente com seu login."); return; }
       if(active) { setAccessProfile(claim.accessProfile as AccessProfile); setIsPresentationDemo(claim.isPresentationDemo); setAssignedBase(claim.assignedBase); setAssignedShift(claim.workShift); setProfilePhoto(claim.avatarDataUrl); setFilters((current) => ({ ...current, base: claim.assignedBase })); }
-      const { data: directoryData, error: directoryError } = await supabase!.rpc("get_user_directory");
+      const [directoryResult, authorResult, stateResult] = await Promise.all([
+        supabase!.rpc("get_user_directory"),
+        supabase!.rpc("get_comment_author_roles"),
+        supabase!.from("shared_app_state").select("flights,catalogs,revision").eq("id", "main").maybeSingle(),
+      ]);
+      const { data: directoryData, error: directoryError } = directoryResult;
       if(!active) return;
       if(directoryError) { if(active) setSyncError(directoryError.message); return; }
       if(active) setUserDirectory(Object.fromEntries(((directoryData ?? []) as { employee_number: string; display_name: string; avatar_data_url: string | null }[]).map((item) => [item.employee_number, { name: item.display_name, avatar: item.avatar_data_url ?? "" }])));
-      const {data:authorRoles}=await supabase!.rpc("get_comment_author_roles");
+      const {data:authorRoles}=authorResult;
       if(!active) return;
       if(active&&authorRoles)setUserDirectory(current=>Object.fromEntries(Object.entries(current).map(([id,person])=>[id,{...person,role:(authorRoles as {employee_number:string;job_role:string}[]).find(p=>p.employee_number===id)?.job_role}])));
-      const { data, error } = await supabase!.from("shared_app_state").select("flights,catalogs,revision").eq("id", "main").maybeSingle();
+      const { data, error } = stateResult;
       if(!active) return;
       if(error) { if(active) setSyncError(error.message); return; }
       if(data&&!isCompleteSharedState(data)){if(active)setSyncError("Dados de sincronização incompletos. Reabra a tela para tentar novamente.");return;}

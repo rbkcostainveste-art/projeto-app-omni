@@ -29,19 +29,19 @@ function mockClient(options = {}) {
     async rpc(name, args) {
       calls.push(name);
       if(name === 'disconnect_my_device') { identity = null; return {data:true,error:null}; }
-      if(name === 'claim_device_identity') {
-        assert.equal(args.p_employee_number, 'QA-42');
-        assert.equal(args.p_password, 'custom-password');
-        if(options.wrongPassword) return {data:null,error:{message:'wrong'}};
-        identity = options.wrongClaim || userClaim;
-        return {data:identity,error:null};
+      if(name === 'complete_application_entry') {
+        assert.equal(args.p_expected_auth_user_id,session.user.id);
+        if(options.activationFailure) return {data:null,error:{message:'failed'}};
+        if(args.p_kind === 'credentials') {
+          assert.equal(args.p_employee_number, 'QA-42');
+          assert.equal(args.p_password, 'custom-password');
+          if(options.wrongPassword) return {data:null,error:{message:'wrong'}};
+          identity = options.wrongClaim || userClaim;
+        } else if(args.p_kind === 'demo') {
+          identity = { ...userClaim, employeeNumber:'demo-42', accessProfile:args.p_profile, isPresentationDemo:true };
+        }
+        return {data:{...(options.refreshClaim || identity), authUserId:options.wrongAuthId ? 'other-session' : session.user.id},error:null};
       }
-      if(name === 'begin_presentation_demo') {
-        identity = { ...userClaim, employeeNumber:'demo-42', accessProfile:args.p_profile, isPresentationDemo:true };
-        return {data:identity,error:null};
-      }
-      if(name === 'activate_current_device') return {data:null,error:options.activationFailure ? {message:'failed'} : null};
-      if(name === 'refresh_current_device') return {data:options.refreshClaim || identity,error:null};
       throw Error(`Unexpected RPC ${name}`);
     }
   };
@@ -52,12 +52,12 @@ test('explicit credentials discard the former admin and return only the supplied
   const result = await api.signInApplication(client, credentials, device);
   assert.equal(result.employeeNumber, 'QA-42');
   assert.equal(result.accessProfile, 'mechanic');
-  assert.ok(client.calls.indexOf('disconnect_my_device') < client.calls.indexOf('claim_device_identity'));
+  assert.ok(client.calls.indexOf('disconnect_my_device') < client.calls.indexOf('complete_application_entry'));
   assert.ok(client.calls.indexOf('signOut:local') < client.calls.indexOf('anonymous'));
 });
 test('wrong password cannot fall back to stored administrator or leave a claimed session', async () => {
   const client = mockClient({wrongPassword:true});
-  await assert.rejects(api.signInApplication(client, credentials, device), /senha inválida/);
+  await assert.rejects(api.signInApplication(client, credentials, device), /login e senha/);
   assert.equal(client.session,null);
   assert.equal(client.identity,null);
   assert.equal(client.calls.includes('activate_current_device'),false);
@@ -67,12 +67,42 @@ test('mismatched claim or refresh and changed browser session are rejected', asy
     {wrongClaim:{employeeNumber:'0001',accessProfile:'admin'}},
     {refreshClaim:{employeeNumber:'0001',accessProfile:'admin'}},
     {switchedSession:true},
+    {wrongAuthId:true},
     {activationFailure:true},
   ]) {
     const client = mockClient(options);
     await assert.rejects(api.signInApplication(client, credentials, device));
     assert.equal(client.session,null);
   }
+});
+
+test('server identity and Auth validation run concurrently, then detect a late account switch', async () => {
+  const client = mockClient();
+  const originalRpc = client.rpc.bind(client);
+  let releaseRpc;
+  const pendingRpc = new Promise(resolve => { releaseRpc=resolve; });
+  let authChecked=false;
+  client.auth.getUser = async () => {
+    authChecked=true;
+    return {data:{user:client.session.user},error:null};
+  };
+  client.rpc = async (name,args) => {
+    if(name==='complete_application_entry') await pendingRpc;
+    return originalRpc(name,args);
+  };
+  const result=api.signInApplication(client,credentials,device);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(authChecked,true,'Auth must not wait for the database round trip');
+  releaseRpc();
+  assert.equal((await result).employeeNumber,'QA-42');
+
+  const switched=mockClient();
+  const originalSession=switched.auth.getSession;
+  let sessionReads=0;
+  switched.auth.getSession=async()=> ++sessionReads===2
+    ? {data:{session:{user:{id:'different-tab-account'}}}}
+    : originalSession();
+  await assert.rejects(api.signInApplication(switched,credentials,device),/sessão mudou/);
 });
 test('stored identity is only restored when the server confirms the same employee', async () => {
   const client = mockClient();

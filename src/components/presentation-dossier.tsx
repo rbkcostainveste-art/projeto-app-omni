@@ -54,7 +54,7 @@ function readContent(value: unknown): DossierData {
 const content = readContent(rawContent);
 const groups = [
   { name: "Visão geral", keys: ["capa", "inicio", "confianca", "dispositivos", "perfis", "mapa"] },
-  { name: "Tripulação", keys: ["perfil-piloto", "guia-cockpit", "preparacao", "preparacao-concluida", "edb", "ocorrencias", "jornada", "ais"] },
+  { name: "Tripulação", keys: ["perfil-piloto", "mural-piloto", "trilhos-piloto", "guia-cockpit", "preparacao", "preparacao-concluida", "edb", "ocorrencias", "jornada", "ais"] },
   { name: "Manutenção e IA", keys: ["perfil-mecanico", "perfil-inspetor", "pista", "servico", "relatos", "botoes-relato", "campos-fatos", "campos-controle", "exemplo-ia", "exemplo-fontes", "troubleshooting", "controle-mel", "comentarios"] },
   { name: "Coordenação e ferramentaria", keys: ["perfil-coordenacao", "coordenacao", "programacao", "perfil-ferramentaria", "guia-ferramentaria"] },
   { name: "Recursos compartilhados", keys: ["trilhos", "chat", "chamadas", "notas", "mural", "ajuda", "pendencias", "cadastros", "catalogo", "videos"] },
